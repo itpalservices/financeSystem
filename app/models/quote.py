@@ -18,6 +18,7 @@ class Quote(Base):
     id = Column(Integer, primary_key=True, index=True)
     quote_number = Column(String, unique=True, nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=True)
     client_name = Column(String, nullable=False)
     client_email = Column(String, nullable=False)
     client_address = Column(Text)
@@ -34,6 +35,7 @@ class Quote(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     user = relationship("User", back_populates="quotes")
+    customer = relationship("Customer", back_populates="quotes")
     line_items = relationship("QuoteLineItem", back_populates="quote", cascade="all, delete-orphan")
 
 class QuoteLineItem(Base):

@@ -6,8 +6,10 @@ import os
 
 from app.database import engine, Base
 from app.models.user import User
+from app.models.customer import Customer
 from app.models.invoice import Invoice, InvoiceLineItem
 from app.models.quote import Quote, QuoteLineItem
+from app.models.email_log import EmailLog
 from app.routes import auth, invoices, quotes, users
 
 Base.metadata.create_all(bind=engine)
@@ -28,6 +30,7 @@ app.include_router(invoices.router, prefix="/api/invoices", tags=["Invoices"])
 app.include_router(quotes.router, prefix="/api/quotes", tags=["Quotes"])
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/pdfs", StaticFiles(directory="pdfs"), name="pdfs")
 
 @app.get("/")
 async def read_index():
@@ -52,6 +55,10 @@ async def read_invoices():
 @app.get("/quotes")
 async def read_quotes():
     return FileResponse("static/quotes.html")
+
+@app.get("/customers")
+async def read_customers():
+    return FileResponse("static/customers.html")
 
 if __name__ == "__main__":
     import uvicorn

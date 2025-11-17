@@ -24,6 +24,8 @@ function renderQuotes() {
     
     tbody.innerHTML = quotes.map(quote => {
         const statusBadge = getStatusBadge(quote.status);
+        const pdfButtonText = quote.pdf_url ? 'Preview PDF' : 'Generate PDF';
+        const pdfButtonIcon = quote.pdf_url ? 'bi-eye' : 'bi-file-pdf';
         const convertBtn = quote.status !== 'converted' 
             ? `<button class="btn btn-outline-warning btn-sm" onclick="convertToInvoice(${quote.id})" title="Convert to Invoice">
                     <i class="bi bi-arrow-right-circle"></i>
@@ -39,8 +41,8 @@ function renderQuotes() {
             <td>
                 <div class="btn-group btn-group-sm" role="group">
                     ${convertBtn}
-                    <button class="btn btn-outline-primary" onclick="generatePDF(${quote.id})" title="Generate PDF">
-                        <i class="bi bi-file-pdf"></i>
+                    <button class="btn btn-outline-primary" onclick="generatePDF(${quote.id})" title="${pdfButtonText}">
+                        <i class="bi ${pdfButtonIcon}"></i>
                     </button>
                     <button class="btn btn-outline-success" onclick="openEmailModal(${quote.id})" title="Send Email">
                         <i class="bi bi-envelope"></i>
@@ -162,18 +164,39 @@ async function convertToInvoice(quoteId) {
     }
 }
 
-async function generatePDF(quoteId) {
+async function generateOrPreviewPDF(quoteId, action = 'preview') {
+    const quote = quotes.find(q => q.id === quoteId);
+    if (!quote) return;
+    
+    if (action === 'generate' && quote.pdf_url) {
+        const confirmed = await showConfirmDialog(
+            'Regenerate PDF?',
+            'A PDF already exists for this quote. Do you want to generate a new one?'
+        );
+        if (!confirmed) return;
+    }
+    
+    if (action === 'preview' && quote.pdf_url) {
+        showPDFPreview(quote.pdf_url, quote.quote_number);
+        return;
+    }
+    
     try {
         showSuccess('Generating PDF...');
         const result = await api.generateQuotePDF(quoteId);
         
-        const quote = quotes.find(q => q.id === quoteId);
         showPDFPreview(result.pdf_url, quote.quote_number);
         
         loadQuotes();
     } catch (error) {
         showError('Error generating PDF: ' + error.message);
     }
+}
+
+async function generatePDF(quoteId) {
+    const quote = quotes.find(q => q.id === quoteId);
+    const action = quote && quote.pdf_url ? 'preview' : 'generate';
+    await generateOrPreviewPDF(quoteId, action);
 }
 
 function showPDFPreview(pdfUrl, quoteNumber) {
@@ -195,8 +218,21 @@ async function openEmailModal(quoteId) {
     }
     
     if (!currentQuote.pdf_url) {
-        showError('Please generate PDF first');
-        return;
+        const confirmed = await showConfirmDialog(
+            'Generate PDF First?',
+            'This quote does not have a PDF yet. Generate one now?'
+        );
+        if (confirmed) {
+            await generateOrPreviewPDF(quoteId, 'generate');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            currentQuote = quotes.find(q => q.id === quoteId);
+            if (!currentQuote.pdf_url) {
+                showError('Failed to generate PDF');
+                return;
+            }
+        } else {
+            return;
+        }
     }
     
     document.getElementById('emailTo').value = currentQuote.client_email;
@@ -230,6 +266,12 @@ document.getElementById('emailForm').addEventListener('submit', async (e) => {
     const subject = document.getElementById('emailSubject').value;
     const message = document.getElementById('emailBody').value;
     
+    const confirmed = await showConfirmDialog(
+        'Send Email?',
+        `Send quote ${currentQuote.quote_number} to ${recipientEmail}?`
+    );
+    if (!confirmed) return;
+    
     try {
         await api.sendQuoteEmail(currentQuote.id, recipientEmail, message, subject);
         showSuccess('Email sent successfully');
@@ -244,7 +286,12 @@ document.getElementById('emailForm').addEventListener('submit', async (e) => {
 });
 
 async function deleteQuote(quoteId) {
-    if (!confirm('Are you sure you want to delete this quote?')) return;
+    const quote = quotes.find(q => q.id === quoteId);
+    const confirmed = await showConfirmDialog(
+        'Delete Quote?',
+        `Are you sure you want to permanently delete quote ${quote ? quote.quote_number : quoteId}? This action cannot be undone.`
+    );
+    if (!confirmed) return;
     
     try {
         await api.deleteQuote(quoteId);
@@ -253,6 +300,13 @@ async function deleteQuote(quoteId) {
     } catch (error) {
         showError('Error deleting quote: ' + error.message);
     }
+}
+
+async function showConfirmDialog(title, message) {
+    return new Promise((resolve) => {
+        const result = confirm(`${title}\n\n${message}`);
+        resolve(result);
+    });
 }
 
 function showError(message) {

@@ -24,6 +24,10 @@ function renderInvoices() {
     
     tbody.innerHTML = invoices.map(invoice => {
         const statusBadge = getStatusBadge(invoice.status);
+        const pdfButtonText = invoice.pdf_url ? 'Preview PDF' : 'Generate PDF';
+        const pdfButtonIcon = invoice.pdf_url ? 'bi-eye' : 'bi-file-pdf';
+        const canEdit = invoice.status === 'draft';
+        
         return `
         <tr>
             <td><strong>${invoice.invoice_number}</strong></td>
@@ -33,8 +37,8 @@ function renderInvoices() {
             <td>${new Date(invoice.due_date).toLocaleDateString()}</td>
             <td>
                 <div class="btn-group btn-group-sm" role="group">
-                    <button class="btn btn-outline-primary" onclick="generatePDF(${invoice.id})" title="Generate PDF">
-                        <i class="bi bi-file-pdf"></i>
+                    <button class="btn btn-outline-primary" onclick="generatePDF(${invoice.id})" title="${pdfButtonText}">
+                        <i class="bi ${pdfButtonIcon}"></i>
                     </button>
                     <button class="btn btn-outline-success" onclick="openEmailModal(${invoice.id})" title="Send Email">
                         <i class="bi bi-envelope"></i>
@@ -139,18 +143,39 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
     }
 });
 
-async function generatePDF(invoiceId) {
+async function generateOrPreviewPDF(invoiceId, action = 'preview') {
+    const invoice = invoices.find(inv => inv.id === invoiceId);
+    if (!invoice) return;
+    
+    if (action === 'generate' && invoice.pdf_url) {
+        const confirmed = await showConfirmDialog(
+            'Regenerate PDF?',
+            'A PDF already exists for this invoice. Do you want to generate a new one?'
+        );
+        if (!confirmed) return;
+    }
+    
+    if (action === 'preview' && invoice.pdf_url) {
+        showPDFPreview(invoice.pdf_url, invoice.invoice_number);
+        return;
+    }
+    
     try {
         showSuccess('Generating PDF...');
         const result = await api.generateInvoicePDF(invoiceId);
         
-        const invoice = invoices.find(inv => inv.id === invoiceId);
         showPDFPreview(result.pdf_url, invoice.invoice_number);
         
         loadInvoices();
     } catch (error) {
         showError('Error generating PDF: ' + error.message);
     }
+}
+
+async function generatePDF(invoiceId) {
+    const invoice = invoices.find(inv => inv.id === invoiceId);
+    const action = invoice && invoice.pdf_url ? 'preview' : 'generate';
+    await generateOrPreviewPDF(invoiceId, action);
 }
 
 function showPDFPreview(pdfUrl, invoiceNumber) {
@@ -172,8 +197,21 @@ async function openEmailModal(invoiceId) {
     }
     
     if (!currentInvoice.pdf_url) {
-        showError('Please generate PDF first');
-        return;
+        const confirmed = await showConfirmDialog(
+            'Generate PDF First?',
+            'This invoice does not have a PDF yet. Generate one now?'
+        );
+        if (confirmed) {
+            await generateOrPreviewPDF(invoiceId, 'generate');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            currentInvoice = invoices.find(inv => inv.id === invoiceId);
+            if (!currentInvoice.pdf_url) {
+                showError('Failed to generate PDF');
+                return;
+            }
+        } else {
+            return;
+        }
     }
     
     document.getElementById('emailTo').value = currentInvoice.client_email;
@@ -207,6 +245,12 @@ document.getElementById('emailForm').addEventListener('submit', async (e) => {
     const subject = document.getElementById('emailSubject').value;
     const message = document.getElementById('emailBody').value;
     
+    const confirmed = await showConfirmDialog(
+        'Send Email?',
+        `Send invoice ${currentInvoice.invoice_number} to ${recipientEmail}?`
+    );
+    if (!confirmed) return;
+    
     try {
         await api.sendInvoiceEmail(currentInvoice.id, recipientEmail, message, subject);
         showSuccess('Email sent successfully');
@@ -221,7 +265,12 @@ document.getElementById('emailForm').addEventListener('submit', async (e) => {
 });
 
 async function deleteInvoice(invoiceId) {
-    if (!confirm('Are you sure you want to delete this invoice?')) return;
+    const invoice = invoices.find(inv => inv.id === invoiceId);
+    const confirmed = await showConfirmDialog(
+        'Delete Invoice?',
+        `Are you sure you want to permanently delete invoice ${invoice ? invoice.invoice_number : invoiceId}? This action cannot be undone.`
+    );
+    if (!confirmed) return;
     
     try {
         await api.deleteInvoice(invoiceId);
@@ -230,6 +279,13 @@ async function deleteInvoice(invoiceId) {
     } catch (error) {
         showError('Error deleting invoice: ' + error.message);
     }
+}
+
+async function showConfirmDialog(title, message) {
+    return new Promise((resolve) => {
+        const result = confirm(`${title}\n\n${message}`);
+        resolve(result);
+    });
 }
 
 function showError(message) {
