@@ -34,8 +34,8 @@ function renderQuotes() {
         return `
         <tr>
             <td><strong>${quote.quote_number}</strong></td>
-            <td>${quote.client_name}<br><small class="text-muted">${quote.client_email}</small></td>
-            <td><strong>$${quote.total.toFixed(2)}</strong></td>
+            <td>${quote.company_name ? `${quote.client_name} (${quote.company_name})` : quote.client_name}<br><small class="text-muted">${quote.client_email || quote.telephone1}</small></td>
+            <td><strong>€${quote.total.toFixed(2)}</strong></td>
             <td>${statusBadge}</td>
             <td>${new Date(quote.valid_until).toLocaleDateString()}</td>
             <td>
@@ -121,7 +121,10 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
     
     const data = {
         client_name: document.getElementById('clientName').value,
-        client_email: document.getElementById('clientEmail').value,
+        company_name: document.getElementById('companyName').value || null,
+        client_email: document.getElementById('clientEmail').value || null,
+        telephone1: document.getElementById('telephone1').value,
+        telephone2: document.getElementById('telephone2').value || null,
         client_address: document.getElementById('clientAddress').value,
         valid_until: new Date(document.getElementById('validUntil').value).toISOString(),
         tax: parseFloat(document.getElementById('tax').value) || 0,
@@ -235,11 +238,11 @@ async function openEmailModal(quoteId) {
         }
     }
     
-    document.getElementById('emailTo').value = currentQuote.client_email;
+    document.getElementById('emailTo').value = currentQuote.client_email || '';
     document.getElementById('emailSubject').value = `Quote ${currentQuote.quote_number} from I.T. PAL Technology Solutions`;
     document.getElementById('emailBody').value = `Dear ${currentQuote.client_name},
 
-Please find attached quote ${currentQuote.quote_number} for the amount of $${currentQuote.total.toFixed(2)}.
+Please find attached quote ${currentQuote.quote_number} for the amount of €${currentQuote.total.toFixed(2)}.
 
 This quote is valid until ${new Date(currentQuote.valid_until).toLocaleDateString()}.
 

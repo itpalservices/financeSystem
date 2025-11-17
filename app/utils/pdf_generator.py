@@ -67,11 +67,15 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
     elements.append(info_table)
     elements.append(Spacer(1, 0.3*inch))
     
-    client_data = [
-        ["Bill To:"],
-        [invoice.client_name],
-        [invoice.client_email],
-    ]
+    client_data = [["Bill To:"], [invoice.client_name]]
+    if invoice.company_name:
+        client_data.append([invoice.company_name])
+    if invoice.client_email:
+        client_data.append([invoice.client_email])
+    if invoice.telephone1:
+        client_data.append([f"Tel: {invoice.telephone1}"])
+    if invoice.telephone2:
+        client_data.append([f"Tel 2: {invoice.telephone2}"])
     if invoice.client_address:
         client_data.append([invoice.client_address])
     
@@ -180,11 +184,15 @@ def generate_quote_pdf(quote, db: Session) -> str:
     elements.append(info_table)
     elements.append(Spacer(1, 0.3*inch))
     
-    client_data = [
-        ["Quote For:"],
-        [quote.client_name],
-        [quote.client_email],
-    ]
+    client_data = [["Quote For:"], [quote.client_name]]
+    if quote.company_name:
+        client_data.append([quote.company_name])
+    if quote.client_email:
+        client_data.append([quote.client_email])
+    if quote.telephone1:
+        client_data.append([f"Tel: {quote.telephone1}"])
+    if quote.telephone2:
+        client_data.append([f"Tel 2: {quote.telephone2}"])
     if quote.client_address:
         client_data.append([quote.client_address])
     
