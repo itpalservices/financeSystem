@@ -1,7 +1,7 @@
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER
 from datetime import datetime
@@ -33,11 +33,17 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
     elements = []
     styles = getSampleStyleSheet()
     
+    logo_path = "static/logo.png"
+    if os.path.exists(logo_path):
+        logo = Image(logo_path, width=2.5*inch, height=0.6*inch)
+        elements.append(logo)
+        elements.append(Spacer(1, 0.2*inch))
+    
     title_style = ParagraphStyle(
         'CustomTitle',
         parent=styles['Heading1'],
         fontSize=24,
-        textColor=colors.HexColor('#2c3e50'),
+        textColor=colors.HexColor('#1b7ca8'),
         spaceAfter=30,
         alignment=TA_CENTER
     )
@@ -91,7 +97,7 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
     
     line_items_table = Table(line_items_data, colWidths=[3.5*inch, 1*inch, 1.5*inch, 1.5*inch])
     line_items_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2c3e50')),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1b7ca8')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
@@ -140,11 +146,17 @@ def generate_quote_pdf(quote, db: Session) -> str:
     elements = []
     styles = getSampleStyleSheet()
     
+    logo_path = "static/logo.png"
+    if os.path.exists(logo_path):
+        logo = Image(logo_path, width=2.5*inch, height=0.6*inch)
+        elements.append(logo)
+        elements.append(Spacer(1, 0.2*inch))
+    
     title_style = ParagraphStyle(
         'CustomTitle',
         parent=styles['Heading1'],
         fontSize=24,
-        textColor=colors.HexColor('#3498db'),
+        textColor=colors.HexColor('#1b7ca8'),
         spaceAfter=30,
         alignment=TA_CENTER
     )
@@ -198,7 +210,7 @@ def generate_quote_pdf(quote, db: Session) -> str:
     
     line_items_table = Table(line_items_data, colWidths=[3.5*inch, 1*inch, 1.5*inch, 1.5*inch])
     line_items_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3498db')),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1b7ca8')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
