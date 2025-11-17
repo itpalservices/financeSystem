@@ -71,7 +71,7 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
     
     # Build Bill To section with two columns
     # Left column: Client name, Tel 1, Tel 2
-    left_column = [invoice.client_name]
+    left_column = [f"Client Name: {invoice.client_name}"]
     if invoice.telephone1:
         left_column.append(f"Tel: {invoice.telephone1}")
     if invoice.telephone2:
@@ -80,11 +80,11 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
     # Right column: Company name, Email, Address
     right_column = []
     if invoice.company_name:
-        right_column.append(invoice.company_name)
+        right_column.append(f"Company Name: {invoice.company_name}")
     if invoice.client_email:
-        right_column.append(invoice.client_email)
+        right_column.append(f"Email: {invoice.client_email}")
     if invoice.client_address:
-        right_column.append(invoice.client_address)
+        right_column.append(f"Address: {invoice.client_address}")
     
     # Create two-column table for Bill To
     bill_to_data = [["Bill To:", ""]]
@@ -246,23 +246,37 @@ def generate_quote_pdf(quote, db: Session) -> str:
     elements.append(info_table)
     elements.append(Spacer(1, 0.3*inch))
     
-    client_data = [["Quote For:"], [quote.client_name]]
-    if quote.company_name:
-        client_data.append([quote.company_name])
-    if quote.client_email:
-        client_data.append([quote.client_email])
+    # Build Quote For section with two columns
+    # Left column: Client name, Tel 1, Tel 2
+    left_column = [f"Client Name: {quote.client_name}"]
     if quote.telephone1:
-        client_data.append([f"Tel: {quote.telephone1}"])
+        left_column.append(f"Tel: {quote.telephone1}")
     if quote.telephone2:
-        client_data.append([f"Tel 2: {quote.telephone2}"])
-    if quote.client_address:
-        client_data.append([quote.client_address])
+        left_column.append(f"Tel 2: {quote.telephone2}")
     
-    client_table = Table(client_data, colWidths=[7*inch])
+    # Right column: Company name, Email, Address
+    right_column = []
+    if quote.company_name:
+        right_column.append(f"Company Name: {quote.company_name}")
+    if quote.client_email:
+        right_column.append(f"Email: {quote.client_email}")
+    if quote.client_address:
+        right_column.append(f"Address: {quote.client_address}")
+    
+    # Create two-column table for Quote For
+    quote_for_data = [["Quote For:", ""]]
+    max_rows = max(len(left_column), len(right_column))
+    for i in range(max_rows):
+        left_text = left_column[i] if i < len(left_column) else ""
+        right_text = right_column[i] if i < len(right_column) else ""
+        quote_for_data.append([left_text, right_text])
+    
+    client_table = Table(quote_for_data, colWidths=[3.5*inch, 3.5*inch])
     client_table.setStyle(TableStyle([
-        ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, -1), 10),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
     ]))
     
     elements.append(client_table)
