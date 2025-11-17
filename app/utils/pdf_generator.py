@@ -35,7 +35,7 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
     
     logo_path = "static/logo.png"
     if os.path.exists(logo_path):
-        logo = Image(logo_path, width=2.5*inch, height=0.6*inch)
+        logo = Image(logo_path, width=2.5*inch, height=1.2*inch)
         elements.append(logo)
         elements.append(Spacer(1, 0.2*inch))
     
@@ -52,8 +52,8 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
     elements.append(Spacer(1, 0.2*inch))
     
     info_data = [
-        ["Invoice Number:", invoice.invoice_number, "Issue Date:", invoice.issue_date.strftime("%Y-%m-%d")],
-        ["Status:", invoice.status.value.upper(), "Due Date:", invoice.due_date.strftime("%Y-%m-%d")]
+        ["Invoice Number:", invoice.invoice_number, "Issue Date:", invoice.issue_date.strftime("%d-%m-%Y")],
+        ["Status:", invoice.status.value.upper(), "Due Date:", invoice.due_date.strftime("%d-%m-%Y")]
     ]
     
     info_table = Table(info_data, colWidths=[1.5*inch, 2*inch, 1.5*inch, 2*inch])
@@ -152,7 +152,7 @@ def generate_quote_pdf(quote, db: Session) -> str:
     
     logo_path = "static/logo.png"
     if os.path.exists(logo_path):
-        logo = Image(logo_path, width=2.5*inch, height=0.6*inch)
+        logo = Image(logo_path, width=2.5*inch, height=1.2*inch)
         elements.append(logo)
         elements.append(Spacer(1, 0.2*inch))
     
@@ -169,8 +169,8 @@ def generate_quote_pdf(quote, db: Session) -> str:
     elements.append(Spacer(1, 0.2*inch))
     
     info_data = [
-        ["Quote Number:", quote.quote_number, "Issue Date:", quote.issue_date.strftime("%Y-%m-%d")],
-        ["Status:", quote.status.value.upper(), "Valid Until:", quote.valid_until.strftime("%Y-%m-%d")]
+        ["Quote Number:", quote.quote_number, "Issue Date:", quote.issue_date.strftime("%d-%m-%Y")],
+        ["Status:", quote.status.value.upper(), "Valid Until:", quote.valid_until.strftime("%d-%m-%Y")]
     ]
     
     info_table = Table(info_data, colWidths=[1.5*inch, 2*inch, 1.5*inch, 2*inch])

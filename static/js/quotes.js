@@ -5,6 +5,14 @@ if (!checkAuth()) {
 let quotes = [];
 let currentQuote = null;
 
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+}
+
 async function loadQuotes() {
     try {
         quotes = await api.getQuotes();
@@ -26,20 +34,25 @@ function renderQuotes() {
         const statusBadge = getStatusBadge(quote.status);
         const pdfButtonText = quote.pdf_url ? 'Preview PDF' : 'Generate PDF';
         const pdfButtonIcon = quote.pdf_url ? 'bi-eye' : 'bi-file-pdf';
+        const canEdit = quote.status === 'draft';
         const convertBtn = quote.status !== 'converted' 
             ? `<button class="btn btn-outline-warning btn-sm" onclick="convertToInvoice(${quote.id})" title="Convert to Invoice">
                     <i class="bi bi-arrow-right-circle"></i>
                </button>` 
             : '';
+        const editButton = canEdit ? `<button class="btn btn-outline-secondary" onclick="editQuote(${quote.id})" title="Edit Draft">
+                        <i class="bi bi-pencil"></i>
+                    </button>` : '';
         return `
         <tr>
             <td><strong>${quote.quote_number}</strong></td>
             <td>${quote.company_name ? `${quote.client_name} (${quote.company_name})` : quote.client_name}<br><small class="text-muted">${quote.client_email || quote.telephone1}</small></td>
             <td><strong>€${quote.total.toFixed(2)}</strong></td>
             <td>${statusBadge}</td>
-            <td>${new Date(quote.valid_until).toLocaleDateString()}</td>
+            <td>${formatDate(quote.valid_until)}</td>
             <td>
                 <div class="btn-group btn-group-sm" role="group">
+                    ${editButton}
                     ${convertBtn}
                     <button class="btn btn-outline-primary" onclick="generatePDF(${quote.id})" title="${pdfButtonText}">
                         <i class="bi ${pdfButtonIcon}"></i>
@@ -77,7 +90,7 @@ function addLineItem() {
                 <input type="text" class="form-control item-desc" placeholder="Description *" required>
             </div>
             <div class="col-md-2">
-                <input type="number" class="form-control item-qty" placeholder="Qty *" step="0.01" required>
+                <input type="number" class="form-control item-qty" placeholder="Qty *" min="1" required>
             </div>
             <div class="col-md-3">
                 <input type="number" class="form-control item-price" placeholder="Unit Price *" step="0.01" required>
@@ -110,7 +123,7 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
     const lineItemsElements = document.querySelectorAll('.line-item-row');
     const lineItems = Array.from(lineItemsElements).map(item => ({
         description: item.querySelector('.item-desc').value,
-        quantity: parseFloat(item.querySelector('.item-qty').value),
+        quantity: parseInt(item.querySelector('.item-qty').value),
         unit_price: parseFloat(item.querySelector('.item-price').value)
     }));
     
@@ -244,7 +257,7 @@ async function openEmailModal(quoteId) {
 
 Please find attached quote ${currentQuote.quote_number} for the amount of €${currentQuote.total.toFixed(2)}.
 
-This quote is valid until ${new Date(currentQuote.valid_until).toLocaleDateString()}.
+This quote is valid until ${formatDate(currentQuote.valid_until)}.
 
 If you have any questions or would like to proceed, please don't hesitate to contact us.
 
@@ -287,6 +300,10 @@ document.getElementById('emailForm').addEventListener('submit', async (e) => {
         showError('Error sending email: ' + error.message);
     }
 });
+
+async function editQuote(quoteId) {
+    showError('Edit functionality coming soon. For now, please delete and recreate the draft quote.');
+}
 
 async function deleteQuote(quoteId) {
     const quote = quotes.find(q => q.id === quoteId);

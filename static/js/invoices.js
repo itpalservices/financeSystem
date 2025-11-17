@@ -5,6 +5,14 @@ if (!checkAuth()) {
 let invoices = [];
 let currentInvoice = null;
 
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+}
+
 async function loadInvoices() {
     try {
         invoices = await api.getInvoices();
@@ -29,6 +37,9 @@ function renderInvoices() {
         const canEdit = invoice.status === 'draft';
         const clientInfo = invoice.company_name ? `${invoice.client_name} (${invoice.company_name})` : invoice.client_name;
         const contactInfo = invoice.client_email ? invoice.client_email : invoice.telephone1;
+        const editButton = canEdit ? `<button class="btn btn-outline-warning" onclick="editInvoice(${invoice.id})" title="Edit Draft">
+                        <i class="bi bi-pencil"></i>
+                    </button>` : '';
         
         return `
         <tr>
@@ -36,9 +47,10 @@ function renderInvoices() {
             <td>${clientInfo}<br><small class="text-muted">${contactInfo}</small></td>
             <td><strong>€${invoice.total.toFixed(2)}</strong></td>
             <td>${statusBadge}</td>
-            <td>${new Date(invoice.due_date).toLocaleDateString()}</td>
+            <td>${formatDate(invoice.due_date)}</td>
             <td>
                 <div class="btn-group btn-group-sm" role="group">
+                    ${editButton}
                     <button class="btn btn-outline-primary" onclick="generatePDF(${invoice.id})" title="${pdfButtonText}">
                         <i class="bi ${pdfButtonIcon}"></i>
                     </button>
@@ -74,7 +86,7 @@ function addLineItem() {
                 <input type="text" class="form-control item-desc" placeholder="Description *" required>
             </div>
             <div class="col-md-2">
-                <input type="number" class="form-control item-qty" placeholder="Qty *" step="0.01" required>
+                <input type="number" class="form-control item-qty" placeholder="Qty *" min="1" required>
             </div>
             <div class="col-md-3">
                 <input type="number" class="form-control item-price" placeholder="Unit Price *" step="0.01" required>
@@ -107,7 +119,7 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
     const lineItemsElements = document.querySelectorAll('.line-item-row');
     const lineItems = Array.from(lineItemsElements).map(item => ({
         description: item.querySelector('.item-desc').value,
-        quantity: parseFloat(item.querySelector('.item-qty').value),
+        quantity: parseInt(item.querySelector('.item-qty').value),
         unit_price: parseFloat(item.querySelector('.item-price').value)
     }));
     
@@ -225,7 +237,7 @@ async function openEmailModal(invoiceId) {
 
 Please find attached invoice ${currentInvoice.invoice_number} for the amount of €${currentInvoice.total.toFixed(2)}.
 
-The invoice is due on ${new Date(currentInvoice.due_date).toLocaleDateString()}.
+The invoice is due on ${formatDate(currentInvoice.due_date)}.
 
 If you have any questions, please don't hesitate to contact us.
 
@@ -268,6 +280,10 @@ document.getElementById('emailForm').addEventListener('submit', async (e) => {
         showError('Error sending email: ' + error.message);
     }
 });
+
+async function editInvoice(invoiceId) {
+    showError('Edit functionality coming soon. For now, please delete and recreate the draft invoice.');
+}
 
 async function deleteInvoice(invoiceId) {
     const invoice = invoices.find(inv => inv.id === invoiceId);
