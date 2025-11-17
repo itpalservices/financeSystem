@@ -139,13 +139,19 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="telephone1" class="form-label">Telephone 1 *</label>
-                                <input type="tel" class="form-control" id="telephone1" required>
+                                <input type="tel" class="form-control" id="telephone1" required 
+                                    pattern="^(25|22|24|23|99|95|94|96|97)\d{6}$"
+                                    maxlength="8"
+                                    title="Phone must be 8 digits starting with 25, 22, 24, 23, 99, 95, 94, 96, or 97">
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="telephone2" class="form-label">Telephone 2</label>
-                                <input type="tel" class="form-control" id="telephone2">
+                                <input type="tel" class="form-control" id="telephone2"
+                                    pattern="^(25|22|24|23|99|95|94|96|97)\d{6}$"
+                                    maxlength="8"
+                                    title="Phone must be 8 digits starting with 25, 22, 24, 23, 99, 95, 94, 96, or 97">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="dueDate" class="form-label">Due Date *</label>

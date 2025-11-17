@@ -103,8 +103,14 @@ def update_invoice(
     
     if invoice_data.client_name is not None:
         invoice.client_name = invoice_data.client_name
+    if invoice_data.company_name is not None:
+        invoice.company_name = invoice_data.company_name
     if invoice_data.client_email is not None:
         invoice.client_email = invoice_data.client_email
+    if invoice_data.telephone1 is not None:
+        invoice.telephone1 = invoice_data.telephone1
+    if invoice_data.telephone2 is not None:
+        invoice.telephone2 = invoice_data.telephone2
     if invoice_data.client_address is not None:
         invoice.client_address = invoice_data.client_address
     if invoice_data.due_date is not None:
@@ -113,6 +119,8 @@ def update_invoice(
         invoice.status = invoice_data.status
     if invoice_data.notes is not None:
         invoice.notes = invoice_data.notes
+    
+    invoice.pdf_url = None
     
     if invoice_data.line_items is not None:
         db.query(InvoiceLineItem).filter(InvoiceLineItem.invoice_id == invoice_id).delete()

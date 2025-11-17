@@ -111,8 +111,14 @@ def update_quote(
     
     if quote_data.client_name is not None:
         quote.client_name = quote_data.client_name
+    if quote_data.company_name is not None:
+        quote.company_name = quote_data.company_name
     if quote_data.client_email is not None:
         quote.client_email = quote_data.client_email
+    if quote_data.telephone1 is not None:
+        quote.telephone1 = quote_data.telephone1
+    if quote_data.telephone2 is not None:
+        quote.telephone2 = quote_data.telephone2
     if quote_data.client_address is not None:
         quote.client_address = quote_data.client_address
     if quote_data.valid_until is not None:
@@ -121,6 +127,8 @@ def update_quote(
         quote.status = quote_data.status
     if quote_data.notes is not None:
         quote.notes = quote_data.notes
+    
+    quote.pdf_url = None
     
     if quote_data.line_items is not None:
         db.query(QuoteLineItem).filter(QuoteLineItem.quote_id == quote_id).delete()

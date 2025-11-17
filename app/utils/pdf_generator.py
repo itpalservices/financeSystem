@@ -135,6 +135,25 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
         elements.append(Spacer(1, 0.3*inch))
         elements.append(Paragraph(f"<b>Notes:</b> {invoice.notes}", styles['Normal']))
     
+    # Add footer
+    elements.append(Spacer(1, 0.5*inch))
+    
+    footer_style = ParagraphStyle(
+        'Footer',
+        parent=styles['Normal'],
+        fontSize=9,
+        textColor=colors.HexColor('#666666'),
+        alignment=TA_CENTER
+    )
+    
+    footer_text = """
+    <b>🌐 Website:</b> itpalsolutions.com &nbsp;&nbsp;|&nbsp;&nbsp; 
+    <b>✉ Email:</b> info@itpalsolutions.com &nbsp;&nbsp;|&nbsp;&nbsp; 
+    <b>📄 VAT Reg No.:</b> CY111111
+    """
+    
+    elements.append(Paragraph(footer_text, footer_style))
+    
     doc.build(elements)
     
     pdf_url = upload_to_s3(filepath, filename)
@@ -251,6 +270,25 @@ def generate_quote_pdf(quote, db: Session) -> str:
     if quote.notes:
         elements.append(Spacer(1, 0.3*inch))
         elements.append(Paragraph(f"<b>Notes:</b> {quote.notes}", styles['Normal']))
+    
+    # Add footer
+    elements.append(Spacer(1, 0.5*inch))
+    
+    footer_style = ParagraphStyle(
+        'Footer',
+        parent=styles['Normal'],
+        fontSize=9,
+        textColor=colors.HexColor('#666666'),
+        alignment=TA_CENTER
+    )
+    
+    footer_text = """
+    <b>🌐 Website:</b> itpalsolutions.com &nbsp;&nbsp;|&nbsp;&nbsp; 
+    <b>✉ Email:</b> info@itpalsolutions.com &nbsp;&nbsp;|&nbsp;&nbsp; 
+    <b>📄 VAT Reg No.:</b> CY111111
+    """
+    
+    elements.append(Paragraph(footer_text, footer_style))
     
     doc.build(elements)
     
