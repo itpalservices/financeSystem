@@ -53,11 +53,11 @@ const api = {
         return handleResponse(response);
     },
     
-    async login(email, password) {
+    async login(username, password) {
         const response = await fetch(`${API_BASE}/auth/login`, {
             method: 'POST',
             headers: getHeaders(false),
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ username, password }),
         });
         const data = await handleResponse(response);
         if (data.access_token) {
