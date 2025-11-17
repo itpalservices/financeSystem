@@ -248,4 +248,21 @@ The FastAPI server starts on `http://0.0.0.0:5000` and is accessible through the
 
 ## User Preferences
 
-No specific user preferences documented yet.
+### Branding
+- **Company**: I.T. PAL Technology Solutions Ltd
+- **Color Scheme**: Teal/Blue (#1b7ca8 primary, #155a7a secondary)
+- **Logo**: Located at `static/logo.png` - used throughout application and PDFs
+
+### Authentication
+- **No public registration**: Registration page removed, admin-only user creation
+- **Landing page**: Redirects directly to login
+- **Admin users**: 
+  - spyros.l@itpal.com
+  - manolis.p@itpal.com
+  - nicolas.ch@itpal.com
+  - Default password: `123` (bcrypt hashed)
+
+### Password Management
+- **Hashing**: bcrypt with cost factor 12
+- **Manual password changes**: See `PASSWORD_MANAGEMENT.md` for instructions
+- Current hash for password "123": `$2b$12$eGwnuOjqgo9DaQR2zAVFSe7Xl8UETyHshemaeG9bEhjRL.FRRRakq`
