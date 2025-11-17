@@ -238,6 +238,20 @@ The FastAPI server starts on `http://0.0.0.0:5000` and is accessible through the
 
 ## Recent Changes
 
+**November 17, 2025 - Euro Currency & Enhanced Contact Fields**
+- Changed all currency from USD ($) to Euro (€) throughout the application
+- Updated invoice/quote forms with enhanced contact information:
+  - Client Name (mandatory)
+  - Company Name (optional)
+  - Client Email (optional - changed from mandatory)
+  - Telephone 1 (mandatory)
+  - Telephone 2 (optional)
+- Updated database models to support new fields
+- Modified PDF generation to display all contact fields
+- Changed Cancel button to red (danger) styling per user request
+- Updated email templates to use Euro currency
+- Maintained "Save as Draft" and "Create & Finalize" workflow
+
 **November 17, 2025 - Bootstrap 5 UI Update**
 - Integrated Bootstrap 5.3.0 and Bootstrap Icons 1.10.0 across all pages
 - Redesigned login page with gradient background and card layout
