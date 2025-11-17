@@ -4,6 +4,7 @@ if (!checkAuth()) {
 
 let invoices = [];
 let currentInvoice = null;
+let editingInvoiceId = null;
 
 function formatDate(dateString) {
     const date = new Date(dateString);
@@ -110,6 +111,30 @@ function removeLineItem(button) {
     }
 }
 
+function resetLineItems() {
+    const lineItemsContainer = document.getElementById('lineItems');
+    lineItemsContainer.innerHTML = `
+        <div class="line-item-row">
+            <div class="row g-2">
+                <div class="col-md-5">
+                    <input type="text" class="form-control item-desc" placeholder="Description *" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control item-qty" placeholder="Qty *" min="1" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="number" class="form-control item-price" placeholder="Unit Price *" step="0.01" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-danger btn-sm w-100" onclick="removeLineItem(this)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 document.getElementById('createForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -143,20 +168,32 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
     };
     
     try {
-        const invoice = await api.createInvoice(data);
-        showSuccess(`Invoice ${action === 'draft' ? 'saved as draft' : 'created'} successfully`);
+        let invoice;
+        const isEditing = editingInvoiceId !== null;
+        
+        if (isEditing) {
+            invoice = await api.updateInvoice(editingInvoiceId, data);
+            showSuccess(`Invoice updated successfully`);
+        } else {
+            invoice = await api.createInvoice(data);
+            showSuccess(`Invoice ${action === 'draft' ? 'saved as draft' : 'created'} successfully`);
+        }
         
         const modal = bootstrap.Modal.getInstance(document.getElementById('createModal'));
         modal.hide();
         document.getElementById('createForm').reset();
         
+        document.querySelector('#createModal .modal-title').innerHTML = '<i class="bi bi-file-earmark-plus"></i> Create Invoice';
+        resetLineItems();
+        editingInvoiceId = null;
+        
         loadInvoices();
         
-        if (action === 'sent') {
+        if (action === 'sent' && !isEditing) {
             setTimeout(() => generatePDF(invoice.id), 500);
         }
     } catch (error) {
-        showError('Error creating invoice: ' + error.message);
+        showError(`Error ${editingInvoiceId ? 'updating' : 'creating'} invoice: ` + error.message);
     }
 });
 
@@ -282,7 +319,68 @@ document.getElementById('emailForm').addEventListener('submit', async (e) => {
 });
 
 async function editInvoice(invoiceId) {
-    showError('Edit functionality coming soon. For now, please delete and recreate the draft invoice.');
+    const invoice = invoices.find(inv => inv.id === invoiceId);
+    if (!invoice) {
+        showError('Invoice not found');
+        return;
+    }
+    
+    if (invoice.status !== 'draft') {
+        showError('Only draft invoices can be edited');
+        return;
+    }
+    
+    editingInvoiceId = invoiceId;
+    
+    document.querySelector('#createModal .modal-title').innerHTML = '<i class="bi bi-pencil"></i> Edit Draft Invoice';
+    
+    document.getElementById('clientName').value = invoice.client_name;
+    document.getElementById('companyName').value = invoice.company_name || '';
+    document.getElementById('clientEmail').value = invoice.client_email || '';
+    document.getElementById('telephone1').value = invoice.telephone1 || '';
+    document.getElementById('telephone2').value = invoice.telephone2 || '';
+    document.getElementById('clientAddress').value = invoice.client_address || '';
+    document.getElementById('dueDate').value = invoice.due_date.split('T')[0];
+    document.getElementById('tax').value = invoice.tax || 0;
+    document.getElementById('notes').value = invoice.notes || '';
+    
+    const lineItemsContainer = document.getElementById('lineItems');
+    lineItemsContainer.innerHTML = '';
+    
+    invoice.line_items.forEach(item => {
+        const newItem = document.createElement('div');
+        newItem.className = 'line-item-row';
+        newItem.innerHTML = `
+            <div class="row g-2">
+                <div class="col-md-5">
+                    <input type="text" class="form-control item-desc" placeholder="Description *" value="${item.description}" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control item-qty" placeholder="Qty *" min="1" value="${item.quantity}" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="number" class="form-control item-price" placeholder="Unit Price *" step="0.01" value="${item.unit_price}" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-danger btn-sm w-100" onclick="removeLineItem(this)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        lineItemsContainer.appendChild(newItem);
+    });
+    
+    const modal = new bootstrap.Modal(document.getElementById('createModal'));
+    modal.show();
+    
+    document.getElementById('createModal').addEventListener('hidden.bs.modal', function resetModal() {
+        document.querySelector('#createModal .modal-title').innerHTML = '<i class="bi bi-file-earmark-plus"></i> Create Invoice';
+        editingInvoiceId = null;
+        document.getElementById('createForm').reset();
+        resetLineItems();
+        document.getElementById('createModal').removeEventListener('hidden.bs.modal', resetModal);
+    }, { once: true });
 }
 
 async function deleteInvoice(invoiceId) {

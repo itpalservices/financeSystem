@@ -35,7 +35,7 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
     
     logo_path = "static/logo.png"
     if os.path.exists(logo_path):
-        logo = Image(logo_path, width=2.5*inch, height=1.2*inch)
+        logo = Image(logo_path, width=2.5*inch, height=0.9*inch)
         elements.append(logo)
         elements.append(Spacer(1, 0.2*inch))
     
@@ -94,7 +94,7 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
     for item in invoice.line_items:
         line_items_data.append([
             item.description,
-            str(item.quantity),
+            str(int(item.quantity)),
             f"€{item.unit_price:.2f}",
             f"€{item.total:.2f}"
         ])
@@ -152,7 +152,7 @@ def generate_quote_pdf(quote, db: Session) -> str:
     
     logo_path = "static/logo.png"
     if os.path.exists(logo_path):
-        logo = Image(logo_path, width=2.5*inch, height=1.2*inch)
+        logo = Image(logo_path, width=2.5*inch, height=0.9*inch)
         elements.append(logo)
         elements.append(Spacer(1, 0.2*inch))
     
@@ -211,7 +211,7 @@ def generate_quote_pdf(quote, db: Session) -> str:
     for item in quote.line_items:
         line_items_data.append([
             item.description,
-            str(item.quantity),
+            str(int(item.quantity)),
             f"€{item.unit_price:.2f}",
             f"€{item.total:.2f}"
         ])
