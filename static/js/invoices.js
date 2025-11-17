@@ -27,12 +27,14 @@ function renderInvoices() {
         const pdfButtonText = invoice.pdf_url ? 'Preview PDF' : 'Generate PDF';
         const pdfButtonIcon = invoice.pdf_url ? 'bi-eye' : 'bi-file-pdf';
         const canEdit = invoice.status === 'draft';
+        const clientInfo = invoice.company_name ? `${invoice.client_name} (${invoice.company_name})` : invoice.client_name;
+        const contactInfo = invoice.client_email ? invoice.client_email : invoice.telephone1;
         
         return `
         <tr>
             <td><strong>${invoice.invoice_number}</strong></td>
-            <td>${invoice.client_name}<br><small class="text-muted">${invoice.client_email}</small></td>
-            <td><strong>$${invoice.total.toFixed(2)}</strong></td>
+            <td>${clientInfo}<br><small class="text-muted">${contactInfo}</small></td>
+            <td><strong>€${invoice.total.toFixed(2)}</strong></td>
             <td>${statusBadge}</td>
             <td>${new Date(invoice.due_date).toLocaleDateString()}</td>
             <td>
@@ -116,7 +118,10 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
     
     const data = {
         client_name: document.getElementById('clientName').value,
-        client_email: document.getElementById('clientEmail').value,
+        company_name: document.getElementById('companyName').value || null,
+        client_email: document.getElementById('clientEmail').value || null,
+        telephone1: document.getElementById('telephone1').value,
+        telephone2: document.getElementById('telephone2').value || null,
         client_address: document.getElementById('clientAddress').value,
         due_date: new Date(document.getElementById('dueDate').value).toISOString(),
         tax: parseFloat(document.getElementById('tax').value) || 0,
@@ -214,11 +219,11 @@ async function openEmailModal(invoiceId) {
         }
     }
     
-    document.getElementById('emailTo').value = currentInvoice.client_email;
+    document.getElementById('emailTo').value = currentInvoice.client_email || '';
     document.getElementById('emailSubject').value = `Invoice ${currentInvoice.invoice_number} from I.T. PAL Technology Solutions`;
     document.getElementById('emailBody').value = `Dear ${currentInvoice.client_name},
 
-Please find attached invoice ${currentInvoice.invoice_number} for the amount of $${currentInvoice.total.toFixed(2)}.
+Please find attached invoice ${currentInvoice.invoice_number} for the amount of €${currentInvoice.total.toFixed(2)}.
 
 The invoice is due on ${new Date(currentInvoice.due_date).toLocaleDateString()}.
 

@@ -91,8 +91,8 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
         line_items_data.append([
             item.description,
             str(item.quantity),
-            f"${item.unit_price:.2f}",
-            f"${item.total:.2f}"
+            f"€{item.unit_price:.2f}",
+            f"€{item.total:.2f}"
         ])
     
     line_items_table = Table(line_items_data, colWidths=[3.5*inch, 1*inch, 1.5*inch, 1.5*inch])
@@ -110,9 +110,9 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
     elements.append(Spacer(1, 0.3*inch))
     
     totals_data = [
-        ["Subtotal:", f"${invoice.subtotal:.2f}"],
-        ["Tax:", f"${invoice.tax:.2f}"],
-        ["Total:", f"${invoice.total:.2f}"]
+        ["Subtotal:", f"€{invoice.subtotal:.2f}"],
+        ["Tax:", f"€{invoice.tax:.2f}"],
+        ["Total:", f"€{invoice.total:.2f}"]
     ]
     
     totals_table = Table(totals_data, colWidths=[5.5*inch, 1.5*inch])
@@ -204,8 +204,8 @@ def generate_quote_pdf(quote, db: Session) -> str:
         line_items_data.append([
             item.description,
             str(item.quantity),
-            f"${item.unit_price:.2f}",
-            f"${item.total:.2f}"
+            f"€{item.unit_price:.2f}",
+            f"€{item.total:.2f}"
         ])
     
     line_items_table = Table(line_items_data, colWidths=[3.5*inch, 1*inch, 1.5*inch, 1.5*inch])
@@ -223,9 +223,9 @@ def generate_quote_pdf(quote, db: Session) -> str:
     elements.append(Spacer(1, 0.3*inch))
     
     totals_data = [
-        ["Subtotal:", f"${quote.subtotal:.2f}"],
-        ["Tax:", f"${quote.tax:.2f}"],
-        ["Total:", f"${quote.total:.2f}"]
+        ["Subtotal:", f"€{quote.subtotal:.2f}"],
+        ["Tax:", f"€{quote.tax:.2f}"],
+        ["Total:", f"€{quote.total:.2f}"]
     ]
     
     totals_table = Table(totals_data, colWidths=[5.5*inch, 1.5*inch])

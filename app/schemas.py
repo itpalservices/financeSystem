@@ -44,7 +44,10 @@ class LineItemResponse(LineItemBase):
 
 class InvoiceBase(BaseModel):
     client_name: str
-    client_email: EmailStr
+    company_name: Optional[str] = None
+    client_email: Optional[str] = None
+    telephone1: str
+    telephone2: Optional[str] = None
     client_address: Optional[str] = None
     due_date: datetime
     notes: Optional[str] = None
@@ -55,7 +58,10 @@ class InvoiceCreate(InvoiceBase):
 
 class InvoiceUpdate(BaseModel):
     client_name: Optional[str] = None
-    client_email: Optional[EmailStr] = None
+    company_name: Optional[str] = None
+    client_email: Optional[str] = None
+    telephone1: Optional[str] = None
+    telephone2: Optional[str] = None
     client_address: Optional[str] = None
     due_date: Optional[datetime] = None
     status: Optional[InvoiceStatus] = None
@@ -81,7 +87,10 @@ class InvoiceResponse(InvoiceBase):
 
 class QuoteBase(BaseModel):
     client_name: str
-    client_email: EmailStr
+    company_name: Optional[str] = None
+    client_email: Optional[str] = None
+    telephone1: str
+    telephone2: Optional[str] = None
     client_address: Optional[str] = None
     valid_until: datetime
     notes: Optional[str] = None
@@ -92,7 +101,10 @@ class QuoteCreate(QuoteBase):
 
 class QuoteUpdate(BaseModel):
     client_name: Optional[str] = None
-    client_email: Optional[EmailStr] = None
+    company_name: Optional[str] = None
+    client_email: Optional[str] = None
+    telephone1: Optional[str] = None
+    telephone2: Optional[str] = None
     client_address: Optional[str] = None
     valid_until: Optional[datetime] = None
     status: Optional[QuoteStatus] = None
