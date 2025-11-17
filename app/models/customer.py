@@ -16,6 +16,3 @@ class Customer(Base):
     notes = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    invoices = relationship("Invoice", back_populates="customer")
-    quotes = relationship("Quote", back_populates="customer")
