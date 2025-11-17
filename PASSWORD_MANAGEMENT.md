@@ -4,9 +4,11 @@
 
 The following admin users have been created with password `123`:
 
-- **spyros.l@itpal.com**
-- **manolis.p@itpal.com**
-- **nicolas.ch@itpal.com**
+- **Username: spyros.l** (Email: spyros.l@itpal.com)
+- **Username: manolis.p** (Email: manolis.p@itpal.com)
+- **Username: nicolas.ch** (Email: nicolas.ch@itpal.com)
+
+**Login with username, not email!**
 
 ## Password Hashing
 

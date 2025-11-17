@@ -256,10 +256,11 @@ The FastAPI server starts on `http://0.0.0.0:5000` and is accessible through the
 ### Authentication
 - **No public registration**: Registration page removed, admin-only user creation
 - **Landing page**: Redirects directly to login
+- **Login method**: Username-based authentication (not email)
 - **Admin users**: 
-  - spyros.l@itpal.com
-  - manolis.p@itpal.com
-  - nicolas.ch@itpal.com
+  - Username: `spyros.l` - Email: spyros.l@itpal.com
+  - Username: `manolis.p` - Email: manolis.p@itpal.com
+  - Username: `nicolas.ch` - Email: nicolas.ch@itpal.com
   - Default password: `123` (bcrypt hashed)
 
 ### Password Management
