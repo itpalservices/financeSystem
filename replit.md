@@ -238,6 +238,20 @@ The FastAPI server starts on `http://0.0.0.0:5000` and is accessible through the
 
 ## Recent Changes
 
+**November 17, 2025 - Invoice PDF Layout & Tax Percentage Calculation**
+- Removed due date from invoice PDFs (only shows Invoice Number, Issue Date, and Status)
+- Redesigned Bill To section with two-column layout:
+  - Left column: Client name, Tel 1, Tel 2 (if exists), Address
+  - Right column: Company name (if exists), Email (if exists)
+- Changed tax system to percentage-based calculation:
+  - Tax input is now a percentage value (e.g., 19 for 19% VAT)
+  - Backend calculates tax amount as: subtotal × (tax% / 100)
+  - PDF displays "Tax (XX%)" showing both percentage and calculated amount
+  - Total automatically calculated as: subtotal + tax amount
+- Enhanced invoice creation/editing:
+  - All contact fields (company_name, telephone1, telephone2) properly handled
+  - Edit modal correctly populates and saves all fields
+
 **November 17, 2025 - PDF Footer, Telephone Validation & Regeneration**
 - Added professional PDF footer with company contact information:
   - Website: itpalsolutions.com (🌐 icon)
