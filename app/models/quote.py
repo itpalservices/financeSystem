@@ -7,10 +7,7 @@ from app.database import Base
 
 class QuoteStatus(str, enum.Enum):
     draft = "draft"
-    sent = "sent"
-    accepted = "accepted"
-    rejected = "rejected"
-    converted = "converted"
+    issued = "issued"
 
 class Quote(Base):
     __tablename__ = "quotes"
@@ -28,6 +25,7 @@ class Quote(Base):
     issue_date = Column(DateTime, default=datetime.utcnow)
     valid_until = Column(DateTime, nullable=False)
     subtotal = Column(Float, default=0.0)
+    discount = Column(Float, default=0.0)
     tax = Column(Float, default=0.0)
     total = Column(Float, default=0.0)
     notes = Column(Text)
@@ -47,6 +45,7 @@ class QuoteLineItem(Base):
     description = Column(String, nullable=False)
     quantity = Column(Float, nullable=False)
     unit_price = Column(Float, nullable=False)
+    discount = Column(Float, default=0.0)
     total = Column(Float, nullable=False)
     
     quote = relationship("Quote", back_populates="line_items")

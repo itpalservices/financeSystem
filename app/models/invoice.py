@@ -7,9 +7,7 @@ from app.database import Base
 
 class InvoiceStatus(str, enum.Enum):
     draft = "draft"
-    sent = "sent"
-    paid = "paid"
-    overdue = "overdue"
+    issued = "issued"
 
 class Invoice(Base):
     __tablename__ = "invoices"
@@ -27,6 +25,7 @@ class Invoice(Base):
     issue_date = Column(DateTime, default=datetime.utcnow)
     due_date = Column(DateTime, nullable=False)
     subtotal = Column(Float, default=0.0)
+    discount = Column(Float, default=0.0)
     tax = Column(Float, default=0.0)
     total = Column(Float, default=0.0)
     notes = Column(Text)
@@ -45,6 +44,7 @@ class InvoiceLineItem(Base):
     description = Column(String, nullable=False)
     quantity = Column(Float, nullable=False)
     unit_price = Column(Float, nullable=False)
+    discount = Column(Float, default=0.0)
     total = Column(Float, nullable=False)
     
     invoice = relationship("Invoice", back_populates="line_items")

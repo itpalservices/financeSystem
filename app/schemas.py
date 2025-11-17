@@ -31,6 +31,7 @@ class LineItemBase(BaseModel):
     description: str
     quantity: float
     unit_price: float
+    discount: Optional[float] = 0.0
 
 class LineItemCreate(LineItemBase):
     pass
@@ -51,6 +52,7 @@ class InvoiceBase(BaseModel):
     client_address: Optional[str] = None
     due_date: datetime
     notes: Optional[str] = None
+    discount: Optional[float] = 0.0
     tax: Optional[float] = 0.0
 
 class InvoiceCreate(InvoiceBase):
@@ -66,6 +68,7 @@ class InvoiceUpdate(BaseModel):
     due_date: Optional[datetime] = None
     status: Optional[InvoiceStatus] = None
     notes: Optional[str] = None
+    discount: Optional[float] = None
     tax: Optional[float] = None
     line_items: Optional[List[LineItemCreate]] = None
 
@@ -76,6 +79,7 @@ class InvoiceResponse(InvoiceBase):
     status: InvoiceStatus
     issue_date: datetime
     subtotal: float
+    discount: float
     total: float
     pdf_url: Optional[str] = None
     line_items: List[LineItemResponse]
@@ -94,6 +98,7 @@ class QuoteBase(BaseModel):
     client_address: Optional[str] = None
     valid_until: datetime
     notes: Optional[str] = None
+    discount: Optional[float] = 0.0
     tax: Optional[float] = 0.0
 
 class QuoteCreate(QuoteBase):
@@ -109,6 +114,7 @@ class QuoteUpdate(BaseModel):
     valid_until: Optional[datetime] = None
     status: Optional[QuoteStatus] = None
     notes: Optional[str] = None
+    discount: Optional[float] = None
     tax: Optional[float] = None
     line_items: Optional[List[LineItemCreate]] = None
 
@@ -119,6 +125,7 @@ class QuoteResponse(QuoteBase):
     status: QuoteStatus
     issue_date: datetime
     subtotal: float
+    discount: float
     total: float
     pdf_url: Optional[str] = None
     line_items: List[LineItemResponse]
