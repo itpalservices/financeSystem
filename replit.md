@@ -238,6 +238,18 @@ The FastAPI server starts on `http://0.0.0.0:5000` and is accessible through the
 
 ## Recent Changes
 
+**November 17, 2025 - PDF Enhancements & Draft Invoice Editing**
+- Adjusted PDF logo height to 0.9 inches for optimal branding display
+- Quantity now displays as integer (without decimals) in PDF documents
+- Date format changed to DD-MM-YYYY (e.g., 17-11-2025) in PDFs, tables, and emails
+- Implemented full edit functionality for draft invoices:
+  - Edit button (pencil icon) appears only for draft invoices
+  - Modal populates with existing invoice data when editing
+  - Proper state management prevents data leakage between create/edit operations
+  - Line items properly reset after editing
+  - Updated invoices maintain draft or finalized status
+- Telephone 1 and Telephone 2 display correctly in "Bill To" section of PDFs
+
 **November 17, 2025 - Euro Currency & Enhanced Contact Fields**
 - Changed all currency from USD ($) to Euro (€) throughout the application
 - Updated invoice/quote forms with enhanced contact information:
