@@ -67,3 +67,47 @@ The frontend utilizes Bootstrap 5.3.0 and Bootstrap Icons 1.10.0 for a modern, r
 - **Frontend Library**: Bootstrap 5.3.0
 - **Icon Library**: Bootstrap Icons 1.10.0
 - **PDF Generation Library**: ReportLab 4.0.9
+
+## Recent Changes
+
+**November 17, 2025 - PDF Labels, Due Date Removal & Manual Invoice Issuing**
+- Enhanced PDF Bill To section with field labels:
+  - Added labels: "Client Name:", "Tel:", "Tel 2:", "Company Name:", "Email:", "Address:"
+  - Applied to both invoice and quote PDFs using two-column layout
+- Removed due date functionality:
+  - Removed due_date field from invoice creation/edit forms
+  - Removed due_date column from invoices table
+  - Removed due_date from email templates
+  - Backend maintains optional due_date field in database for future use
+- Implemented manual invoice issuing workflow:
+  - Added "Mark as Issued" button in invoices table for draft invoices
+  - Added "Mark as Issued" button in edit modal (only visible when editing drafts)
+  - Button shows confirmation dialog before changing status
+  - Removed automatic status change when sending emails
+  - Users must manually mark invoices as issued using dedicated buttons
+- PDF regeneration improvements:
+  - PDFs automatically regenerate after editing (pdf_url cleared on update)
+  - Changes to fields like telephone 2 deletion now properly reflect in regenerated PDFs
+
+**November 17, 2025 - Discount System, Status Simplification & Search Functionality**
+- Simplified invoice/quote status system:
+  - Changed from "draft, sent, paid, overdue" to only "draft" and "issued"
+  - "issued" represents finalized invoices/quotes
+  - Backend, frontend, and email endpoints updated to use new status values
+- Implemented comprehensive discount system:
+  - Added overall discount field (percentage 0-100%) to invoices/quotes
+  - Added line item discount field (percentage 0-100%) to each line item
+  - Discounts are mutually exclusive: use either overall discount OR line item discounts
+  - Backend calculation flow: Line items → Subtotal → Overall Discount → Tax → Total
+  - PDF displays discount column in line items table if any item has discount > 0
+  - PDF displays overall discount in totals section if discount > 0
+- Enhanced invoice PDF layout:
+  - PDF title dynamically shows "INVOICE DRAFT" for draft status, "INVOICE" for issued status
+  - Removed status badge from PDF (status only indicated by title)
+  - Info table simplified to show only Invoice Number and Issue Date
+  - Bill To section restructured with two-column layout
+- Frontend enhancements:
+  - Added Telephone column to invoices table (displays telephone 1)
+  - Implemented real-time search functionality for invoices
+  - Overall discount field added to invoice/quote forms with validation
+  - Line item discount column added with validation
