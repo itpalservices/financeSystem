@@ -238,6 +238,25 @@ The FastAPI server starts on `http://0.0.0.0:5000` and is accessible through the
 
 ## Recent Changes
 
+**November 17, 2025 - PDF Footer, Telephone Validation & Regeneration**
+- Added professional PDF footer with company contact information:
+  - Website: itpalsolutions.com (🌐 icon)
+  - Email: info@itpalsolutions.com (✉ icon)
+  - VAT Reg No.: CY111111 (📄 icon)
+  - Footer appears on all invoice and quote PDFs
+- Implemented telephone number validation (Cyprus format):
+  - Must be exactly 8 characters
+  - Must start with: 25, 22, 24, 23, 99, 95, 94, 96, or 97
+  - HTML5 pattern validation with helpful error messages
+  - Applies to both create and edit modals for invoices and quotes
+- Enhanced PDF regeneration workflow:
+  - Backend now clears pdf_url when updating invoices or quotes
+  - Generate PDF button automatically reappears after editing
+  - Users can regenerate PDFs with updated details after any changes
+- Backend improvements:
+  - Added support for company_name, telephone1, telephone2 in update routes
+  - All contact fields properly handled in both invoices and quotes
+
 **November 17, 2025 - PDF Enhancements & Draft Invoice Editing**
 - Adjusted PDF logo height to 0.9 inches for optimal branding display
 - Quantity now displays as integer (without decimals) in PDF documents
