@@ -6,7 +6,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #1b7ca8 0%, #155a7a 100%);
     min-height: 100vh;
     padding: 20px;
 }
@@ -21,7 +21,7 @@ body {
 }
 
 .header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #1b7ca8 0%, #155a7a 100%);
     color: white;
     padding: 20px;
     display: flex;
@@ -102,7 +102,7 @@ body {
 .form-group select:focus,
 .form-group textarea:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #1b7ca8;
 }
 
 .form-group textarea {
@@ -113,7 +113,7 @@ body {
 .btn {
     width: 100%;
     padding: 12px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #1b7ca8 0%, #155a7a 100%);
     color: white;
     border: none;
     border-radius: 5px;
@@ -179,7 +179,7 @@ body {
 }
 
 .stat-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #1b7ca8 0%, #155a7a 100%);
     color: white;
     padding: 20px;
     border-radius: 10px;

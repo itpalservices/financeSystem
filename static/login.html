@@ -3,11 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Invoice & Quote System</title>
+    <title>I.T. PAL - Invoice & Quote System</title>
     <link rel="stylesheet" href="/static/css/styles.css">
+    <style>
+        .logo-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo-container img {
+            max-width: 300px;
+            width: 80%;
+            height: auto;
+        }
+    </style>
 </head>
 <body>
     <div class="form-container">
+        <div class="logo-container">
+            <img src="/static/logo.png" alt="I.T. PAL Technology Solutions">
+        </div>
         <h2>Login</h2>
         <div id="error" class="error" style="display: none;"></div>
         <form id="loginForm">
@@ -21,9 +35,6 @@
             </div>
             <button type="submit" class="btn">Login</button>
         </form>
-        <p class="text-center mt-3">
-            Don't have an account? <a href="/register">Register</a>
-        </p>
     </div>
 
     <script src="/static/js/api.js"></script>
