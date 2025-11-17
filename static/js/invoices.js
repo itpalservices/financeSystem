@@ -23,29 +23,31 @@ async function loadInvoices() {
     }
 }
 
-function renderInvoices() {
+let allInvoices = [];
+
+function renderInvoices(invoicesToRender = invoices) {
     const tbody = document.getElementById('invoicesTable');
     
-    if (invoices.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No invoices found</td></tr>';
+    if (invoicesToRender.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No invoices found</td></tr>';
         return;
     }
     
-    tbody.innerHTML = invoices.map(invoice => {
+    tbody.innerHTML = invoicesToRender.map(invoice => {
         const statusBadge = getStatusBadge(invoice.status);
         const pdfButtonText = invoice.pdf_url ? 'Preview PDF' : 'Generate PDF';
         const pdfButtonIcon = invoice.pdf_url ? 'bi-eye' : 'bi-file-pdf';
         const canEdit = invoice.status === 'draft';
         const clientInfo = invoice.company_name ? `${invoice.client_name} (${invoice.company_name})` : invoice.client_name;
-        const contactInfo = invoice.client_email ? invoice.client_email : invoice.telephone1;
         const editButton = canEdit ? `<button class="btn btn-outline-warning" onclick="editInvoice(${invoice.id})" title="Edit Draft">
                         <i class="bi bi-pencil"></i>
                     </button>` : '';
         
         return `
-        <tr>
+        <tr data-invoice-number="${invoice.invoice_number}" data-client-name="${invoice.client_name}" data-company-name="${invoice.company_name || ''}" data-telephone="${invoice.telephone1 || ''}">
             <td><strong>${invoice.invoice_number}</strong></td>
-            <td>${clientInfo}<br><small class="text-muted">${contactInfo}</small></td>
+            <td>${clientInfo}</td>
+            <td>${invoice.telephone1 || '-'}</td>
             <td><strong>€${invoice.total.toFixed(2)}</strong></td>
             <td>${statusBadge}</td>
             <td>${formatDate(invoice.due_date)}</td>
@@ -70,9 +72,7 @@ function renderInvoices() {
 function getStatusBadge(status) {
     const badges = {
         'draft': '<span class="badge bg-secondary">Draft</span>',
-        'sent': '<span class="badge bg-info">Sent</span>',
-        'paid': '<span class="badge bg-success">Paid</span>',
-        'overdue': '<span class="badge bg-danger">Overdue</span>'
+        'issued': '<span class="badge bg-success">Issued</span>'
     };
     return badges[status] || `<span class="badge bg-secondary">${status}</span>`;
 }
@@ -83,14 +83,17 @@ function addLineItem() {
     newItem.className = 'line-item-row';
     newItem.innerHTML = `
         <div class="row g-2">
-            <div class="col-md-5">
+            <div class="col-md-4">
                 <input type="text" class="form-control item-desc" placeholder="Description *" required>
             </div>
             <div class="col-md-2">
                 <input type="number" class="form-control item-qty" placeholder="Qty *" min="1" required>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <input type="number" class="form-control item-price" placeholder="Unit Price *" step="0.01" required>
+            </div>
+            <div class="col-md-2">
+                <input type="number" class="form-control item-discount" placeholder="Disc %" step="0.01" value="0" min="0" max="100">
             </div>
             <div class="col-md-2">
                 <button type="button" class="btn btn-danger btn-sm w-100" onclick="removeLineItem(this)">
@@ -116,14 +119,17 @@ function resetLineItems() {
     lineItemsContainer.innerHTML = `
         <div class="line-item-row">
             <div class="row g-2">
-                <div class="col-md-5">
+                <div class="col-md-4">
                     <input type="text" class="form-control item-desc" placeholder="Description *" required>
                 </div>
                 <div class="col-md-2">
                     <input type="number" class="form-control item-qty" placeholder="Qty *" min="1" required>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <input type="number" class="form-control item-price" placeholder="Unit Price *" step="0.01" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control item-discount" placeholder="Disc %" step="0.01" value="0" min="0" max="100">
                 </div>
                 <div class="col-md-2">
                     <button type="button" class="btn btn-danger btn-sm w-100" onclick="removeLineItem(this)">
@@ -145,7 +151,8 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
     const lineItems = Array.from(lineItemsElements).map(item => ({
         description: item.querySelector('.item-desc').value,
         quantity: parseInt(item.querySelector('.item-qty').value),
-        unit_price: parseFloat(item.querySelector('.item-price').value)
+        unit_price: parseFloat(item.querySelector('.item-price').value),
+        discount: parseFloat(item.querySelector('.item-discount').value) || 0
     }));
     
     if (lineItems.length === 0) {
@@ -161,6 +168,7 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
         telephone2: document.getElementById('telephone2').value || null,
         client_address: document.getElementById('clientAddress').value,
         due_date: new Date(document.getElementById('dueDate').value).toISOString(),
+        discount: parseFloat(document.getElementById('discount').value) || 0,
         tax: parseFloat(document.getElementById('tax').value) || 0,
         notes: document.getElementById('notes').value,
         status: action,
@@ -189,7 +197,7 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
         
         loadInvoices();
         
-        if (action === 'sent' && !isEditing) {
+        if (action === 'issued' && !isEditing) {
             setTimeout(() => generatePDF(invoice.id), 500);
         }
     } catch (error) {
@@ -341,6 +349,7 @@ async function editInvoice(invoiceId) {
     document.getElementById('telephone2').value = invoice.telephone2 || '';
     document.getElementById('clientAddress').value = invoice.client_address || '';
     document.getElementById('dueDate').value = invoice.due_date.split('T')[0];
+    document.getElementById('discount').value = invoice.discount || 0;
     document.getElementById('tax').value = invoice.tax || 0;
     document.getElementById('notes').value = invoice.notes || '';
     
@@ -352,14 +361,17 @@ async function editInvoice(invoiceId) {
         newItem.className = 'line-item-row';
         newItem.innerHTML = `
             <div class="row g-2">
-                <div class="col-md-5">
+                <div class="col-md-4">
                     <input type="text" class="form-control item-desc" placeholder="Description *" value="${item.description}" required>
                 </div>
                 <div class="col-md-2">
                     <input type="number" class="form-control item-qty" placeholder="Qty *" min="1" value="${item.quantity}" required>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <input type="number" class="form-control item-price" placeholder="Unit Price *" step="0.01" value="${item.unit_price}" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control item-discount" placeholder="Disc %" step="0.01" value="${item.discount || 0}" min="0" max="100">
                 </div>
                 <div class="col-md-2">
                     <button type="button" class="btn btn-danger btn-sm w-100" onclick="removeLineItem(this)">
@@ -420,5 +432,24 @@ function showSuccess(message) {
     successDiv.style.display = 'block';
     setTimeout(() => successDiv.style.display = 'none', 3000);
 }
+
+// Search functionality
+document.getElementById('searchInput').addEventListener('input', (e) => {
+    const searchTerm = e.target.value.toLowerCase().trim();
+    
+    if (!searchTerm) {
+        renderInvoices(invoices);
+        return;
+    }
+    
+    const filteredInvoices = invoices.filter(invoice => {
+        return invoice.invoice_number.toLowerCase().includes(searchTerm) ||
+               invoice.client_name.toLowerCase().includes(searchTerm) ||
+               (invoice.company_name && invoice.company_name.toLowerCase().includes(searchTerm)) ||
+               (invoice.telephone1 && invoice.telephone1.includes(searchTerm));
+    });
+    
+    renderInvoices(filteredInvoices);
+});
 
 loadInvoices();

@@ -88,6 +88,15 @@
         <div id="error" class="alert alert-danger" style="display: none;"></div>
         <div id="success" class="alert alert-success" style="display: none;"></div>
 
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" id="searchInput" placeholder="Search by invoice number, client name, company name, or telephone...">
+                </div>
+            </div>
+        </div>
+
         <div class="card shadow-sm">
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -96,6 +105,7 @@
                             <tr>
                                 <th>Invoice #</th>
                                 <th>Client</th>
+                                <th>Telephone</th>
                                 <th>Total</th>
                                 <th>Status</th>
                                 <th>Due Date</th>
@@ -104,7 +114,7 @@
                         </thead>
                         <tbody id="invoicesTable">
                             <tr>
-                                <td colspan="6" class="text-center">Loading...</td>
+                                <td colspan="7" class="text-center">Loading...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -164,8 +174,13 @@
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
+                                <label for="discount" class="form-label">Overall Discount (%)</label>
+                                <input type="number" class="form-control" id="discount" step="0.01" value="0" min="0" max="100">
+                                <small class="text-muted">Leave at 0 to use line item discounts instead</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
                                 <label for="tax" class="form-label">Tax (%)</label>
-                                <input type="number" class="form-control" id="tax" step="0.01" value="0">
+                                <input type="number" class="form-control" id="tax" step="0.01" value="0" min="0" max="100">
                             </div>
                         </div>
                         <div class="mb-3">
@@ -183,14 +198,17 @@
                             <div id="lineItems">
                                 <div class="line-item-row">
                                     <div class="row g-2">
-                                        <div class="col-md-5">
+                                        <div class="col-md-4">
                                             <input type="text" class="form-control item-desc" placeholder="Description *" required>
                                         </div>
                                         <div class="col-md-2">
                                             <input type="number" class="form-control item-qty" placeholder="Qty *" min="1" required>
                                         </div>
-                                        <div class="col-md-3">
+                                        <div class="col-md-2">
                                             <input type="number" class="form-control item-price" placeholder="Unit Price *" step="0.01" required>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <input type="number" class="form-control item-discount" placeholder="Disc %" step="0.01" value="0" min="0" max="100">
                                         </div>
                                         <div class="col-md-2">
                                             <button type="button" class="btn btn-danger btn-sm w-100" onclick="removeLineItem(this)">
@@ -207,7 +225,7 @@
                         <button type="submit" name="action" value="draft" class="btn btn-outline-primary">
                             <i class="bi bi-file-earmark"></i> Save as Draft
                         </button>
-                        <button type="submit" name="action" value="sent" class="btn btn-primary">
+                        <button type="submit" name="action" value="issued" class="btn btn-primary">
                             <i class="bi bi-check-circle"></i> Create & Finalize
                         </button>
                     </div>
