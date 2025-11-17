@@ -48,12 +48,14 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
         alignment=TA_CENTER
     )
     
-    elements.append(Paragraph("INVOICE", title_style))
+    # Change title based on status
+    title_text = "INVOICE DRAFT" if invoice.status.value == "draft" else "INVOICE"
+    elements.append(Paragraph(title_text, title_style))
     elements.append(Spacer(1, 0.2*inch))
     
+    # Remove status from PDF, only show Invoice Number and Issue Date
     info_data = [
-        ["Invoice Number:", invoice.invoice_number, "Issue Date:", invoice.issue_date.strftime("%d-%m-%Y")],
-        ["Status:", invoice.status.value.upper(), "", ""]
+        ["Invoice Number:", invoice.invoice_number, "Issue Date:", invoice.issue_date.strftime("%d-%m-%Y")]
     ]
     
     info_table = Table(info_data, colWidths=[1.5*inch, 2*inch, 1.5*inch, 2*inch])
@@ -68,19 +70,21 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
     elements.append(Spacer(1, 0.3*inch))
     
     # Build Bill To section with two columns
+    # Left column: Client name, Tel 1, Tel 2
     left_column = [invoice.client_name]
     if invoice.telephone1:
         left_column.append(f"Tel: {invoice.telephone1}")
     if invoice.telephone2:
         left_column.append(f"Tel 2: {invoice.telephone2}")
-    if invoice.client_address:
-        left_column.append(invoice.client_address)
     
+    # Right column: Company name, Email, Address
     right_column = []
     if invoice.company_name:
         right_column.append(invoice.company_name)
     if invoice.client_email:
         right_column.append(invoice.client_email)
+    if invoice.client_address:
+        right_column.append(invoice.client_address)
     
     # Create two-column table for Bill To
     bill_to_data = [["Bill To:", ""]]
@@ -101,17 +105,30 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
     elements.append(client_table)
     elements.append(Spacer(1, 0.3*inch))
     
-    line_items_data = [["Description", "Quantity", "Unit Price", "Total"]]
+    # Check if any line item has a discount
+    has_line_item_discount = any(item.discount > 0 for item in invoice.line_items)
     
-    for item in invoice.line_items:
-        line_items_data.append([
-            item.description,
-            str(int(item.quantity)),
-            f"€{item.unit_price:.2f}",
-            f"€{item.total:.2f}"
-        ])
-    
-    line_items_table = Table(line_items_data, colWidths=[3.5*inch, 1*inch, 1.5*inch, 1.5*inch])
+    if has_line_item_discount:
+        line_items_data = [["Description", "Quantity", "Unit Price", "Discount %", "Total"]]
+        for item in invoice.line_items:
+            line_items_data.append([
+                item.description,
+                str(int(item.quantity)),
+                f"€{item.unit_price:.2f}",
+                f"{item.discount}%" if item.discount > 0 else "-",
+                f"€{item.total:.2f}"
+            ])
+        line_items_table = Table(line_items_data, colWidths=[2.5*inch, 0.8*inch, 1.2*inch, 1*inch, 1.5*inch])
+    else:
+        line_items_data = [["Description", "Quantity", "Unit Price", "Total"]]
+        for item in invoice.line_items:
+            line_items_data.append([
+                item.description,
+                str(int(item.quantity)),
+                f"€{item.unit_price:.2f}",
+                f"€{item.total:.2f}"
+            ])
+        line_items_table = Table(line_items_data, colWidths=[3.5*inch, 1*inch, 1.5*inch, 1.5*inch])
     line_items_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1b7ca8')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
@@ -125,15 +142,25 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
     elements.append(line_items_table)
     elements.append(Spacer(1, 0.3*inch))
     
+    # Build totals section with discount support
+    totals_data = [["Subtotal:", f"€{invoice.subtotal:.2f}"]]
+    
+    # Add discount if present (overall discount only)
+    if invoice.discount > 0:
+        discount_amount = invoice.subtotal * (invoice.discount / 100)
+        subtotal_after_discount = invoice.subtotal - discount_amount
+        totals_data.append([f"Discount ({invoice.discount}%):", f"-€{discount_amount:.2f}"])
+    else:
+        subtotal_after_discount = invoice.subtotal
+    
     # Calculate tax amount from percentage
     tax_percentage = invoice.tax or 0.0
-    tax_amount = invoice.subtotal * (tax_percentage / 100)
+    tax_amount = subtotal_after_discount * (tax_percentage / 100)
+    totals_data.append([f"Tax ({tax_percentage}%):", f"€{tax_amount:.2f}"])
     
-    totals_data = [
-        ["Subtotal:", f"€{invoice.subtotal:.2f}"],
-        [f"Tax ({tax_percentage}%):", f"€{tax_amount:.2f}"],
-        ["Total:", f"€{invoice.subtotal + tax_amount:.2f}"]
-    ]
+    # Total
+    total = subtotal_after_discount + tax_amount
+    totals_data.append(["Total:", f"€{total:.2f}"])
     
     totals_table = Table(totals_data, colWidths=[5.5*inch, 1.5*inch])
     totals_table.setStyle(TableStyle([
