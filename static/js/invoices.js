@@ -29,7 +29,7 @@ function renderInvoices(invoicesToRender = invoices) {
     const tbody = document.getElementById('invoicesTable');
     
     if (invoicesToRender.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No invoices found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No invoices found</td></tr>';
         return;
     }
     
@@ -42,6 +42,9 @@ function renderInvoices(invoicesToRender = invoices) {
         const editButton = canEdit ? `<button class="btn btn-outline-warning" onclick="editInvoice(${invoice.id})" title="Edit Draft">
                         <i class="bi bi-pencil"></i>
                     </button>` : '';
+        const markIssuedButton = canEdit ? `<button class="btn btn-outline-info" onclick="markAsIssued(${invoice.id})" title="Mark as Issued">
+                        <i class="bi bi-check-circle"></i>
+                    </button>` : '';
         
         return `
         <tr data-invoice-number="${invoice.invoice_number}" data-client-name="${invoice.client_name}" data-company-name="${invoice.company_name || ''}" data-telephone="${invoice.telephone1 || ''}">
@@ -50,10 +53,10 @@ function renderInvoices(invoicesToRender = invoices) {
             <td>${invoice.telephone1 || '-'}</td>
             <td><strong>€${invoice.total.toFixed(2)}</strong></td>
             <td>${statusBadge}</td>
-            <td>${formatDate(invoice.due_date)}</td>
             <td>
                 <div class="btn-group btn-group-sm" role="group">
                     ${editButton}
+                    ${markIssuedButton}
                     <button class="btn btn-outline-primary" onclick="generatePDF(${invoice.id})" title="${pdfButtonText}">
                         <i class="bi ${pdfButtonIcon}"></i>
                     </button>
@@ -167,7 +170,6 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
         telephone1: document.getElementById('telephone1').value,
         telephone2: document.getElementById('telephone2').value || null,
         client_address: document.getElementById('clientAddress').value,
-        due_date: new Date(document.getElementById('dueDate').value).toISOString(),
         discount: parseFloat(document.getElementById('discount').value) || 0,
         tax: parseFloat(document.getElementById('tax').value) || 0,
         notes: document.getElementById('notes').value,
@@ -282,8 +284,6 @@ async function openEmailModal(invoiceId) {
 
 Please find attached invoice ${currentInvoice.invoice_number} for the amount of €${currentInvoice.total.toFixed(2)}.
 
-The invoice is due on ${formatDate(currentInvoice.due_date)}.
-
 If you have any questions, please don't hesitate to contact us.
 
 Best regards,
@@ -341,6 +341,7 @@ async function editInvoice(invoiceId) {
     editingInvoiceId = invoiceId;
     
     document.querySelector('#createModal .modal-title').innerHTML = '<i class="bi bi-pencil"></i> Edit Draft Invoice';
+    document.getElementById('markIssuedModalBtn').style.display = 'inline-block';
     
     document.getElementById('clientName').value = invoice.client_name;
     document.getElementById('companyName').value = invoice.company_name || '';
@@ -348,7 +349,6 @@ async function editInvoice(invoiceId) {
     document.getElementById('telephone1').value = invoice.telephone1 || '';
     document.getElementById('telephone2').value = invoice.telephone2 || '';
     document.getElementById('clientAddress').value = invoice.client_address || '';
-    document.getElementById('dueDate').value = invoice.due_date.split('T')[0];
     document.getElementById('discount').value = invoice.discount || 0;
     document.getElementById('tax').value = invoice.tax || 0;
     document.getElementById('notes').value = invoice.notes || '';
@@ -388,6 +388,7 @@ async function editInvoice(invoiceId) {
     
     document.getElementById('createModal').addEventListener('hidden.bs.modal', function resetModal() {
         document.querySelector('#createModal .modal-title').innerHTML = '<i class="bi bi-file-earmark-plus"></i> Create Invoice';
+        document.getElementById('markIssuedModalBtn').style.display = 'none';
         editingInvoiceId = null;
         document.getElementById('createForm').reset();
         resetLineItems();
@@ -431,6 +432,42 @@ function showSuccess(message) {
     successDiv.textContent = message;
     successDiv.style.display = 'block';
     setTimeout(() => successDiv.style.display = 'none', 3000);
+}
+
+async function markAsIssued(invoiceId) {
+    const invoice = invoices.find(inv => inv.id === invoiceId);
+    if (!invoice) {
+        showError('Invoice not found');
+        return;
+    }
+    
+    if (invoice.status !== 'draft') {
+        showError('Only draft invoices can be marked as issued');
+        return;
+    }
+    
+    const confirmed = await showConfirmDialog(
+        'Mark as Issued?',
+        `Mark invoice ${invoice.invoice_number} as issued? This will finalize the invoice.`
+    );
+    if (!confirmed) return;
+    
+    try {
+        await api.updateInvoice(invoiceId, { status: 'issued' });
+        showSuccess('Invoice marked as issued successfully');
+        loadInvoices();
+    } catch (error) {
+        showError('Error marking invoice as issued: ' + error.message);
+    }
+}
+
+async function markAsIssuedFromModal() {
+    if (!editingInvoiceId) return;
+    
+    const modal = bootstrap.Modal.getInstance(document.getElementById('createModal'));
+    modal.hide();
+    
+    await markAsIssued(editingInvoiceId);
 }
 
 // Search functionality

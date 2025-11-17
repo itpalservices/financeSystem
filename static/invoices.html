@@ -108,13 +108,12 @@
                                 <th>Telephone</th>
                                 <th>Total</th>
                                 <th>Status</th>
-                                <th>Due Date</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="invoicesTable">
                             <tr>
-                                <td colspan="7" class="text-center">Loading...</td>
+                                <td colspan="6" class="text-center">Loading...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -162,10 +161,6 @@
                                     pattern="^(25|22|24|23|99|95|94|96|97)\d{6}$"
                                     maxlength="8"
                                     title="Phone must be 8 digits starting with 25, 22, 24, 23, 99, 95, 94, 96, or 97">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="dueDate" class="form-label">Due Date *</label>
-                                <input type="date" class="form-control" id="dueDate" required>
                             </div>
                         </div>
                         <div class="mb-3">
@@ -222,6 +217,9 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" id="markIssuedModalBtn" class="btn btn-info" onclick="markAsIssuedFromModal()" style="display: none;">
+                            <i class="bi bi-check-circle"></i> Mark as Issued
+                        </button>
                         <button type="submit" name="action" value="draft" class="btn btn-outline-primary">
                             <i class="bi bi-file-earmark"></i> Save as Draft
                         </button>

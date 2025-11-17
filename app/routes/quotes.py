@@ -268,8 +268,4 @@ def send_email(
     
     send_quote_email(quote, email_data.recipient_email, email_data.message or "")
     
-    if quote.status == QuoteStatus.draft:
-        quote.status = QuoteStatus.sent
-        db.commit()
-    
     return {"message": "Email sent successfully"}
