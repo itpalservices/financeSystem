@@ -265,7 +265,7 @@ def send_email(
     send_invoice_email(invoice, email_data.recipient_email, email_data.message or "")
     
     if invoice.status == InvoiceStatus.draft:
-        invoice.status = InvoiceStatus.sent
+        invoice.status = InvoiceStatus.issued
         db.commit()
     
     return {"message": "Email sent successfully"}
