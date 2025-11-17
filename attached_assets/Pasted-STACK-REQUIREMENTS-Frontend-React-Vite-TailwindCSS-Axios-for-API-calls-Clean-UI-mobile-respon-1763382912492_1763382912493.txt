@@ -1,0 +1,191 @@
+STACK REQUIREMENTS
+Frontend
+
+React (Vite)
+
+TailwindCSS
+
+Axios for API calls
+
+Clean UI, mobile-responsive
+
+Pages:
+
+/ → Home
+
+/login
+
+/register
+
+/dashboard (protected)
+
+Reusable components:
+
+Navbar
+
+Footer
+
+FormInput
+
+Button
+
+ProtectedRoute wrapper
+
+Backend
+
+Use Node.js + Express.js (not Python).
+
+Backend must include:
+
+Authentication
+
+JWT-based authentication
+
+/api/auth/register
+
+/api/auth/login
+
+Password hashing with bcrypt
+
+User Routes
+
+/api/users/me → returns logged-in user
+
+Secure all routes except login/register with JWT middleware
+
+Database
+
+Use SQLite with Prisma ORM (recommended for Replit).
+Create Prisma models:
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+
+
+Commands the agent must run:
+
+npm install @prisma/client prisma
+
+npx prisma init
+
+npx prisma migrate dev --name init
+
+MVP Features
+
+The app must support:
+
+1. User Registration
+
+Email + Password
+
+Validations on frontend
+
+Validate duplicate email on backend
+
+2. User Login
+
+Returns JWT
+
+Store token in localStorage
+
+Redirect user to dashboard
+
+3. Protected Dashboard
+
+Shows:
+
+Greeting with user email
+
+Logout button
+
+4. Clean UI
+
+Tailwind default design
+
+Buttons, inputs, cards
+
+PROJECT STRUCTURE
+
+The agent must generate:
+
+root/
+ ├── backend/
+ │    ├── server.js
+ │    ├── prisma/
+ │    ├── routes/
+ │    ├── middleware/
+ │    ├── controllers/
+ │    └── package.json
+ └── frontend/
+      ├── src/
+      │    ├── pages/
+      │    ├── components/
+      │    ├── App.jsx
+      │    └── main.jsx
+      └── package.json
+
+WHAT THE AGENT MUST DO
+
+Create the entire folder structure.
+
+Generate all backend code:
+
+Express server
+
+Routes
+
+Controllers
+
+JWT middleware
+
+Prisma configuration
+
+Generate full React frontend:
+
+Pages
+
+Components
+
+API service (Axios)
+
+Install all dependencies automatically.
+
+Initialize Prisma and create SQLite database.
+
+Connect frontend + backend.
+
+Ensure the app runs without errors on Replit.
+
+DEPENDENCIES
+
+Backend:
+
+npm install express cors bcrypt jsonwebtoken prisma @prisma/client
+
+
+Frontend:
+
+npm create vite@latest frontend --template react
+cd frontend
+npm install axios react-router-dom tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+
+INSTRUCTIONS TO THE AGENT
+
+Do NOT ask follow-up questions.
+
+Do NOT break steps.
+
+Generate all code without waiting for confirmation.
+
+Ensure everything is runnable in Replit immediately.
+
+After generating files, run the app.
+
+Fix errors automatically if they appear.
+
+Final output: a fully functioning MVP with login, registration, dashboard.
