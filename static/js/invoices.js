@@ -3,6 +3,7 @@ if (!checkAuth()) {
 }
 
 let invoices = [];
+let currentInvoice = null;
 
 async function loadInvoices() {
     try {
@@ -17,56 +18,87 @@ function renderInvoices() {
     const tbody = document.getElementById('invoicesTable');
     
     if (invoices.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No invoices found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No invoices found</td></tr>';
         return;
     }
     
-    tbody.innerHTML = invoices.map(invoice => `
+    tbody.innerHTML = invoices.map(invoice => {
+        const statusBadge = getStatusBadge(invoice.status);
+        return `
         <tr>
-            <td>${invoice.invoice_number}</td>
-            <td>${invoice.client_name}</td>
-            <td>$${invoice.total.toFixed(2)}</td>
-            <td><span class="badge badge-${invoice.status}">${invoice.status.toUpperCase()}</span></td>
+            <td><strong>${invoice.invoice_number}</strong></td>
+            <td>${invoice.client_name}<br><small class="text-muted">${invoice.client_email}</small></td>
+            <td><strong>$${invoice.total.toFixed(2)}</strong></td>
+            <td>${statusBadge}</td>
             <td>${new Date(invoice.due_date).toLocaleDateString()}</td>
-            <td class="actions">
-                <button class="btn btn-small btn-secondary" onclick="generatePDF(${invoice.id})">PDF</button>
-                <button class="btn btn-small btn-success" onclick="sendEmail(${invoice.id})">Email</button>
-                <button class="btn btn-small btn-danger" onclick="deleteInvoice(${invoice.id})">Delete</button>
+            <td>
+                <div class="btn-group btn-group-sm" role="group">
+                    <button class="btn btn-outline-primary" onclick="generatePDF(${invoice.id})" title="Generate PDF">
+                        <i class="bi bi-file-pdf"></i>
+                    </button>
+                    <button class="btn btn-outline-success" onclick="openEmailModal(${invoice.id})" title="Send Email">
+                        <i class="bi bi-envelope"></i>
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="deleteInvoice(${invoice.id})" title="Delete">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
             </td>
         </tr>
-    `).join('');
+    `}).join('');
 }
 
-function openCreateModal() {
-    document.getElementById('createModal').classList.add('active');
-}
-
-function closeCreateModal() {
-    document.getElementById('createModal').classList.remove('active');
-    document.getElementById('createForm').reset();
+function getStatusBadge(status) {
+    const badges = {
+        'draft': '<span class="badge bg-secondary">Draft</span>',
+        'sent': '<span class="badge bg-info">Sent</span>',
+        'paid': '<span class="badge bg-success">Paid</span>',
+        'overdue': '<span class="badge bg-danger">Overdue</span>'
+    };
+    return badges[status] || `<span class="badge bg-secondary">${status}</span>`;
 }
 
 function addLineItem() {
     const lineItems = document.getElementById('lineItems');
     const newItem = document.createElement('div');
-    newItem.className = 'line-item';
+    newItem.className = 'line-item-row';
     newItem.innerHTML = `
-        <input type="text" placeholder="Description" class="item-desc" required>
-        <input type="number" placeholder="Qty" class="item-qty" step="0.01" required>
-        <input type="number" placeholder="Unit Price" class="item-price" step="0.01" required>
-        <button type="button" class="btn btn-danger btn-small" onclick="removeLineItem(this)">Remove</button>
+        <div class="row g-2">
+            <div class="col-md-5">
+                <input type="text" class="form-control item-desc" placeholder="Description *" required>
+            </div>
+            <div class="col-md-2">
+                <input type="number" class="form-control item-qty" placeholder="Qty *" step="0.01" required>
+            </div>
+            <div class="col-md-3">
+                <input type="number" class="form-control item-price" placeholder="Unit Price *" step="0.01" required>
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-danger btn-sm w-100" onclick="removeLineItem(this)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
     `;
     lineItems.appendChild(newItem);
 }
 
 function removeLineItem(button) {
-    button.parentElement.remove();
+    const lineItemRow = button.closest('.line-item-row');
+    if (document.querySelectorAll('.line-item-row').length > 1) {
+        lineItemRow.remove();
+    } else {
+        showError('At least one line item is required');
+    }
 }
 
 document.getElementById('createForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    const lineItemsElements = document.querySelectorAll('.line-item');
+    const submitter = e.submitter;
+    const action = submitter.getAttribute('value');
+    
+    const lineItemsElements = document.querySelectorAll('.line-item-row');
     const lineItems = Array.from(lineItemsElements).map(item => ({
         description: item.querySelector('.item-desc').value,
         quantity: parseFloat(item.querySelector('.item-qty').value),
@@ -85,14 +117,23 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
         due_date: new Date(document.getElementById('dueDate').value).toISOString(),
         tax: parseFloat(document.getElementById('tax').value) || 0,
         notes: document.getElementById('notes').value,
+        status: action,
         line_items: lineItems
     };
     
     try {
-        await api.createInvoice(data);
-        showSuccess('Invoice created successfully');
-        closeCreateModal();
+        const invoice = await api.createInvoice(data);
+        showSuccess(`Invoice ${action === 'draft' ? 'saved as draft' : 'created'} successfully`);
+        
+        const modal = bootstrap.Modal.getInstance(document.getElementById('createModal'));
+        modal.hide();
+        document.getElementById('createForm').reset();
+        
         loadInvoices();
+        
+        if (action === 'sent') {
+            setTimeout(() => generatePDF(invoice.id), 500);
+        }
     } catch (error) {
         showError('Error creating invoice: ' + error.message);
     }
@@ -100,28 +141,84 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
 
 async function generatePDF(invoiceId) {
     try {
+        showSuccess('Generating PDF...');
         const result = await api.generateInvoicePDF(invoiceId);
-        showSuccess('PDF generated successfully');
+        
+        const invoice = invoices.find(inv => inv.id === invoiceId);
+        showPDFPreview(result.pdf_url, invoice.invoice_number);
+        
         loadInvoices();
     } catch (error) {
         showError('Error generating PDF: ' + error.message);
     }
 }
 
-async function sendEmail(invoiceId) {
-    const email = prompt('Enter recipient email:');
-    if (!email) return;
+function showPDFPreview(pdfUrl, invoiceNumber) {
+    const container = document.getElementById('pdfPreviewContainer');
+    container.innerHTML = `<iframe src="${pdfUrl}" style="width: 100%; height: 600px; border: none; background: white;"></iframe>`;
     
-    const message = prompt('Enter optional message:');
+    document.getElementById('pdfDownloadBtn').href = pdfUrl;
+    document.getElementById('pdfDownloadBtn').download = `${invoiceNumber}.pdf`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('pdfPreviewModal'));
+    modal.show();
+}
+
+async function openEmailModal(invoiceId) {
+    currentInvoice = invoices.find(inv => inv.id === invoiceId);
+    if (!currentInvoice) {
+        showError('Invoice not found');
+        return;
+    }
+    
+    if (!currentInvoice.pdf_url) {
+        showError('Please generate PDF first');
+        return;
+    }
+    
+    document.getElementById('emailTo').value = currentInvoice.client_email;
+    document.getElementById('emailSubject').value = `Invoice ${currentInvoice.invoice_number} from I.T. PAL Technology Solutions`;
+    document.getElementById('emailBody').value = `Dear ${currentInvoice.client_name},
+
+Please find attached invoice ${currentInvoice.invoice_number} for the amount of $${currentInvoice.total.toFixed(2)}.
+
+The invoice is due on ${new Date(currentInvoice.due_date).toLocaleDateString()}.
+
+If you have any questions, please don't hesitate to contact us.
+
+Best regards,
+I.T. PAL Technology Solutions Ltd`;
+    
+    document.getElementById('emailAttachment').textContent = `${currentInvoice.invoice_number}.pdf`;
+    
+    const previewContainer = document.getElementById('emailPdfPreviewContainer');
+    previewContainer.innerHTML = `<iframe src="${currentInvoice.pdf_url}" style="width: 100%; height: 300px; border: none; background: white;"></iframe>`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('emailModal'));
+    modal.show();
+}
+
+document.getElementById('emailForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    if (!currentInvoice) return;
+    
+    const recipientEmail = document.getElementById('emailTo').value;
+    const subject = document.getElementById('emailSubject').value;
+    const message = document.getElementById('emailBody').value;
     
     try {
-        await api.sendInvoiceEmail(invoiceId, email, message);
+        await api.sendInvoiceEmail(currentInvoice.id, recipientEmail, message, subject);
         showSuccess('Email sent successfully');
+        
+        const modal = bootstrap.Modal.getInstance(document.getElementById('emailModal'));
+        modal.hide();
+        
         loadInvoices();
     } catch (error) {
         showError('Error sending email: ' + error.message);
     }
-}
+});
 
 async function deleteInvoice(invoiceId) {
     if (!confirm('Are you sure you want to delete this invoice?')) return;
@@ -146,7 +243,7 @@ function showSuccess(message) {
     const successDiv = document.getElementById('success');
     successDiv.textContent = message;
     successDiv.style.display = 'block';
-    setTimeout(() => successDiv.style.display = 'none', 5000);
+    setTimeout(() => successDiv.style.display = 'none', 3000);
 }
 
 loadInvoices();

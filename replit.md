@@ -4,9 +4,9 @@
 A full-stack invoice and quote management system built with FastAPI (Python) backend and vanilla HTML/CSS/JavaScript frontend. The system includes user authentication, role-based access control, PDF generation, S3-compatible object storage, and email notifications via Brevo API.
 
 ## Current State
-- **Status**: MVP Complete and Running
+- **Status**: MVP Complete with Bootstrap 5 UI
 - **Last Updated**: November 17, 2025
-- **Version**: 1.0.0
+- **Version**: 1.1.0
 
 ## Tech Stack
 
@@ -20,8 +20,10 @@ A full-stack invoice and quote management system built with FastAPI (Python) bac
 - **Storage**: S3-compatible object storage (boto3)
 
 ### Frontend
-- **Vanilla JavaScript** (ES6+)
-- **Responsive CSS** with Flexbox/Grid
+- **Bootstrap 5.3.0** - Modern responsive UI framework
+- **Bootstrap Icons 1.10.0** - Icon library for UI elements
+- **Vanilla JavaScript** (ES6+) with Bootstrap modals
+- **Responsive CSS** with Bootstrap grid system
 - **Fetch API** for HTTP requests
 
 ## Project Architecture
@@ -236,15 +238,26 @@ The FastAPI server starts on `http://0.0.0.0:5000` and is accessible through the
 
 ## Recent Changes
 
-**November 17, 2025**
-- Initial MVP implementation
+**November 17, 2025 - Bootstrap 5 UI Update**
+- Integrated Bootstrap 5.3.0 and Bootstrap Icons 1.10.0 across all pages
+- Redesigned login page with gradient background and card layout
+- Modernized dashboard with stat cards and responsive navbar
+- Implemented Bootstrap modals for invoice/quote creation
+- Added draft status support - users can save as draft or create & finalize
+- Created PDF preview modal after generation with view/download options
+- Built email composition modal with editable subject/body and PDF preview
+- Updated all tables with Bootstrap styling and action button groups
+- Improved mobile responsiveness with Bootstrap grid system
+- Enhanced UX with status badges, icons, and modern button styling
+
+**November 17, 2025 - Initial MVP**
 - Complete backend with FastAPI
 - Full frontend with vanilla HTML/CSS/JS
 - Database schema with all models
 - PDF generation and email integration
 - S3 storage integration with fallback
 - Role-based access control
-- Mobile-responsive UI
+- Username-based authentication
 
 ## User Preferences
 

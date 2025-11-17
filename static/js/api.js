@@ -124,11 +124,11 @@ const api = {
         return handleResponse(response);
     },
     
-    async sendInvoiceEmail(id, recipientEmail, message) {
+    async sendInvoiceEmail(id, recipientEmail, message, subject) {
         const response = await fetch(`${API_BASE}/invoices/${id}/send-email`, {
             method: 'POST',
             headers: getHeaders(),
-            body: JSON.stringify({ recipient_email: recipientEmail, subject: 'Invoice', message }),
+            body: JSON.stringify({ recipient_email: recipientEmail, subject: subject || 'Invoice', message }),
         });
         return handleResponse(response);
     },
@@ -192,11 +192,11 @@ const api = {
         return handleResponse(response);
     },
     
-    async sendQuoteEmail(id, recipientEmail, message) {
+    async sendQuoteEmail(id, recipientEmail, message, subject) {
         const response = await fetch(`${API_BASE}/quotes/${id}/send-email`, {
             method: 'POST',
             headers: getHeaders(),
-            body: JSON.stringify({ recipient_email: recipientEmail, subject: 'Quote', message }),
+            body: JSON.stringify({ recipient_email: recipientEmail, subject: subject || 'Quote', message }),
         });
         return handleResponse(response);
     },
