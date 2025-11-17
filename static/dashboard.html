@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Invoice & Quote System</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Invoice & Quote System</h1>
+            <div class="nav">
+                <a href="/dashboard">Dashboard</a>
+                <a href="/invoices">Invoices</a>
+                <a href="/quotes">Quotes</a>
+                <button class="btn-logout" onclick="logout()">Logout</button>
+            </div>
+        </div>
+        <div class="content">
+            <h2>Welcome, <span id="userEmail">User</span>!</h2>
+            <p>Role: <strong id="userRole">-</strong></p>
+            
+            <div class="stats">
+                <div class="stat-card">
+                    <h3 id="invoiceCount">0</h3>
+                    <p>Total Invoices</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="quoteCount">0</h3>
+                    <p>Total Quotes</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="draftCount">0</h3>
+                    <p>Drafts</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <h3>Quick Actions</h3>
+                <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
+                    <a href="/invoices" class="btn btn-small">View Invoices</a>
+                    <a href="/quotes" class="btn btn-small">View Quotes</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/api.js"></script>
+    <script>
+        if (!checkAuth()) {
+            window.location.href = '/login';
+        }
+
+        async function loadDashboard() {
+            try {
+                const user = await api.getCurrentUser();
+                document.getElementById('userEmail').textContent = user.email;
+                document.getElementById('userRole').textContent = user.role;
+
+                const [invoices, quotes] = await Promise.all([
+                    api.getInvoices(),
+                    api.getQuotes()
+                ]);
+
+                document.getElementById('invoiceCount').textContent = invoices.length;
+                document.getElementById('quoteCount').textContent = quotes.length;
+                
+                const draftCount = invoices.filter(inv => inv.status === 'draft').length + 
+                                  quotes.filter(q => q.status === 'draft').length;
+                document.getElementById('draftCount').textContent = draftCount;
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        loadDashboard();
+    </script>
+</body>
+</html>

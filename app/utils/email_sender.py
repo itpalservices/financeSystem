@@ -1,8 +1,9 @@
 import sib_api_v3_sdk
 from sib_api_v3_sdk.rest import ApiException
+from typing import Optional
 from app.config import settings
 
-def send_invoice_email(invoice, recipient_email: str, custom_message: str = None):
+def send_invoice_email(invoice, recipient_email: str, custom_message: Optional[str] = None):
     if not settings.brevo_api_key:
         print("Brevo API key not configured. Email not sent.")
         return
@@ -44,7 +45,7 @@ def send_invoice_email(invoice, recipient_email: str, custom_message: str = None
     except ApiException as e:
         print(f"Exception when calling Brevo API: {e}")
 
-def send_quote_email(quote, recipient_email: str, custom_message: str = None):
+def send_quote_email(quote, recipient_email: str, custom_message: Optional[str] = None):
     if not settings.brevo_api_key:
         print("Brevo API key not configured. Email not sent.")
         return

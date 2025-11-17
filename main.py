@@ -5,6 +5,9 @@ from fastapi.responses import FileResponse
 import os
 
 from app.database import engine, Base
+from app.models.user import User
+from app.models.invoice import Invoice, InvoiceLineItem
+from app.models.quote import Quote, QuoteLineItem
 from app.routes import auth, invoices, quotes, users
 
 Base.metadata.create_all(bind=engine)

@@ -29,7 +29,8 @@ def create_invoice(
     invoice_number = generate_invoice_number(db)
     
     subtotal = sum(item.quantity * item.unit_price for item in invoice_data.line_items)
-    total = subtotal + invoice_data.tax
+    tax = invoice_data.tax if invoice_data.tax is not None else 0.0
+    total = subtotal + tax
     
     new_invoice = Invoice(
         invoice_number=invoice_number,
@@ -39,7 +40,7 @@ def create_invoice(
         client_address=invoice_data.client_address,
         due_date=invoice_data.due_date,
         subtotal=subtotal,
-        tax=invoice_data.tax,
+        tax=tax,
         total=total,
         notes=invoice_data.notes
     )
@@ -117,7 +118,6 @@ def update_invoice(
         db.query(InvoiceLineItem).filter(InvoiceLineItem.invoice_id == invoice_id).delete()
         
         subtotal = sum(item.quantity * item.unit_price for item in invoice_data.line_items)
-        tax = invoice_data.tax if invoice_data.tax is not None else invoice.tax
         
         for item in invoice_data.line_items:
             line_item = InvoiceLineItem(
@@ -130,8 +130,16 @@ def update_invoice(
             db.add(line_item)
         
         invoice.subtotal = subtotal
-        invoice.tax = tax
-        invoice.total = subtotal + tax
+    
+    if "tax" in invoice_data.model_fields_set:
+        invoice.tax = invoice_data.tax or 0.0
+        db.flush()
+        current_line_items = db.query(InvoiceLineItem).filter(InvoiceLineItem.invoice_id == invoice_id).all()
+        if current_line_items:
+            invoice.subtotal = sum(item.total for item in current_line_items)
+        invoice.total = invoice.subtotal + invoice.tax
+    elif invoice_data.line_items is not None:
+        invoice.total = invoice.subtotal + (invoice.tax or 0.0)
     
     invoice.updated_at = datetime.utcnow()
     db.commit()
@@ -192,7 +200,7 @@ def send_email(
         invoice.pdf_url = pdf_url
         db.commit()
     
-    send_invoice_email(invoice, email_data.recipient_email, email_data.message)
+    send_invoice_email(invoice, email_data.recipient_email, email_data.message or "")
     
     if invoice.status == InvoiceStatus.draft:
         invoice.status = InvoiceStatus.sent

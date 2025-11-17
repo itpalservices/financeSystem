@@ -37,7 +37,8 @@ def create_quote(
     quote_number = generate_quote_number(db)
     
     subtotal = sum(item.quantity * item.unit_price for item in quote_data.line_items)
-    total = subtotal + quote_data.tax
+    tax = quote_data.tax if quote_data.tax is not None else 0.0
+    total = subtotal + tax
     
     new_quote = Quote(
         quote_number=quote_number,
@@ -47,7 +48,7 @@ def create_quote(
         client_address=quote_data.client_address,
         valid_until=quote_data.valid_until,
         subtotal=subtotal,
-        tax=quote_data.tax,
+        tax=tax,
         total=total,
         notes=quote_data.notes
     )
@@ -125,7 +126,6 @@ def update_quote(
         db.query(QuoteLineItem).filter(QuoteLineItem.quote_id == quote_id).delete()
         
         subtotal = sum(item.quantity * item.unit_price for item in quote_data.line_items)
-        tax = quote_data.tax if quote_data.tax is not None else quote.tax
         
         for item in quote_data.line_items:
             line_item = QuoteLineItem(
@@ -138,8 +138,16 @@ def update_quote(
             db.add(line_item)
         
         quote.subtotal = subtotal
-        quote.tax = tax
-        quote.total = subtotal + tax
+    
+    if "tax" in quote_data.model_fields_set:
+        quote.tax = quote_data.tax or 0.0
+        db.flush()
+        current_line_items = db.query(QuoteLineItem).filter(QuoteLineItem.quote_id == quote_id).all()
+        if current_line_items:
+            quote.subtotal = sum(item.total for item in current_line_items)
+        quote.total = quote.subtotal + quote.tax
+    elif quote_data.line_items is not None:
+        quote.total = quote.subtotal + (quote.tax or 0.0)
     
     quote.updated_at = datetime.utcnow()
     db.commit()
@@ -250,7 +258,7 @@ def send_email(
         quote.pdf_url = pdf_url
         db.commit()
     
-    send_quote_email(quote, email_data.recipient_email, email_data.message)
+    send_quote_email(quote, email_data.recipient_email, email_data.message or "")
     
     if quote.status == QuoteStatus.draft:
         quote.status = QuoteStatus.sent
