@@ -21,7 +21,7 @@ class Quote(Base):
     client_name = Column(String, nullable=False)
     company_name = Column(String, nullable=True)
     client_email = Column(String, nullable=True)
-    telephone1 = Column(String, nullable=False)
+    telephone1 = Column(String, nullable=True)
     telephone2 = Column(String, nullable=True)
     client_address = Column(Text)
     status = Column(Enum(QuoteStatus), default=QuoteStatus.draft, nullable=False)

@@ -46,7 +46,7 @@ class InvoiceBase(BaseModel):
     client_name: str
     company_name: Optional[str] = None
     client_email: Optional[str] = None
-    telephone1: str
+    telephone1: Optional[str] = None
     telephone2: Optional[str] = None
     client_address: Optional[str] = None
     due_date: datetime
@@ -89,7 +89,7 @@ class QuoteBase(BaseModel):
     client_name: str
     company_name: Optional[str] = None
     client_email: Optional[str] = None
-    telephone1: str
+    telephone1: Optional[str] = None
     telephone2: Optional[str] = None
     client_address: Optional[str] = None
     valid_until: datetime
