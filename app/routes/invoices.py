@@ -28,10 +28,31 @@ def create_invoice(
 ):
     invoice_number = generate_invoice_number(db)
     
-    subtotal = sum(item.quantity * item.unit_price for item in invoice_data.line_items)
+    # Calculate line item totals with discount if line items have discount
+    line_item_totals = []
+    for item in invoice_data.line_items:
+        item_subtotal = item.quantity * item.unit_price
+        if item.discount and item.discount > 0:
+            # Apply line item discount
+            discount_amount = item_subtotal * (item.discount / 100)
+            item_total = item_subtotal - discount_amount
+        else:
+            item_total = item_subtotal
+        line_item_totals.append(item_total)
+    
+    subtotal = sum(line_item_totals)
+    
+    # Calculate discount and tax
+    discount_percentage = invoice_data.discount if invoice_data.discount is not None else 0.0
+    if discount_percentage > 0:
+        discount_amount = subtotal * (discount_percentage / 100)
+        subtotal_after_discount = subtotal - discount_amount
+    else:
+        subtotal_after_discount = subtotal
+    
     tax_percentage = invoice_data.tax if invoice_data.tax is not None else 0.0
-    tax_amount = subtotal * (tax_percentage / 100)
-    total = subtotal + tax_amount
+    tax_amount = subtotal_after_discount * (tax_percentage / 100)
+    total = subtotal_after_discount + tax_amount
     
     new_invoice = Invoice(
         invoice_number=invoice_number,
@@ -44,6 +65,7 @@ def create_invoice(
         client_address=invoice_data.client_address,
         due_date=invoice_data.due_date,
         subtotal=subtotal,
+        discount=discount_percentage,
         tax=tax_percentage,
         total=total,
         notes=invoice_data.notes
@@ -51,13 +73,14 @@ def create_invoice(
     db.add(new_invoice)
     db.flush()
     
-    for item in invoice_data.line_items:
+    for i, item in enumerate(invoice_data.line_items):
         line_item = InvoiceLineItem(
             invoice_id=new_invoice.id,
             description=item.description,
             quantity=item.quantity,
             unit_price=item.unit_price,
-            total=item.quantity * item.unit_price
+            discount=item.discount if item.discount is not None else 0.0,
+            total=line_item_totals[i]
         )
         db.add(line_item)
     
@@ -129,31 +152,56 @@ def update_invoice(
     if invoice_data.line_items is not None:
         db.query(InvoiceLineItem).filter(InvoiceLineItem.invoice_id == invoice_id).delete()
         
-        subtotal = sum(item.quantity * item.unit_price for item in invoice_data.line_items)
-        
+        # Calculate line item totals with discount if line items have discount
+        line_item_totals = []
         for item in invoice_data.line_items:
+            item_subtotal = item.quantity * item.unit_price
+            if item.discount and item.discount > 0:
+                # Apply line item discount
+                discount_amount = item_subtotal * (item.discount / 100)
+                item_total = item_subtotal - discount_amount
+            else:
+                item_total = item_subtotal
+            line_item_totals.append(item_total)
+        
+        for i, item in enumerate(invoice_data.line_items):
             line_item = InvoiceLineItem(
                 invoice_id=invoice.id,
                 description=item.description,
                 quantity=item.quantity,
                 unit_price=item.unit_price,
-                total=item.quantity * item.unit_price
+                discount=item.discount if item.discount is not None else 0.0,
+                total=line_item_totals[i]
             )
             db.add(line_item)
         
-        invoice.subtotal = subtotal
+        invoice.subtotal = sum(line_item_totals)
     
+    # Handle discount update
+    if "discount" in invoice_data.model_fields_set:
+        invoice.discount = invoice_data.discount or 0.0
+    
+    # Handle tax update
     if "tax" in invoice_data.model_fields_set:
         invoice.tax = invoice_data.tax or 0.0
+    
+    # Recalculate total whenever line items, discount, or tax change
+    if invoice_data.line_items is not None or "discount" in invoice_data.model_fields_set or "tax" in invoice_data.model_fields_set:
         db.flush()
         current_line_items = db.query(InvoiceLineItem).filter(InvoiceLineItem.invoice_id == invoice_id).all()
         if current_line_items:
             invoice.subtotal = sum(item.total for item in current_line_items)
-        tax_amount = invoice.subtotal * (invoice.tax / 100)
-        invoice.total = invoice.subtotal + tax_amount
-    elif invoice_data.line_items is not None:
-        tax_amount = invoice.subtotal * ((invoice.tax or 0.0) / 100)
-        invoice.total = invoice.subtotal + tax_amount
+        
+        # Apply overall discount if present
+        if invoice.discount > 0:
+            discount_amount = invoice.subtotal * (invoice.discount / 100)
+            subtotal_after_discount = invoice.subtotal - discount_amount
+        else:
+            subtotal_after_discount = invoice.subtotal
+        
+        # Apply tax
+        tax_amount = subtotal_after_discount * ((invoice.tax or 0.0) / 100)
+        invoice.total = subtotal_after_discount + tax_amount
     
     invoice.updated_at = datetime.utcnow()
     db.commit()
