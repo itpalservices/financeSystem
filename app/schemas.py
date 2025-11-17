@@ -50,7 +50,7 @@ class InvoiceBase(BaseModel):
     telephone1: Optional[str] = None
     telephone2: Optional[str] = None
     client_address: Optional[str] = None
-    due_date: datetime
+    due_date: Optional[datetime] = None
     notes: Optional[str] = None
     discount: Optional[float] = 0.0
     tax: Optional[float] = 0.0
