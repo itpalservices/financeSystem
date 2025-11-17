@@ -29,18 +29,22 @@ def create_invoice(
     invoice_number = generate_invoice_number(db)
     
     subtotal = sum(item.quantity * item.unit_price for item in invoice_data.line_items)
-    tax = invoice_data.tax if invoice_data.tax is not None else 0.0
-    total = subtotal + tax
+    tax_percentage = invoice_data.tax if invoice_data.tax is not None else 0.0
+    tax_amount = subtotal * (tax_percentage / 100)
+    total = subtotal + tax_amount
     
     new_invoice = Invoice(
         invoice_number=invoice_number,
         user_id=current_user.id,
         client_name=invoice_data.client_name,
+        company_name=invoice_data.company_name,
         client_email=invoice_data.client_email,
+        telephone1=invoice_data.telephone1,
+        telephone2=invoice_data.telephone2,
         client_address=invoice_data.client_address,
         due_date=invoice_data.due_date,
         subtotal=subtotal,
-        tax=tax,
+        tax=tax_percentage,
         total=total,
         notes=invoice_data.notes
     )
@@ -145,9 +149,11 @@ def update_invoice(
         current_line_items = db.query(InvoiceLineItem).filter(InvoiceLineItem.invoice_id == invoice_id).all()
         if current_line_items:
             invoice.subtotal = sum(item.total for item in current_line_items)
-        invoice.total = invoice.subtotal + invoice.tax
+        tax_amount = invoice.subtotal * (invoice.tax / 100)
+        invoice.total = invoice.subtotal + tax_amount
     elif invoice_data.line_items is not None:
-        invoice.total = invoice.subtotal + (invoice.tax or 0.0)
+        tax_amount = invoice.subtotal * ((invoice.tax or 0.0) / 100)
+        invoice.total = invoice.subtotal + tax_amount
     
     invoice.updated_at = datetime.utcnow()
     db.commit()

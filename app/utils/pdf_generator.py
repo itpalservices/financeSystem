@@ -53,7 +53,7 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
     
     info_data = [
         ["Invoice Number:", invoice.invoice_number, "Issue Date:", invoice.issue_date.strftime("%d-%m-%Y")],
-        ["Status:", invoice.status.value.upper(), "Due Date:", invoice.due_date.strftime("%d-%m-%Y")]
+        ["Status:", invoice.status.value.upper(), "", ""]
     ]
     
     info_table = Table(info_data, colWidths=[1.5*inch, 2*inch, 1.5*inch, 2*inch])
@@ -67,23 +67,35 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
     elements.append(info_table)
     elements.append(Spacer(1, 0.3*inch))
     
-    client_data = [["Bill To:"], [invoice.client_name]]
-    if invoice.company_name:
-        client_data.append([invoice.company_name])
-    if invoice.client_email:
-        client_data.append([invoice.client_email])
+    # Build Bill To section with two columns
+    left_column = [invoice.client_name]
     if invoice.telephone1:
-        client_data.append([f"Tel: {invoice.telephone1}"])
+        left_column.append(f"Tel: {invoice.telephone1}")
     if invoice.telephone2:
-        client_data.append([f"Tel 2: {invoice.telephone2}"])
+        left_column.append(f"Tel 2: {invoice.telephone2}")
     if invoice.client_address:
-        client_data.append([invoice.client_address])
+        left_column.append(invoice.client_address)
     
-    client_table = Table(client_data, colWidths=[7*inch])
+    right_column = []
+    if invoice.company_name:
+        right_column.append(invoice.company_name)
+    if invoice.client_email:
+        right_column.append(invoice.client_email)
+    
+    # Create two-column table for Bill To
+    bill_to_data = [["Bill To:", ""]]
+    max_rows = max(len(left_column), len(right_column))
+    for i in range(max_rows):
+        left_text = left_column[i] if i < len(left_column) else ""
+        right_text = right_column[i] if i < len(right_column) else ""
+        bill_to_data.append([left_text, right_text])
+    
+    client_table = Table(bill_to_data, colWidths=[3.5*inch, 3.5*inch])
     client_table.setStyle(TableStyle([
-        ('FONTNAME', (0, 0), (0, 0), 'Helvetica-Bold'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, -1), 10),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
     ]))
     
     elements.append(client_table)
@@ -113,10 +125,14 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
     elements.append(line_items_table)
     elements.append(Spacer(1, 0.3*inch))
     
+    # Calculate tax amount from percentage
+    tax_percentage = invoice.tax or 0.0
+    tax_amount = invoice.subtotal * (tax_percentage / 100)
+    
     totals_data = [
         ["Subtotal:", f"€{invoice.subtotal:.2f}"],
-        ["Tax:", f"€{invoice.tax:.2f}"],
-        ["Total:", f"€{invoice.total:.2f}"]
+        [f"Tax ({tax_percentage}%):", f"€{tax_amount:.2f}"],
+        ["Total:", f"€{invoice.subtotal + tax_amount:.2f}"]
     ]
     
     totals_table = Table(totals_data, colWidths=[5.5*inch, 1.5*inch])
