@@ -1,0 +1,201 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from typing import List
+from datetime import datetime
+
+from app.database import get_db
+from app.models.user import User
+from app.models.invoice import Invoice, InvoiceLineItem, InvoiceStatus
+from app.schemas import InvoiceCreate, InvoiceResponse, InvoiceUpdate, EmailRequest
+from app.auth import get_current_user
+from app.utils.pdf_generator import generate_invoice_pdf
+from app.utils.email_sender import send_invoice_email
+
+router = APIRouter()
+
+def generate_invoice_number(db: Session) -> str:
+    last_invoice = db.query(Invoice).order_by(Invoice.id.desc()).first()
+    if last_invoice:
+        last_number = int(last_invoice.invoice_number.split('-')[1])
+        return f"INV-{last_number + 1:05d}"
+    return "INV-00001"
+
+@router.post("", response_model=InvoiceResponse, status_code=status.HTTP_201_CREATED)
+def create_invoice(
+    invoice_data: InvoiceCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    invoice_number = generate_invoice_number(db)
+    
+    subtotal = sum(item.quantity * item.unit_price for item in invoice_data.line_items)
+    total = subtotal + invoice_data.tax
+    
+    new_invoice = Invoice(
+        invoice_number=invoice_number,
+        user_id=current_user.id,
+        client_name=invoice_data.client_name,
+        client_email=invoice_data.client_email,
+        client_address=invoice_data.client_address,
+        due_date=invoice_data.due_date,
+        subtotal=subtotal,
+        tax=invoice_data.tax,
+        total=total,
+        notes=invoice_data.notes
+    )
+    db.add(new_invoice)
+    db.flush()
+    
+    for item in invoice_data.line_items:
+        line_item = InvoiceLineItem(
+            invoice_id=new_invoice.id,
+            description=item.description,
+            quantity=item.quantity,
+            unit_price=item.unit_price,
+            total=item.quantity * item.unit_price
+        )
+        db.add(line_item)
+    
+    db.commit()
+    db.refresh(new_invoice)
+    return new_invoice
+
+@router.get("", response_model=List[InvoiceResponse])
+def get_invoices(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role == "admin":
+        invoices = db.query(Invoice).all()
+    else:
+        invoices = db.query(Invoice).filter(Invoice.user_id == current_user.id).all()
+    return invoices
+
+@router.get("/{invoice_id}", response_model=InvoiceResponse)
+def get_invoice(
+    invoice_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice not found")
+    
+    if current_user.role != "admin" and invoice.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    
+    return invoice
+
+@router.put("/{invoice_id}", response_model=InvoiceResponse)
+def update_invoice(
+    invoice_id: int,
+    invoice_data: InvoiceUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice not found")
+    
+    if current_user.role != "admin" and invoice.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    
+    if invoice_data.client_name is not None:
+        invoice.client_name = invoice_data.client_name
+    if invoice_data.client_email is not None:
+        invoice.client_email = invoice_data.client_email
+    if invoice_data.client_address is not None:
+        invoice.client_address = invoice_data.client_address
+    if invoice_data.due_date is not None:
+        invoice.due_date = invoice_data.due_date
+    if invoice_data.status is not None:
+        invoice.status = invoice_data.status
+    if invoice_data.notes is not None:
+        invoice.notes = invoice_data.notes
+    
+    if invoice_data.line_items is not None:
+        db.query(InvoiceLineItem).filter(InvoiceLineItem.invoice_id == invoice_id).delete()
+        
+        subtotal = sum(item.quantity * item.unit_price for item in invoice_data.line_items)
+        tax = invoice_data.tax if invoice_data.tax is not None else invoice.tax
+        
+        for item in invoice_data.line_items:
+            line_item = InvoiceLineItem(
+                invoice_id=invoice.id,
+                description=item.description,
+                quantity=item.quantity,
+                unit_price=item.unit_price,
+                total=item.quantity * item.unit_price
+            )
+            db.add(line_item)
+        
+        invoice.subtotal = subtotal
+        invoice.tax = tax
+        invoice.total = subtotal + tax
+    
+    invoice.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(invoice)
+    return invoice
+
+@router.delete("/{invoice_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_invoice(
+    invoice_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice not found")
+    
+    if current_user.role != "admin" and invoice.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    
+    db.delete(invoice)
+    db.commit()
+
+@router.post("/{invoice_id}/generate-pdf")
+def generate_pdf(
+    invoice_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice not found")
+    
+    if current_user.role != "admin" and invoice.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    
+    pdf_url = generate_invoice_pdf(invoice, db)
+    invoice.pdf_url = pdf_url
+    db.commit()
+    
+    return {"message": "PDF generated successfully", "pdf_url": pdf_url}
+
+@router.post("/{invoice_id}/send-email")
+def send_email(
+    invoice_id: int,
+    email_data: EmailRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice not found")
+    
+    if current_user.role != "admin" and invoice.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    
+    if not invoice.pdf_url:
+        pdf_url = generate_invoice_pdf(invoice, db)
+        invoice.pdf_url = pdf_url
+        db.commit()
+    
+    send_invoice_email(invoice, email_data.recipient_email, email_data.message)
+    
+    if invoice.status == InvoiceStatus.draft:
+        invoice.status = InvoiceStatus.sent
+        db.commit()
+    
+    return {"message": "Email sent successfully"}

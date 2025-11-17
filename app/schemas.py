@@ -1,0 +1,123 @@
+from pydantic import BaseModel, EmailStr
+from typing import List, Optional
+from datetime import datetime
+from app.models.user import UserRole
+from app.models.invoice import InvoiceStatus
+from app.models.quote import QuoteStatus
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+    role: Optional[UserRole] = UserRole.user
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    role: UserRole
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class LineItemBase(BaseModel):
+    description: str
+    quantity: float
+    unit_price: float
+
+class LineItemCreate(LineItemBase):
+    pass
+
+class LineItemResponse(LineItemBase):
+    id: int
+    total: float
+    
+    class Config:
+        from_attributes = True
+
+class InvoiceBase(BaseModel):
+    client_name: str
+    client_email: EmailStr
+    client_address: Optional[str] = None
+    due_date: datetime
+    notes: Optional[str] = None
+    tax: Optional[float] = 0.0
+
+class InvoiceCreate(InvoiceBase):
+    line_items: List[LineItemCreate]
+
+class InvoiceUpdate(BaseModel):
+    client_name: Optional[str] = None
+    client_email: Optional[EmailStr] = None
+    client_address: Optional[str] = None
+    due_date: Optional[datetime] = None
+    status: Optional[InvoiceStatus] = None
+    notes: Optional[str] = None
+    tax: Optional[float] = None
+    line_items: Optional[List[LineItemCreate]] = None
+
+class InvoiceResponse(InvoiceBase):
+    id: int
+    invoice_number: str
+    user_id: int
+    status: InvoiceStatus
+    issue_date: datetime
+    subtotal: float
+    total: float
+    pdf_url: Optional[str] = None
+    line_items: List[LineItemResponse]
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class QuoteBase(BaseModel):
+    client_name: str
+    client_email: EmailStr
+    client_address: Optional[str] = None
+    valid_until: datetime
+    notes: Optional[str] = None
+    tax: Optional[float] = 0.0
+
+class QuoteCreate(QuoteBase):
+    line_items: List[LineItemCreate]
+
+class QuoteUpdate(BaseModel):
+    client_name: Optional[str] = None
+    client_email: Optional[EmailStr] = None
+    client_address: Optional[str] = None
+    valid_until: Optional[datetime] = None
+    status: Optional[QuoteStatus] = None
+    notes: Optional[str] = None
+    tax: Optional[float] = None
+    line_items: Optional[List[LineItemCreate]] = None
+
+class QuoteResponse(QuoteBase):
+    id: int
+    quote_number: str
+    user_id: int
+    status: QuoteStatus
+    issue_date: datetime
+    subtotal: float
+    total: float
+    pdf_url: Optional[str] = None
+    line_items: List[LineItemResponse]
+    converted_to_invoice_id: Optional[int] = None
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class EmailRequest(BaseModel):
+    recipient_email: EmailStr
+    subject: str
+    message: Optional[str] = None
