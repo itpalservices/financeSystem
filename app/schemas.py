@@ -82,7 +82,7 @@ class InvoiceBase(BaseModel):
     client_name: str
     company_name: Optional[str] = None
     client_email: Optional[str] = None
-    telephone1: Optional[str] = None
+    telephone1: str  # Required for customer identification
     telephone2: Optional[str] = None
     client_address: Optional[str] = None
     client_reg_no: Optional[str] = None
@@ -99,7 +99,7 @@ class InvoiceUpdate(BaseModel):
     client_name: Optional[str] = None
     company_name: Optional[str] = None
     client_email: Optional[str] = None
-    telephone1: Optional[str] = None
+    telephone1: str  # Required for customer identification
     telephone2: Optional[str] = None
     client_address: Optional[str] = None
     client_reg_no: Optional[str] = None

@@ -70,6 +70,21 @@ The frontend utilizes Bootstrap 5.3.0 and Bootstrap Icons 1.10.0 for a modern, r
 
 ## Recent Changes
 
+**November 21, 2025 - Customer Management System & Auto-Sync**
+- Implemented complete customer management module:
+  - Customer model with all fields (name, company, email, telephone1/2, address, reg_no, tax_id, is_active)
+  - Full CRUD API with real-time search by name, company, email, or telephone
+  - Customer page with responsive table, add/edit modals, toggle active/inactive status
+  - Telephone1 is unique identifier for customers
+- Auto-sync customer data with invoices:
+  - Creating invoice: automatically creates customer if telephone1 doesn't exist
+  - Editing invoice: automatically updates customer details if telephone1 exists
+  - Telephone1 now required for invoices (used to match/create customers)
+- Navigation enhancement:
+  - Added "Customers" navigation link to all pages (dashboard, invoices, quotes)
+- Database cleanup:
+  - Cleared all test invoices to start sequential real invoice numbering (INV-00001+)
+
 **November 21, 2025 - Enhanced Customer Fields & Dynamic PDF Layout**
 - Added optional customer information fields:
   - Client Reg. No. (Registration Number) - optional field

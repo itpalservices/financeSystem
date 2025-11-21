@@ -21,32 +21,38 @@ def generate_invoice_number(db: Session) -> str:
         return f"INV-{last_number + 1:05d}"
     return "INV-00001"
 
-def sync_customer(db: Session, invoice_data):
-    if not invoice_data.telephone1:
-        return
-    
+def sync_customer(db: Session, client_name: str, company_name: str, client_email: str, 
+                 telephone1: str, telephone2: str, client_address: str, 
+                 client_reg_no: str, client_tax_id: str):
+    """
+    Auto-create or update customer based on telephone1.
+    - If customer with telephone1 exists: update their details
+    - If customer doesn't exist: create new customer
+    """
     existing_customer = db.query(Customer).filter(
-        Customer.telephone1 == invoice_data.telephone1
+        Customer.telephone1 == telephone1
     ).first()
     
     if existing_customer:
-        existing_customer.name = invoice_data.client_name
-        existing_customer.company_name = invoice_data.company_name
-        existing_customer.email = invoice_data.client_email
-        existing_customer.telephone2 = invoice_data.telephone2
-        existing_customer.address = invoice_data.client_address
-        existing_customer.client_reg_no = invoice_data.client_reg_no
-        existing_customer.client_tax_id = invoice_data.client_tax_id
+        # Update existing customer with latest invoice data
+        existing_customer.name = client_name
+        existing_customer.company_name = company_name
+        existing_customer.email = client_email
+        existing_customer.telephone2 = telephone2
+        existing_customer.address = client_address
+        existing_customer.client_reg_no = client_reg_no
+        existing_customer.client_tax_id = client_tax_id
     else:
+        # Create new customer
         new_customer = Customer(
-            name=invoice_data.client_name,
-            company_name=invoice_data.company_name,
-            email=invoice_data.client_email,
-            telephone1=invoice_data.telephone1,
-            telephone2=invoice_data.telephone2,
-            address=invoice_data.client_address,
-            client_reg_no=invoice_data.client_reg_no,
-            client_tax_id=invoice_data.client_tax_id
+            name=client_name,
+            company_name=company_name,
+            email=client_email,
+            telephone1=telephone1,
+            telephone2=telephone2,
+            address=client_address,
+            client_reg_no=client_reg_no,
+            client_tax_id=client_tax_id
         )
         db.add(new_customer)
 
@@ -56,6 +62,20 @@ def create_invoice(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    # Auto-create or update customer based on telephone number
+    sync_customer(
+        db,
+        client_name=invoice_data.client_name,
+        company_name=invoice_data.company_name,
+        client_email=invoice_data.client_email,
+        telephone1=invoice_data.telephone1,
+        telephone2=invoice_data.telephone2,
+        client_address=invoice_data.client_address,
+        client_reg_no=invoice_data.client_reg_no,
+        client_tax_id=invoice_data.client_tax_id
+    )
+    db.flush()
+    
     invoice_number = generate_invoice_number(db)
     
     # Calculate line item totals with discount if line items have discount
@@ -166,8 +186,8 @@ def update_invoice(
         invoice.company_name = invoice_data.company_name
     if invoice_data.client_email is not None:
         invoice.client_email = invoice_data.client_email
-    if invoice_data.telephone1 is not None:
-        invoice.telephone1 = invoice_data.telephone1
+    # telephone1 is always required
+    invoice.telephone1 = invoice_data.telephone1
     if invoice_data.telephone2 is not None:
         invoice.telephone2 = invoice_data.telephone2
     if invoice_data.client_address is not None:
@@ -182,6 +202,19 @@ def update_invoice(
         invoice.status = invoice_data.status
     if invoice_data.notes is not None:
         invoice.notes = invoice_data.notes
+    
+    # Auto-update customer based on changes
+    sync_customer(
+        db,
+        client_name=invoice.client_name,
+        company_name=invoice.company_name,
+        client_email=invoice.client_email,
+        telephone1=invoice.telephone1,
+        telephone2=invoice.telephone2,
+        client_address=invoice.client_address,
+        client_reg_no=invoice.client_reg_no,
+        client_tax_id=invoice.client_tax_id
+    )
     
     invoice.pdf_url = None
     
