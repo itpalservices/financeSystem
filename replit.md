@@ -70,6 +70,15 @@ The frontend utilizes Bootstrap 5.3.0 and Bootstrap Icons 1.10.0 for a modern, r
 
 ## Recent Changes
 
+**November 21, 2025 - Professional PDF Footer**
+- Updated PDF footer with official company information:
+  - Company Name: IT PAL TECHNOLOGY SOLUTIONS LTD (bold, teal color)
+  - Address: Pera Kampou 6, Kato Polemidia, Limassol, 4170
+  - Registration details: Reg. No.: HE482919 / T.I.C: 60254066D
+  - Contact: Tel: +357-97652017, Email: finance@itpalsolutions.com, Web: itpalsolutions.com
+  - Design: Teal separator line above footer, centered text layout with organized multi-line structure
+  - Applied to both invoice and quote PDFs for consistency
+
 **November 17, 2025 - PDF Labels, Due Date Removal & Manual Invoice Issuing**
 - Enhanced PDF Bill To section with field labels:
   - Added labels: "Client Name:", "Tel:", "Tel 2:", "Company Name:", "Email:", "Address:"

@@ -178,24 +178,50 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
         elements.append(Spacer(1, 0.3*inch))
         elements.append(Paragraph(f"<b>Notes:</b> {invoice.notes}", styles['Normal']))
     
-    # Add footer
+    # Add footer with separator line
     elements.append(Spacer(1, 0.5*inch))
     
-    footer_style = ParagraphStyle(
-        'Footer',
+    # Footer separator line
+    footer_line_data = [["" for _ in range(1)]]
+    footer_line_table = Table(footer_line_data, colWidths=[7*inch])
+    footer_line_table.setStyle(TableStyle([
+        ('LINEABOVE', (0, 0), (-1, 0), 1, colors.HexColor('#1b7ca8')),
+        ('TOPPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+    ]))
+    elements.append(footer_line_table)
+    
+    # Footer styles
+    footer_company_style = ParagraphStyle(
+        'FooterCompany',
         parent=styles['Normal'],
-        fontSize=9,
-        textColor=colors.HexColor('#666666'),
-        alignment=TA_CENTER
+        fontSize=11,
+        textColor=colors.HexColor('#1b7ca8'),
+        alignment=TA_CENTER,
+        fontName='Helvetica-Bold'
     )
     
-    footer_text = """
-    <b>🌐 Website:</b> itpalsolutions.com &nbsp;&nbsp;|&nbsp;&nbsp; 
-    <b>✉ Email:</b> info@itpalsolutions.com &nbsp;&nbsp;|&nbsp;&nbsp; 
-    <b>📄 VAT Reg No.:</b> CY111111
-    """
+    footer_info_style = ParagraphStyle(
+        'FooterInfo',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=colors.HexColor('#555555'),
+        alignment=TA_CENTER,
+        leading=12
+    )
     
-    elements.append(Paragraph(footer_text, footer_style))
+    # Company name
+    elements.append(Paragraph("IT PAL TECHNOLOGY SOLUTIONS LTD", footer_company_style))
+    elements.append(Spacer(1, 0.05*inch))
+    
+    # Company details in organized lines
+    footer_line1 = "Pera Kampou 6, Kato Polemidia, Limassol, 4170"
+    footer_line2 = "Reg. No.: HE482919 / T.I.C: 60254066D"
+    footer_line3 = "Tel: +357-97652017 &nbsp;&nbsp;|&nbsp;&nbsp; Email: finance@itpalsolutions.com &nbsp;&nbsp;|&nbsp;&nbsp; Web: itpalsolutions.com"
+    
+    elements.append(Paragraph(footer_line1, footer_info_style))
+    elements.append(Paragraph(footer_line2, footer_info_style))
+    elements.append(Paragraph(footer_line3, footer_info_style))
     
     doc.build(elements)
     
@@ -328,24 +354,50 @@ def generate_quote_pdf(quote, db: Session) -> str:
         elements.append(Spacer(1, 0.3*inch))
         elements.append(Paragraph(f"<b>Notes:</b> {quote.notes}", styles['Normal']))
     
-    # Add footer
+    # Add footer with separator line
     elements.append(Spacer(1, 0.5*inch))
     
-    footer_style = ParagraphStyle(
-        'Footer',
+    # Footer separator line
+    footer_line_data = [["" for _ in range(1)]]
+    footer_line_table = Table(footer_line_data, colWidths=[7*inch])
+    footer_line_table.setStyle(TableStyle([
+        ('LINEABOVE', (0, 0), (-1, 0), 1, colors.HexColor('#1b7ca8')),
+        ('TOPPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+    ]))
+    elements.append(footer_line_table)
+    
+    # Footer styles
+    footer_company_style = ParagraphStyle(
+        'FooterCompany',
         parent=styles['Normal'],
-        fontSize=9,
-        textColor=colors.HexColor('#666666'),
-        alignment=TA_CENTER
+        fontSize=11,
+        textColor=colors.HexColor('#1b7ca8'),
+        alignment=TA_CENTER,
+        fontName='Helvetica-Bold'
     )
     
-    footer_text = """
-    <b>🌐 Website:</b> itpalsolutions.com &nbsp;&nbsp;|&nbsp;&nbsp; 
-    <b>✉ Email:</b> info@itpalsolutions.com &nbsp;&nbsp;|&nbsp;&nbsp; 
-    <b>📄 VAT Reg No.:</b> CY111111
-    """
+    footer_info_style = ParagraphStyle(
+        'FooterInfo',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=colors.HexColor('#555555'),
+        alignment=TA_CENTER,
+        leading=12
+    )
     
-    elements.append(Paragraph(footer_text, footer_style))
+    # Company name
+    elements.append(Paragraph("IT PAL TECHNOLOGY SOLUTIONS LTD", footer_company_style))
+    elements.append(Spacer(1, 0.05*inch))
+    
+    # Company details in organized lines
+    footer_line1 = "Pera Kampou 6, Kato Polemidia, Limassol, 4170"
+    footer_line2 = "Reg. No.: HE482919 / T.I.C: 60254066D"
+    footer_line3 = "Tel: +357-97652017 &nbsp;&nbsp;|&nbsp;&nbsp; Email: finance@itpalsolutions.com &nbsp;&nbsp;|&nbsp;&nbsp; Web: itpalsolutions.com"
+    
+    elements.append(Paragraph(footer_line1, footer_info_style))
+    elements.append(Paragraph(footer_line2, footer_info_style))
+    elements.append(Paragraph(footer_line3, footer_info_style))
     
     doc.build(elements)
     
