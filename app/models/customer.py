@@ -8,7 +8,7 @@ class Customer(Base):
     __tablename__ = "customers"
     
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
+    name = Column(String, nullable=True)
     company_name = Column(String, nullable=True)
     email = Column(String, nullable=True)
     telephone1 = Column(String, nullable=False, index=True)  # Primary identifier

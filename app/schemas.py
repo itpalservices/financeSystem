@@ -28,7 +28,7 @@ class Token(BaseModel):
     token_type: str
 
 class CustomerBase(BaseModel):
-    name: str
+    name: Optional[str] = None
     company_name: Optional[str] = None
     email: Optional[str] = None
     telephone1: str
@@ -79,7 +79,7 @@ class LineItemResponse(LineItemBase):
         from_attributes = True
 
 class InvoiceBase(BaseModel):
-    client_name: str
+    client_name: Optional[str] = None
     company_name: Optional[str] = None
     client_email: Optional[str] = None
     telephone1: str  # Required for customer identification

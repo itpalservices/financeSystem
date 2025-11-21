@@ -136,12 +136,13 @@
                     <div class="modal-body">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="clientName" class="form-label">Client Name *</label>
-                                <input type="text" class="form-control" id="clientName" required>
+                                <label for="clientName" class="form-label">Client Name</label>
+                                <input type="text" class="form-control" id="clientName">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="companyName" class="form-label">Company Name</label>
                                 <input type="text" class="form-control" id="companyName">
+                                <small class="text-muted">At least one of Client Name or Company Name is required</small>
                             </div>
                         </div>
                         <div class="row">
@@ -187,7 +188,7 @@
                                 <small class="text-muted">Leave at 0 to use line item discounts instead</small>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="tax" class="form-label">Tax (%)</label>
+                                <label for="tax" class="form-label">VAT (%)</label>
                                 <input type="number" class="form-control" id="tax" step="0.01" value="0" min="0" max="100">
                             </div>
                         </div>

@@ -70,6 +70,22 @@ The frontend utilizes Bootstrap 5.3.0 and Bootstrap Icons 1.10.0 for a modern, r
 
 ## Recent Changes
 
+**November 21, 2025 - Final Production Configuration**
+- **Database cleanup**: Cleared all test invoices and customers for fresh start
+- **PDF footer updates**:
+  - Removed company address (Pera Kampou 6, Kato Polemidia, Limassol, 4170)
+  - Added bank details: IBAN: LT41 3250 0726 5105 4093 | BIC: REVOLT21 | BANK: Revolut Bank UAB
+  - Changed "Web: itpalsolutions.com" to "Website: www.itpalsolutions.com"
+- **TAX changed to VAT**:
+  - Updated all forms (invoice and quote creation) to display "VAT (%)" instead of "Tax (%)"
+  - Updated all PDFs to show "VAT" instead of "Tax"
+  - Backend tax field name remains the same for database compatibility
+- **Flexible client identification**:
+  - Client Name is now optional (was required)
+  - System requires either Client Name OR Company Name (at least one must be provided)
+  - Both fields can be filled if desired
+  - Backend validation ensures at least one is present
+
 **November 21, 2025 - Customer Management System & Auto-Sync**
 - Implemented complete customer management module:
   - Customer model with all fields (name, company, email, telephone1/2, address, reg_no, tax_id, is_active)

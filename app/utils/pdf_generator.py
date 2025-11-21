@@ -180,13 +180,13 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
     else:
         subtotal_after_discount = invoice.subtotal
     
-    # Calculate tax amount from percentage
-    tax_percentage = invoice.tax or 0.0
-    tax_amount = subtotal_after_discount * (tax_percentage / 100)
-    totals_data.append([f"Tax ({tax_percentage}%):", f"€{tax_amount:.2f}"])
+    # Calculate VAT amount from percentage
+    vat_percentage = invoice.tax or 0.0
+    vat_amount = subtotal_after_discount * (vat_percentage / 100)
+    totals_data.append([f"VAT ({vat_percentage}%):", f"€{vat_amount:.2f}"])
     
     # Total
-    total = subtotal_after_discount + tax_amount
+    total = subtotal_after_discount + vat_amount
     totals_data.append(["Total:", f"€{total:.2f}"])
     
     totals_table = Table(totals_data, colWidths=[5.5*inch, 1.5*inch])
@@ -242,9 +242,9 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
     elements.append(Spacer(1, 0.05*inch))
     
     # Company details in organized lines
-    footer_line1 = "Pera Kampou 6, Kato Polemidia, Limassol, 4170"
-    footer_line2 = "Reg. No.: HE482919 / T.I.C: 60254066D"
-    footer_line3 = "Tel: +357-97652017 &nbsp;&nbsp;|&nbsp;&nbsp; Email: finance@itpalsolutions.com &nbsp;&nbsp;|&nbsp;&nbsp; Web: itpalsolutions.com"
+    footer_line1 = "Reg. No.: HE482919 / T.I.C: 60254066D"
+    footer_line2 = "IBAN: LT41 3250 0726 5105 4093 &nbsp;&nbsp;|&nbsp;&nbsp; BIC: REVOLT21 &nbsp;&nbsp;|&nbsp;&nbsp; BANK: Revolut Bank UAB"
+    footer_line3 = "Tel: +357-97652017 &nbsp;&nbsp;|&nbsp;&nbsp; Email: finance@itpalsolutions.com &nbsp;&nbsp;|&nbsp;&nbsp; Website: www.itpalsolutions.com"
     
     elements.append(Paragraph(footer_line1, footer_info_style))
     elements.append(Paragraph(footer_line2, footer_info_style))
@@ -361,7 +361,7 @@ def generate_quote_pdf(quote, db: Session) -> str:
     
     totals_data = [
         ["Subtotal:", f"€{quote.subtotal:.2f}"],
-        ["Tax:", f"€{quote.tax:.2f}"],
+        ["VAT:", f"€{quote.tax:.2f}"],
         ["Total:", f"€{quote.total:.2f}"]
     ]
     
@@ -418,9 +418,9 @@ def generate_quote_pdf(quote, db: Session) -> str:
     elements.append(Spacer(1, 0.05*inch))
     
     # Company details in organized lines
-    footer_line1 = "Pera Kampou 6, Kato Polemidia, Limassol, 4170"
-    footer_line2 = "Reg. No.: HE482919 / T.I.C: 60254066D"
-    footer_line3 = "Tel: +357-97652017 &nbsp;&nbsp;|&nbsp;&nbsp; Email: finance@itpalsolutions.com &nbsp;&nbsp;|&nbsp;&nbsp; Web: itpalsolutions.com"
+    footer_line1 = "Reg. No.: HE482919 / T.I.C: 60254066D"
+    footer_line2 = "IBAN: LT41 3250 0726 5105 4093 &nbsp;&nbsp;|&nbsp;&nbsp; BIC: REVOLT21 &nbsp;&nbsp;|&nbsp;&nbsp; BANK: Revolut Bank UAB"
+    footer_line3 = "Tel: +357-97652017 &nbsp;&nbsp;|&nbsp;&nbsp; Email: finance@itpalsolutions.com &nbsp;&nbsp;|&nbsp;&nbsp; Website: www.itpalsolutions.com"
     
     elements.append(Paragraph(footer_line1, footer_info_style))
     elements.append(Paragraph(footer_line2, footer_info_style))

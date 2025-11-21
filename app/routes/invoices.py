@@ -75,6 +75,13 @@ def create_invoice(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    # Validate that at least client_name OR company_name is provided
+    if not invoice_data.client_name and not invoice_data.company_name:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Either Client Name or Company Name must be provided"
+        )
+    
     # Auto-create or update customer based on telephone number
     sync_customer(
         db,
