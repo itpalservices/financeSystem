@@ -26,22 +26,35 @@ def sync_customer(db: Session, client_name: str, company_name: str, client_email
                  client_reg_no: str, client_tax_id: str):
     """
     Auto-create or update customer based on telephone1.
-    - If customer with telephone1 exists: update their details
+    - If customer with telephone1 exists: update their details (only non-null values)
     - If customer doesn't exist: create new customer
     """
+    if not telephone1 or telephone1.strip() == "":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Telephone1 is required for customer identification"
+        )
+    
     existing_customer = db.query(Customer).filter(
         Customer.telephone1 == telephone1
     ).first()
     
     if existing_customer:
-        # Update existing customer with latest invoice data
-        existing_customer.name = client_name
-        existing_customer.company_name = company_name
-        existing_customer.email = client_email
-        existing_customer.telephone2 = telephone2
-        existing_customer.address = client_address
-        existing_customer.client_reg_no = client_reg_no
-        existing_customer.client_tax_id = client_tax_id
+        # Update existing customer with latest invoice data (only non-null values)
+        if client_name:
+            existing_customer.name = client_name
+        if company_name is not None:
+            existing_customer.company_name = company_name
+        if client_email is not None:
+            existing_customer.email = client_email
+        if telephone2 is not None:
+            existing_customer.telephone2 = telephone2
+        if client_address is not None:
+            existing_customer.address = client_address
+        if client_reg_no is not None:
+            existing_customer.client_reg_no = client_reg_no
+        if client_tax_id is not None:
+            existing_customer.client_tax_id = client_tax_id
     else:
         # Create new customer
         new_customer = Customer(

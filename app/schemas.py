@@ -45,7 +45,7 @@ class CustomerUpdate(BaseModel):
     name: Optional[str] = None
     company_name: Optional[str] = None
     email: Optional[str] = None
-    telephone1: Optional[str] = None
+    telephone1: str  # Required - unique identifier
     telephone2: Optional[str] = None
     address: Optional[str] = None
     client_reg_no: Optional[str] = None
