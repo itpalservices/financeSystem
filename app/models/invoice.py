@@ -15,7 +15,7 @@ class Invoice(Base):
     id = Column(Integer, primary_key=True, index=True)
     invoice_number = Column(String, unique=True, nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    client_name = Column(String, nullable=False)
+    client_name = Column(String, nullable=True)
     company_name = Column(String, nullable=True)
     client_email = Column(String, nullable=True)
     telephone1 = Column(String, nullable=True)
