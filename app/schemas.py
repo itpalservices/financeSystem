@@ -27,6 +27,41 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+class CustomerBase(BaseModel):
+    name: str
+    company_name: Optional[str] = None
+    email: Optional[str] = None
+    telephone1: str
+    telephone2: Optional[str] = None
+    address: Optional[str] = None
+    client_reg_no: Optional[str] = None
+    client_tax_id: Optional[str] = None
+    notes: Optional[str] = None
+
+class CustomerCreate(CustomerBase):
+    pass
+
+class CustomerUpdate(BaseModel):
+    name: Optional[str] = None
+    company_name: Optional[str] = None
+    email: Optional[str] = None
+    telephone1: Optional[str] = None
+    telephone2: Optional[str] = None
+    address: Optional[str] = None
+    client_reg_no: Optional[str] = None
+    client_tax_id: Optional[str] = None
+    is_active: Optional[bool] = None
+    notes: Optional[str] = None
+
+class CustomerResponse(CustomerBase):
+    id: int
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
 class LineItemBase(BaseModel):
     description: str
     quantity: float

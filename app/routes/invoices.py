@@ -6,6 +6,7 @@ from datetime import datetime
 from app.database import get_db
 from app.models.user import User
 from app.models.invoice import Invoice, InvoiceLineItem, InvoiceStatus
+from app.models.customer import Customer
 from app.schemas import InvoiceCreate, InvoiceResponse, InvoiceUpdate, EmailRequest
 from app.auth import get_current_user
 from app.utils.pdf_generator import generate_invoice_pdf
@@ -19,6 +20,35 @@ def generate_invoice_number(db: Session) -> str:
         last_number = int(last_invoice.invoice_number.split('-')[1])
         return f"INV-{last_number + 1:05d}"
     return "INV-00001"
+
+def sync_customer(db: Session, invoice_data):
+    if not invoice_data.telephone1:
+        return
+    
+    existing_customer = db.query(Customer).filter(
+        Customer.telephone1 == invoice_data.telephone1
+    ).first()
+    
+    if existing_customer:
+        existing_customer.name = invoice_data.client_name
+        existing_customer.company_name = invoice_data.company_name
+        existing_customer.email = invoice_data.client_email
+        existing_customer.telephone2 = invoice_data.telephone2
+        existing_customer.address = invoice_data.client_address
+        existing_customer.client_reg_no = invoice_data.client_reg_no
+        existing_customer.client_tax_id = invoice_data.client_tax_id
+    else:
+        new_customer = Customer(
+            name=invoice_data.client_name,
+            company_name=invoice_data.company_name,
+            email=invoice_data.client_email,
+            telephone1=invoice_data.telephone1,
+            telephone2=invoice_data.telephone2,
+            address=invoice_data.client_address,
+            client_reg_no=invoice_data.client_reg_no,
+            client_tax_id=invoice_data.client_tax_id
+        )
+        db.add(new_customer)
 
 @router.post("", response_model=InvoiceResponse, status_code=status.HTTP_201_CREATED)
 def create_invoice(
