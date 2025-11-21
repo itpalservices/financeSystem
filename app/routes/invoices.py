@@ -63,6 +63,8 @@ def create_invoice(
         telephone1=invoice_data.telephone1,
         telephone2=invoice_data.telephone2,
         client_address=invoice_data.client_address,
+        client_reg_no=invoice_data.client_reg_no,
+        client_tax_id=invoice_data.client_tax_id,
         due_date=invoice_data.due_date,
         subtotal=subtotal,
         discount=discount_percentage,
@@ -140,6 +142,10 @@ def update_invoice(
         invoice.telephone2 = invoice_data.telephone2
     if invoice_data.client_address is not None:
         invoice.client_address = invoice_data.client_address
+    if invoice_data.client_reg_no is not None:
+        invoice.client_reg_no = invoice_data.client_reg_no
+    if invoice_data.client_tax_id is not None:
+        invoice.client_tax_id = invoice_data.client_tax_id
     if invoice_data.due_date is not None:
         invoice.due_date = invoice_data.due_date
     if invoice_data.status is not None:

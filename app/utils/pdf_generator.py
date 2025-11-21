@@ -8,6 +8,7 @@ from datetime import datetime
 import os
 import boto3
 from sqlalchemy.orm import Session
+import html
 
 from app.config import settings
 
@@ -69,22 +70,32 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
     elements.append(info_table)
     elements.append(Spacer(1, 0.3*inch))
     
-    # Build Bill To section with two columns
-    # Left column: Client name, Tel 1, Tel 2
-    left_column = [f"Client Name: {invoice.client_name}"]
-    if invoice.telephone1:
-        left_column.append(f"Tel: {invoice.telephone1}")
-    if invoice.telephone2:
-        left_column.append(f"Tel 2: {invoice.telephone2}")
+    # Build dynamic Bill To section - only show filled fields
+    bill_to_fields = []
     
-    # Right column: Company name, Email, Address
-    right_column = []
+    # Always include client name (mandatory)
+    bill_to_fields.append(f"Client Name: {invoice.client_name}")
+    
+    # Add optional fields only if they have values
     if invoice.company_name:
-        right_column.append(f"Company Name: {invoice.company_name}")
+        bill_to_fields.append(f"Company Name: {invoice.company_name}")
     if invoice.client_email:
-        right_column.append(f"Email: {invoice.client_email}")
+        bill_to_fields.append(f"Email: {invoice.client_email}")
+    if invoice.telephone1:
+        bill_to_fields.append(f"Tel: {invoice.telephone1}")
+    if invoice.telephone2:
+        bill_to_fields.append(f"Tel 2: {invoice.telephone2}")
+    if invoice.client_reg_no:
+        bill_to_fields.append(f"Reg. No.: {invoice.client_reg_no}")
+    if invoice.client_tax_id:
+        bill_to_fields.append(f"T.I.C.: {invoice.client_tax_id}")
     if invoice.client_address:
-        right_column.append(f"Address: {invoice.client_address}")
+        bill_to_fields.append(f"Address: {invoice.client_address}")
+    
+    # Distribute fields across two columns for better space utilization
+    mid_point = (len(bill_to_fields) + 1) // 2
+    left_column = bill_to_fields[:mid_point]
+    right_column = bill_to_fields[mid_point:]
     
     # Create two-column table for Bill To
     bill_to_data = [["Bill To:", ""]]
@@ -103,39 +114,55 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
     ]))
     
     elements.append(client_table)
-    elements.append(Spacer(1, 0.3*inch))
+    elements.append(Spacer(1, 0.2*inch))
     
     # Check if any line item has a discount
     has_line_item_discount = any(item.discount > 0 for item in invoice.line_items)
     
+    # Create a paragraph style for description wrapping
+    desc_style = ParagraphStyle(
+        'DescriptionStyle',
+        parent=styles['Normal'],
+        fontSize=10,
+        leading=12,
+        wordWrap='CJK'
+    )
+    
     if has_line_item_discount:
         line_items_data = [["Description", "Quantity", "Unit Price", "Discount %", "Total"]]
         for item in invoice.line_items:
+            # Escape HTML special characters to prevent ReportLab parsing errors
+            safe_description = html.escape(item.description)
             line_items_data.append([
-                item.description,
+                Paragraph(safe_description, desc_style),
                 str(int(item.quantity)),
                 f"€{item.unit_price:.2f}",
                 f"{item.discount}%" if item.discount > 0 else "-",
                 f"€{item.total:.2f}"
             ])
-        line_items_table = Table(line_items_data, colWidths=[2.5*inch, 0.8*inch, 1.2*inch, 1*inch, 1.5*inch])
+        line_items_table = Table(line_items_data, colWidths=[3*inch, 0.8*inch, 1.1*inch, 0.9*inch, 1.2*inch])
     else:
         line_items_data = [["Description", "Quantity", "Unit Price", "Total"]]
         for item in invoice.line_items:
+            # Escape HTML special characters to prevent ReportLab parsing errors
+            safe_description = html.escape(item.description)
             line_items_data.append([
-                item.description,
+                Paragraph(safe_description, desc_style),
                 str(int(item.quantity)),
                 f"€{item.unit_price:.2f}",
                 f"€{item.total:.2f}"
             ])
-        line_items_table = Table(line_items_data, colWidths=[3.5*inch, 1*inch, 1.5*inch, 1.5*inch])
+        line_items_table = Table(line_items_data, colWidths=[4*inch, 0.9*inch, 1.2*inch, 1.4*inch])
     line_items_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1b7ca8')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
         ('GRID', (0, 0), (-1, -1), 1, colors.black),
     ]))
     

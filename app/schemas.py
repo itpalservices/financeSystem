@@ -50,6 +50,8 @@ class InvoiceBase(BaseModel):
     telephone1: Optional[str] = None
     telephone2: Optional[str] = None
     client_address: Optional[str] = None
+    client_reg_no: Optional[str] = None
+    client_tax_id: Optional[str] = None
     due_date: Optional[datetime] = None
     notes: Optional[str] = None
     discount: Optional[float] = 0.0
@@ -65,6 +67,8 @@ class InvoiceUpdate(BaseModel):
     telephone1: Optional[str] = None
     telephone2: Optional[str] = None
     client_address: Optional[str] = None
+    client_reg_no: Optional[str] = None
+    client_tax_id: Optional[str] = None
     due_date: Optional[datetime] = None
     status: Optional[InvoiceStatus] = None
     notes: Optional[str] = None

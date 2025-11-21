@@ -70,6 +70,26 @@ The frontend utilizes Bootstrap 5.3.0 and Bootstrap Icons 1.10.0 for a modern, r
 
 ## Recent Changes
 
+**November 21, 2025 - Enhanced Customer Fields & Dynamic PDF Layout**
+- Added optional customer information fields:
+  - Client Reg. No. (Registration Number) - optional field
+  - Client T.I.C. (Tax Identification Code) - optional field
+  - Both fields stored in database and displayed in PDFs when provided
+- Implemented dynamic PDF Bill To section:
+  - Only shows filled/completed fields (no empty/null fields displayed)
+  - Intelligent two-column layout that balances fields automatically
+  - Saves vertical space to prevent multi-page invoices
+  - Includes all customer fields: name, company, email, telephones, reg no, tax ID, address
+- Enhanced line items handling:
+  - Changed description input from text field to textarea (2 rows)
+  - Added field labels to all line item inputs (Description, Quantity, Unit Price, Discount %)
+  - PDF descriptions now wrap properly with auto row height adjustment
+  - HTML special characters in descriptions are escaped to prevent rendering errors
+  - Line item table uses proper column widths to prevent overflow
+- Security improvements:
+  - HTML escaping prevents ReportLab parsing errors with special characters (<, >, &)
+  - Prevents potential XSS vulnerabilities in PDF generation
+
 **November 21, 2025 - Professional PDF Footer**
 - Updated PDF footer with official company information:
   - Company Name: IT PAL TECHNOLOGY SOLUTIONS LTD (bold, teal color)

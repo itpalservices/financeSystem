@@ -87,18 +87,23 @@ function addLineItem() {
     newItem.innerHTML = `
         <div class="row g-2">
             <div class="col-md-4">
-                <input type="text" class="form-control item-desc" placeholder="Description *" required>
+                <label class="form-label text-muted small mb-1">Description *</label>
+                <textarea class="form-control item-desc" rows="2" placeholder="Enter item description" required></textarea>
             </div>
             <div class="col-md-2">
-                <input type="number" class="form-control item-qty" placeholder="Qty *" min="1" required>
+                <label class="form-label text-muted small mb-1">Quantity *</label>
+                <input type="number" class="form-control item-qty" placeholder="Qty" min="1" required>
             </div>
             <div class="col-md-2">
-                <input type="number" class="form-control item-price" placeholder="Unit Price *" step="0.01" required>
+                <label class="form-label text-muted small mb-1">Unit Price *</label>
+                <input type="number" class="form-control item-price" placeholder="€0.00" step="0.01" required>
             </div>
             <div class="col-md-2">
-                <input type="number" class="form-control item-discount" placeholder="Disc %" step="0.01" value="0" min="0" max="100">
+                <label class="form-label text-muted small mb-1">Discount %</label>
+                <input type="number" class="form-control item-discount" placeholder="0" step="0.01" value="0" min="0" max="100">
             </div>
             <div class="col-md-2">
+                <label class="form-label text-muted small mb-1">&nbsp;</label>
                 <button type="button" class="btn btn-danger btn-sm w-100" onclick="removeLineItem(this)">
                     <i class="bi bi-trash"></i>
                 </button>
@@ -123,18 +128,23 @@ function resetLineItems() {
         <div class="line-item-row">
             <div class="row g-2">
                 <div class="col-md-4">
-                    <input type="text" class="form-control item-desc" placeholder="Description *" required>
+                    <label class="form-label text-muted small mb-1">Description *</label>
+                    <textarea class="form-control item-desc" rows="2" placeholder="Enter item description" required></textarea>
                 </div>
                 <div class="col-md-2">
-                    <input type="number" class="form-control item-qty" placeholder="Qty *" min="1" required>
+                    <label class="form-label text-muted small mb-1">Quantity *</label>
+                    <input type="number" class="form-control item-qty" placeholder="Qty" min="1" required>
                 </div>
                 <div class="col-md-2">
-                    <input type="number" class="form-control item-price" placeholder="Unit Price *" step="0.01" required>
+                    <label class="form-label text-muted small mb-1">Unit Price *</label>
+                    <input type="number" class="form-control item-price" placeholder="€0.00" step="0.01" required>
                 </div>
                 <div class="col-md-2">
-                    <input type="number" class="form-control item-discount" placeholder="Disc %" step="0.01" value="0" min="0" max="100">
+                    <label class="form-label text-muted small mb-1">Discount %</label>
+                    <input type="number" class="form-control item-discount" placeholder="0" step="0.01" value="0" min="0" max="100">
                 </div>
                 <div class="col-md-2">
+                    <label class="form-label text-muted small mb-1">&nbsp;</label>
                     <button type="button" class="btn btn-danger btn-sm w-100" onclick="removeLineItem(this)">
                         <i class="bi bi-trash"></i>
                     </button>
@@ -170,6 +180,8 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
         telephone1: document.getElementById('telephone1').value,
         telephone2: document.getElementById('telephone2').value || null,
         client_address: document.getElementById('clientAddress').value,
+        client_reg_no: document.getElementById('clientRegNo').value || null,
+        client_tax_id: document.getElementById('clientTaxId').value || null,
         discount: parseFloat(document.getElementById('discount').value) || 0,
         tax: parseFloat(document.getElementById('tax').value) || 0,
         notes: document.getElementById('notes').value,
@@ -348,6 +360,8 @@ async function editInvoice(invoiceId) {
     document.getElementById('clientEmail').value = invoice.client_email || '';
     document.getElementById('telephone1').value = invoice.telephone1 || '';
     document.getElementById('telephone2').value = invoice.telephone2 || '';
+    document.getElementById('clientRegNo').value = invoice.client_reg_no || '';
+    document.getElementById('clientTaxId').value = invoice.client_tax_id || '';
     document.getElementById('clientAddress').value = invoice.client_address || '';
     document.getElementById('discount').value = invoice.discount || 0;
     document.getElementById('tax').value = invoice.tax || 0;
@@ -362,18 +376,23 @@ async function editInvoice(invoiceId) {
         newItem.innerHTML = `
             <div class="row g-2">
                 <div class="col-md-4">
-                    <input type="text" class="form-control item-desc" placeholder="Description *" value="${item.description}" required>
+                    <label class="form-label text-muted small mb-1">Description *</label>
+                    <textarea class="form-control item-desc" rows="2" placeholder="Enter item description" required>${item.description}</textarea>
                 </div>
                 <div class="col-md-2">
-                    <input type="number" class="form-control item-qty" placeholder="Qty *" min="1" value="${item.quantity}" required>
+                    <label class="form-label text-muted small mb-1">Quantity *</label>
+                    <input type="number" class="form-control item-qty" placeholder="Qty" min="1" value="${item.quantity}" required>
                 </div>
                 <div class="col-md-2">
-                    <input type="number" class="form-control item-price" placeholder="Unit Price *" step="0.01" value="${item.unit_price}" required>
+                    <label class="form-label text-muted small mb-1">Unit Price *</label>
+                    <input type="number" class="form-control item-price" placeholder="€0.00" step="0.01" value="${item.unit_price}" required>
                 </div>
                 <div class="col-md-2">
-                    <input type="number" class="form-control item-discount" placeholder="Disc %" step="0.01" value="${item.discount || 0}" min="0" max="100">
+                    <label class="form-label text-muted small mb-1">Discount %</label>
+                    <input type="number" class="form-control item-discount" placeholder="0" step="0.01" value="${item.discount || 0}" min="0" max="100">
                 </div>
                 <div class="col-md-2">
+                    <label class="form-label text-muted small mb-1">&nbsp;</label>
                     <button type="button" class="btn btn-danger btn-sm w-100" onclick="removeLineItem(this)">
                         <i class="bi bi-trash"></i>
                     </button>
