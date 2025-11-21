@@ -472,7 +472,10 @@ async function markAsIssued(invoiceId) {
     if (!confirmed) return;
     
     try {
-        await api.updateInvoice(invoiceId, { status: 'issued' });
+        await api.updateInvoice(invoiceId, { 
+            status: 'issued',
+            telephone1: invoice.telephone1
+        });
         showSuccess('Invoice marked as issued successfully');
         loadInvoices();
     } catch (error) {
