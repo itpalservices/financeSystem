@@ -169,13 +169,22 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
     }));
     
     if (lineItems.length === 0) {
-        showError('Please add at least one line item');
+        showModalError('Please add at least one line item');
+        return;
+    }
+    
+    const clientName = document.getElementById('clientName').value.trim();
+    const companyName = document.getElementById('companyName').value.trim();
+    
+    // Validate that at least one of client name or company name is provided
+    if (!clientName && !companyName) {
+        showModalError('Either Client Name or Company Name must be provided');
         return;
     }
     
     const data = {
-        client_name: document.getElementById('clientName').value,
-        company_name: document.getElementById('companyName').value || null,
+        client_name: clientName || null,
+        company_name: companyName || null,
         client_email: document.getElementById('clientEmail').value || null,
         telephone1: document.getElementById('telephone1').value,
         telephone2: document.getElementById('telephone2').value || null,
@@ -215,7 +224,7 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
             setTimeout(() => generatePDF(invoice.id), 500);
         }
     } catch (error) {
-        showError(`Error ${editingInvoiceId ? 'updating' : 'creating'} invoice: ` + error.message);
+        showModalError(`Error ${editingInvoiceId ? 'updating' : 'creating'} invoice: ` + error.message);
     }
 });
 
@@ -444,6 +453,21 @@ function showError(message) {
     errorDiv.textContent = message;
     errorDiv.style.display = 'block';
     setTimeout(() => errorDiv.style.display = 'none', 5000);
+}
+
+function showModalError(message) {
+    let modalError = document.getElementById('modalError');
+    if (!modalError) {
+        const modalBody = document.querySelector('#createModal .modal-body');
+        modalError = document.createElement('div');
+        modalError.id = 'modalError';
+        modalError.className = 'alert alert-danger';
+        modalError.style.display = 'none';
+        modalBody.insertBefore(modalError, modalBody.firstChild);
+    }
+    modalError.textContent = message;
+    modalError.style.display = 'block';
+    setTimeout(() => modalError.style.display = 'none', 5000);
 }
 
 function showSuccess(message) {
