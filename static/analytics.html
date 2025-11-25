@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics - I.T. PAL</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .navbar {
+            background: linear-gradient(135deg, #1b7ca8 0%, #155a7a 100%);
+        }
+        .btn-primary {
+            background: #1b7ca8;
+            border-color: #1b7ca8;
+        }
+        .btn-primary:hover {
+            background: #155a7a;
+            border-color: #155a7a;
+        }
+        .stat-card {
+            border-left: 4px solid #1b7ca8;
+        }
+        .stat-card h3 {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1b7ca8;
+            margin: 0;
+        }
+        .stat-card p {
+            color: #6c757d;
+            margin: 0.5rem 0 0 0;
+        }
+        .change-positive {
+            color: #198754;
+        }
+        .change-negative {
+            color: #dc3545;
+        }
+        .chart-container {
+            position: relative;
+            height: 350px;
+        }
+        .year-selector {
+            max-width: 150px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/dashboard">
+                <img src="/static/logo.png" alt="I.T. PAL" style="max-height: 50px;">
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/invoices"><i class="bi bi-file-earmark-text"></i> Invoices</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/quotes"><i class="bi bi-file-earmark-ruled"></i> Quotes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/customers"><i class="bi bi-people"></i> Customers</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/analytics"><i class="bi bi-graph-up"></i> Analytics</a>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-outline-light btn-sm ms-3" onclick="logout()">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-graph-up"></i> Analytics</h2>
+            <select id="yearSelector" class="form-select year-selector" onchange="updateCharts()">
+            </select>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="card stat-card shadow-sm">
+                    <div class="card-body">
+                        <h3 id="totalIssuedAmount">€0</h3>
+                        <p><i class="bi bi-currency-euro"></i> Total Issued Revenue</p>
+                        <small class="text-muted"><span id="totalIssuedCount">0</span> invoices</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card shadow-sm">
+                    <div class="card-body">
+                        <h3 id="currentMonthTotal">€0</h3>
+                        <p><i class="bi bi-calendar-month"></i> This Month</p>
+                        <small id="monthChange"></small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card shadow-sm">
+                    <div class="card-body">
+                        <h3 id="currentYearTotal">€0</h3>
+                        <p><i class="bi bi-calendar"></i> This Year</p>
+                        <small id="yearChange"></small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card shadow-sm">
+                    <div class="card-body">
+                        <h3 id="totalDraftAmount">€0</h3>
+                        <p><i class="bi bi-file-earmark"></i> Pending (Drafts)</p>
+                        <small class="text-muted"><span id="totalDraftCount">0</span> invoices</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-8">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Monthly Revenue (<span id="selectedYearTitle">2025</span>)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="monthlyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Invoice Distribution</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="statusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-graph-up-arrow"></i> Year Comparison</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="yearComparisonChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-calendar-range"></i> Monthly Trend</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-table"></i> Monthly Breakdown (<span id="selectedYearTable">2025</span>)</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Month</th>
+                                <th class="text-end">Invoices</th>
+                                <th class="text-end">Revenue</th>
+                                <th class="text-end">Avg per Invoice</th>
+                            </tr>
+                        </thead>
+                        <tbody id="monthlyTable">
+                            <tr>
+                                <td colspan="4" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th>Total</th>
+                                <th class="text-end" id="tableTotalCount">0</th>
+                                <th class="text-end" id="tableTotalRevenue">€0</th>
+                                <th class="text-end" id="tableTotalAvg">€0</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script>
+        if (!checkAuth()) {
+            window.location.href = '/login';
+        }
+
+        let analyticsData = null;
+        let monthlyChart = null;
+        let statusChart = null;
+        let yearComparisonChart = null;
+        let trendChart = null;
+
+        const chartColors = {
+            primary: '#1b7ca8',
+            secondary: '#155a7a',
+            success: '#198754',
+            warning: '#ffc107',
+            danger: '#dc3545',
+            light: '#f8f9fa',
+            primaryAlpha: 'rgba(27, 124, 168, 0.7)',
+            secondaryAlpha: 'rgba(21, 90, 122, 0.7)'
+        };
+
+        async function loadAnalytics() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/analytics', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) throw new Error('Failed to load analytics');
+                
+                analyticsData = await response.json();
+                updateDisplay();
+                initializeCharts();
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+            }
+        }
+
+        function updateDisplay() {
+            document.getElementById('totalIssuedAmount').textContent = `€${analyticsData.total_issued_amount.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            document.getElementById('totalIssuedCount').textContent = analyticsData.total_issued_invoices;
+            document.getElementById('totalDraftAmount').textContent = `€${analyticsData.total_draft_amount.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            document.getElementById('totalDraftCount').textContent = analyticsData.total_draft_invoices;
+            document.getElementById('currentMonthTotal').textContent = `€${analyticsData.current_month_total.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            document.getElementById('currentYearTotal').textContent = `€${analyticsData.current_year_total.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+
+            const monthChange = document.getElementById('monthChange');
+            if (analyticsData.month_change_percent !== null) {
+                const isPositive = analyticsData.month_change_percent >= 0;
+                monthChange.className = isPositive ? 'change-positive' : 'change-negative';
+                monthChange.innerHTML = `<i class="bi bi-arrow-${isPositive ? 'up' : 'down'}"></i> ${Math.abs(analyticsData.month_change_percent)}% vs last month`;
+            } else {
+                monthChange.textContent = 'No previous month data';
+                monthChange.className = 'text-muted';
+            }
+
+            const yearChange = document.getElementById('yearChange');
+            if (analyticsData.year_change_percent !== null) {
+                const isPositive = analyticsData.year_change_percent >= 0;
+                yearChange.className = isPositive ? 'change-positive' : 'change-negative';
+                yearChange.innerHTML = `<i class="bi bi-arrow-${isPositive ? 'up' : 'down'}"></i> ${Math.abs(analyticsData.year_change_percent)}% vs last year`;
+            } else {
+                yearChange.textContent = 'No previous year data';
+                yearChange.className = 'text-muted';
+            }
+
+            const yearSelector = document.getElementById('yearSelector');
+            yearSelector.innerHTML = '';
+            analyticsData.available_years.forEach(year => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelector.appendChild(option);
+            });
+        }
+
+        function initializeCharts() {
+            const selectedYear = parseInt(document.getElementById('yearSelector').value);
+            const yearData = analyticsData.yearly_data.find(y => y.year === selectedYear);
+            
+            document.getElementById('selectedYearTitle').textContent = selectedYear;
+            document.getElementById('selectedYearTable').textContent = selectedYear;
+
+            if (monthlyChart) monthlyChart.destroy();
+            const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+            monthlyChart = new Chart(monthlyCtx, {
+                type: 'bar',
+                data: {
+                    labels: yearData.monthly_data.map(m => m.month_name.substring(0, 3)),
+                    datasets: [{
+                        label: 'Revenue (€)',
+                        data: yearData.monthly_data.map(m => m.total),
+                        backgroundColor: chartColors.primaryAlpha,
+                        borderColor: chartColors.primary,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '€' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (statusChart) statusChart.destroy();
+            const statusCtx = document.getElementById('statusChart').getContext('2d');
+            statusChart = new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Issued', 'Draft'],
+                    datasets: [{
+                        data: [analyticsData.total_issued_invoices, analyticsData.total_draft_invoices],
+                        backgroundColor: [chartColors.success, chartColors.warning],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            if (yearComparisonChart) yearComparisonChart.destroy();
+            const yearCompCtx = document.getElementById('yearComparisonChart').getContext('2d');
+            yearComparisonChart = new Chart(yearCompCtx, {
+                type: 'bar',
+                data: {
+                    labels: analyticsData.yearly_data.map(y => y.year).reverse(),
+                    datasets: [{
+                        label: 'Annual Revenue (€)',
+                        data: analyticsData.yearly_data.map(y => y.total).reverse(),
+                        backgroundColor: chartColors.primaryAlpha,
+                        borderColor: chartColors.primary,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '€' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (trendChart) trendChart.destroy();
+            const trendCtx = document.getElementById('trendChart').getContext('2d');
+            const datasets = analyticsData.yearly_data.slice(0, 3).map((year, index) => ({
+                label: year.year.toString(),
+                data: year.monthly_data.map(m => m.total),
+                borderColor: index === 0 ? chartColors.primary : (index === 1 ? chartColors.secondary : chartColors.warning),
+                backgroundColor: 'transparent',
+                tension: 0.3,
+                borderWidth: 2
+            }));
+            
+            trendChart = new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '€' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            updateTable(yearData);
+        }
+
+        function updateTable(yearData) {
+            const tbody = document.getElementById('monthlyTable');
+            let html = '';
+            let totalCount = 0;
+            let totalRevenue = 0;
+
+            yearData.monthly_data.forEach(month => {
+                const avg = month.count > 0 ? month.total / month.count : 0;
+                totalCount += month.count;
+                totalRevenue += month.total;
+                html += `
+                    <tr>
+                        <td>${month.month_name}</td>
+                        <td class="text-end">${month.count}</td>
+                        <td class="text-end">€${month.total.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                        <td class="text-end">€${avg.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+            document.getElementById('tableTotalCount').textContent = totalCount;
+            document.getElementById('tableTotalRevenue').textContent = `€${totalRevenue.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            document.getElementById('tableTotalAvg').textContent = totalCount > 0 ? `€${(totalRevenue / totalCount).toLocaleString('en-US', {minimumFractionDigits: 2})}` : '€0';
+        }
+
+        function updateCharts() {
+            if (!analyticsData) return;
+            
+            const selectedYear = parseInt(document.getElementById('yearSelector').value);
+            const yearData = analyticsData.yearly_data.find(y => y.year === selectedYear);
+            
+            if (!yearData) return;
+
+            document.getElementById('selectedYearTitle').textContent = selectedYear;
+            document.getElementById('selectedYearTable').textContent = selectedYear;
+
+            monthlyChart.data.datasets[0].data = yearData.monthly_data.map(m => m.total);
+            monthlyChart.update();
+
+            updateTable(yearData);
+        }
+
+        loadAnalytics();
+    </script>
+</body>
+</html>

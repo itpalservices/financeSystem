@@ -10,7 +10,7 @@ from app.models.customer import Customer
 from app.models.invoice import Invoice, InvoiceLineItem
 from app.models.quote import Quote, QuoteLineItem
 from app.models.email_log import EmailLog
-from app.routes import auth, invoices, quotes, users, customers
+from app.routes import auth, invoices, quotes, users, customers, analytics
 
 Base.metadata.create_all(bind=engine)
 
@@ -29,6 +29,7 @@ app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(invoices.router, prefix="/api/invoices", tags=["Invoices"])
 app.include_router(quotes.router, prefix="/api/quotes", tags=["Quotes"])
 app.include_router(customers.router, prefix="/api/customers", tags=["Customers"])
+app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/pdfs", StaticFiles(directory="pdfs"), name="pdfs")
@@ -60,6 +61,10 @@ async def read_quotes():
 @app.get("/customers")
 async def read_customers():
     return FileResponse("static/customers.html")
+
+@app.get("/analytics")
+async def read_analytics():
+    return FileResponse("static/analytics.html")
 
 if __name__ == "__main__":
     import uvicorn
