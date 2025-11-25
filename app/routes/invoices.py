@@ -25,9 +25,8 @@ def sync_customer(db: Session, client_name: str, company_name: str, client_email
                  telephone1: str, telephone2: str, client_address: str, 
                  client_reg_no: str, client_tax_id: str):
     """
-    Auto-create or update customer based on telephone1 or email.
+    Auto-create or update customer based on telephone1 ONLY.
     - If customer with telephone1 exists: update their details
-    - If customer with email exists: update their details  
     - If customer doesn't exist: create new customer
     Only called when invoice is marked as issued.
     """
@@ -38,20 +37,13 @@ def sync_customer(db: Session, client_name: str, company_name: str, client_email
         Customer.telephone1 == telephone1
     ).first()
     
-    if not existing_customer and client_email:
-        existing_customer = db.query(Customer).filter(
-            Customer.email == client_email
-        ).first()
-    
     if existing_customer:
         if client_name:
             existing_customer.name = client_name
         if company_name is not None:
             existing_customer.company_name = company_name
-        if client_email is not None and not existing_customer.email:
+        if client_email is not None:
             existing_customer.email = client_email
-        if telephone1 and not existing_customer.telephone1:
-            existing_customer.telephone1 = telephone1
         if telephone2 is not None:
             existing_customer.telephone2 = telephone2
         if client_address is not None:
@@ -62,10 +54,14 @@ def sync_customer(db: Session, client_name: str, company_name: str, client_email
             existing_customer.client_tax_id = client_tax_id
         existing_customer.updated_at = datetime.utcnow()
     else:
+        email_exists = False
+        if client_email:
+            email_exists = db.query(Customer).filter(Customer.email == client_email).first() is not None
+        
         new_customer = Customer(
             name=client_name,
             company_name=company_name,
-            email=client_email,
+            email=client_email if not email_exists else None,
             telephone1=telephone1,
             telephone2=telephone2,
             address=client_address,
