@@ -25,28 +25,33 @@ def sync_customer(db: Session, client_name: str, company_name: str, client_email
                  telephone1: str, telephone2: str, client_address: str, 
                  client_reg_no: str, client_tax_id: str):
     """
-    Auto-create or update customer based on telephone1.
-    - If customer with telephone1 exists: update their details (only non-null values)
+    Auto-create or update customer based on telephone1 or email.
+    - If customer with telephone1 exists: update their details
+    - If customer with email exists: update their details  
     - If customer doesn't exist: create new customer
+    Only called when invoice is marked as issued.
     """
     if not telephone1 or telephone1.strip() == "":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Telephone1 is required for customer identification"
-        )
+        return
     
     existing_customer = db.query(Customer).filter(
         Customer.telephone1 == telephone1
     ).first()
     
+    if not existing_customer and client_email:
+        existing_customer = db.query(Customer).filter(
+            Customer.email == client_email
+        ).first()
+    
     if existing_customer:
-        # Update existing customer with latest invoice data (only non-null values)
         if client_name:
             existing_customer.name = client_name
         if company_name is not None:
             existing_customer.company_name = company_name
-        if client_email is not None:
+        if client_email is not None and not existing_customer.email:
             existing_customer.email = client_email
+        if telephone1 and not existing_customer.telephone1:
+            existing_customer.telephone1 = telephone1
         if telephone2 is not None:
             existing_customer.telephone2 = telephone2
         if client_address is not None:
@@ -55,8 +60,8 @@ def sync_customer(db: Session, client_name: str, company_name: str, client_email
             existing_customer.client_reg_no = client_reg_no
         if client_tax_id is not None:
             existing_customer.client_tax_id = client_tax_id
+        existing_customer.updated_at = datetime.utcnow()
     else:
-        # Create new customer
         new_customer = Customer(
             name=client_name,
             company_name=company_name,
@@ -75,26 +80,11 @@ def create_invoice(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Validate that at least client_name OR company_name is provided
     if not invoice_data.client_name and not invoice_data.company_name:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Either Client Name or Company Name must be provided"
         )
-    
-    # Auto-create or update customer based on telephone number
-    sync_customer(
-        db,
-        client_name=invoice_data.client_name,
-        company_name=invoice_data.company_name,
-        client_email=invoice_data.client_email,
-        telephone1=invoice_data.telephone1,
-        telephone2=invoice_data.telephone2,
-        client_address=invoice_data.client_address,
-        client_reg_no=invoice_data.client_reg_no,
-        client_tax_id=invoice_data.client_tax_id
-    )
-    db.flush()
     
     invoice_number = generate_invoice_number(db)
     
@@ -200,14 +190,16 @@ def update_invoice(
     if current_user.role != "admin" and invoice.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     
+    old_status = invoice.status
+    
     if invoice_data.client_name is not None:
         invoice.client_name = invoice_data.client_name
     if invoice_data.company_name is not None:
         invoice.company_name = invoice_data.company_name
     if invoice_data.client_email is not None:
         invoice.client_email = invoice_data.client_email
-    # telephone1 is always required
-    invoice.telephone1 = invoice_data.telephone1
+    if invoice_data.telephone1 is not None:
+        invoice.telephone1 = invoice_data.telephone1
     if invoice_data.telephone2 is not None:
         invoice.telephone2 = invoice_data.telephone2
     if invoice_data.client_address is not None:
@@ -223,18 +215,18 @@ def update_invoice(
     if invoice_data.notes is not None:
         invoice.notes = invoice_data.notes
     
-    # Auto-update customer based on changes
-    sync_customer(
-        db,
-        client_name=invoice.client_name,
-        company_name=invoice.company_name,
-        client_email=invoice.client_email,
-        telephone1=invoice.telephone1,
-        telephone2=invoice.telephone2,
-        client_address=invoice.client_address,
-        client_reg_no=invoice.client_reg_no,
-        client_tax_id=invoice.client_tax_id
-    )
+    if old_status == InvoiceStatus.draft and invoice.status == InvoiceStatus.issued:
+        sync_customer(
+            db,
+            client_name=invoice.client_name,
+            company_name=invoice.company_name,
+            client_email=invoice.client_email,
+            telephone1=invoice.telephone1,
+            telephone2=invoice.telephone2,
+            client_address=invoice.client_address,
+            client_reg_no=invoice.client_reg_no,
+            client_tax_id=invoice.client_tax_id
+        )
     
     invoice.pdf_url = None
     

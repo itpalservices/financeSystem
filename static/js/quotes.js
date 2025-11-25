@@ -27,7 +27,7 @@ function renderQuotes(quotesToRender = quotes) {
     const tbody = document.getElementById('quotesTable');
     
     if (quotesToRender.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="text-center">No quotes found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No quotes found</td></tr>';
         return;
     }
     
@@ -55,7 +55,6 @@ function renderQuotes(quotesToRender = quotes) {
             <td><strong>${quote.quote_number}</strong></td>
             <td>${quote.client_name || '-'}</td>
             <td>${quote.company_name || '-'}</td>
-            <td>${quote.client_email || '-'}</td>
             <td>${quote.telephone1 || '-'}</td>
             <td><strong>€${quote.total.toFixed(2)}</strong></td>
             <td>${statusBadge}</td>
@@ -579,7 +578,6 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
         return quote.quote_number.toLowerCase().includes(searchTerm) ||
                (quote.client_name && quote.client_name.toLowerCase().includes(searchTerm)) ||
                (quote.company_name && quote.company_name.toLowerCase().includes(searchTerm)) ||
-               (quote.client_email && quote.client_email.toLowerCase().includes(searchTerm)) ||
                (quote.telephone1 && quote.telephone1.includes(searchTerm));
     });
     
