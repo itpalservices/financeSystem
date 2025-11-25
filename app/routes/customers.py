@@ -6,7 +6,8 @@ from typing import List
 from app.database import get_db
 from app.models.user import User
 from app.models.customer import Customer
-from app.schemas import CustomerCreate, CustomerResponse, CustomerUpdate
+from app.models.email_log import EmailLog
+from app.schemas import CustomerCreate, CustomerResponse, CustomerUpdate, EmailLogResponse
 from app.auth import get_current_user
 
 router = APIRouter()
@@ -155,3 +156,30 @@ def toggle_customer_status(
     db.refresh(customer)
     
     return customer
+
+@router.get("/{customer_id}/email-history", response_model=List[EmailLogResponse])
+def get_customer_email_history(
+    customer_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    customer = db.query(Customer).filter(Customer.id == customer_id).first()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    email_logs = db.query(EmailLog).filter(
+        or_(
+            EmailLog.customer_id == customer_id,
+            EmailLog.telephone1 == customer.telephone1
+        )
+    ).order_by(EmailLog.sent_at.desc()).all()
+    
+    return email_logs
+
+@router.get("/email-history/all", response_model=List[EmailLogResponse])
+def get_all_email_history(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    email_logs = db.query(EmailLog).order_by(EmailLog.sent_at.desc()).all()
+    return email_logs

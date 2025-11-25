@@ -7,6 +7,7 @@ from app.database import get_db
 from app.models.user import User
 from app.models.invoice import Invoice, InvoiceLineItem, InvoiceStatus
 from app.models.customer import Customer
+from app.models.email_log import EmailLog, EmailType
 from app.schemas import InvoiceCreate, InvoiceResponse, InvoiceUpdate, EmailRequest
 from app.auth import get_current_user
 from app.utils.pdf_generator import generate_invoice_pdf
@@ -340,5 +341,27 @@ def send_email(
         db.commit()
     
     send_invoice_email(invoice, email_data.recipient_email, email_data.message or "")
+    
+    customer = None
+    if invoice.telephone1:
+        customer = db.query(Customer).filter(Customer.telephone1 == invoice.telephone1).first()
+    
+    email_log = EmailLog(
+        email_type=EmailType.invoice,
+        document_id=invoice.id,
+        document_number=invoice.invoice_number,
+        recipient_email=email_data.recipient_email,
+        subject=email_data.subject,
+        message=email_data.message or "",
+        pdf_url=invoice.pdf_url,
+        user_id=current_user.id,
+        customer_id=customer.id if customer else None,
+        telephone1=invoice.telephone1,
+        client_name=invoice.client_name,
+        company_name=invoice.company_name,
+        total_amount=invoice.total
+    )
+    db.add(email_log)
+    db.commit()
     
     return {"message": "Email sent successfully"}

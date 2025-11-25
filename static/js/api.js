@@ -200,6 +200,20 @@ const api = {
         });
         return handleResponse(response);
     },
+    
+    async getCustomerEmailHistory(customerId) {
+        const response = await fetch(`${API_BASE}/customers/${customerId}/email-history`, {
+            headers: getHeaders(),
+        });
+        return handleResponse(response);
+    },
+    
+    async getAllEmailHistory() {
+        const response = await fetch(`${API_BASE}/customers/email-history/all`, {
+            headers: getHeaders(),
+        });
+        return handleResponse(response);
+    },
 };
 
 function checkAuth() {

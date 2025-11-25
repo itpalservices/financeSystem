@@ -51,6 +51,9 @@ function renderCustomers() {
                     <button class="btn btn-outline-primary" onclick="editCustomer(${customer.id})" title="Edit Customer">
                         <i class="bi bi-pencil"></i>
                     </button>
+                    <button class="btn btn-outline-info" onclick="viewEmailHistory(${customer.id}, '${customer.name.replace(/'/g, "\\'")}', '${(customer.company_name || '').replace(/'/g, "\\'")}')">
+                        <i class="bi bi-envelope-open"></i>
+                    </button>
                     <button class="btn btn-outline-warning" onclick="toggleCustomerStatus(${customer.id})" title="${toggleStatusTitle}">
                         <i class="bi ${toggleStatusIcon}"></i>
                     </button>
@@ -225,5 +228,95 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
         loadCustomers(e.target.value);
     }, 300);
 });
+
+let currentEmailLogs = [];
+
+async function viewEmailHistory(customerId, customerName, companyName) {
+    document.getElementById('emailHistoryCustomerName').textContent = 
+        companyName ? `${customerName} (${companyName})` : customerName;
+    
+    const tbody = document.getElementById('emailHistoryTable');
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading...</td></tr>';
+    
+    new bootstrap.Modal(document.getElementById('emailHistoryModal')).show();
+    
+    try {
+        currentEmailLogs = await api.getCustomerEmailHistory(customerId);
+        renderEmailHistory();
+    } catch (error) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error loading email history</td></tr>';
+        showError('Error loading email history: ' + error.message);
+    }
+}
+
+function renderEmailHistory() {
+    const tbody = document.getElementById('emailHistoryTable');
+    
+    if (currentEmailLogs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No emails sent to this customer yet</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = currentEmailLogs.map((log, index) => {
+        const sentAt = new Date(log.sent_at);
+        const formattedDate = sentAt.toLocaleDateString('en-GB', {
+            day: '2-digit', month: '2-digit', year: 'numeric'
+        });
+        const formattedTime = sentAt.toLocaleTimeString('en-GB', {
+            hour: '2-digit', minute: '2-digit'
+        });
+        
+        const typeBadge = log.email_type === 'invoice' 
+            ? '<span class="badge bg-primary">Invoice</span>'
+            : '<span class="badge bg-info">Quote</span>';
+        
+        const documentNumber = log.document_number || '-';
+        const amount = log.total_amount !== null ? `${log.total_amount.toFixed(2)}` : '-';
+        
+        return `
+        <tr>
+            <td>${formattedDate}<br><small class="text-muted">${formattedTime}</small></td>
+            <td>${typeBadge}</td>
+            <td><strong>${documentNumber}</strong></td>
+            <td>${log.recipient_email}</td>
+            <td><small>${log.subject ? (log.subject.length > 30 ? log.subject.substring(0, 30) + '...' : log.subject) : '-'}</small></td>
+            <td>${amount}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="viewEmailDetail(${index})" title="View Details">
+                    <i class="bi bi-eye"></i>
+                </button>
+            </td>
+        </tr>
+        `;
+    }).join('');
+}
+
+function viewEmailDetail(index) {
+    const log = currentEmailLogs[index];
+    
+    const sentAt = new Date(log.sent_at);
+    const formattedDateTime = sentAt.toLocaleString('en-GB', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+    
+    document.getElementById('detailSentAt').textContent = formattedDateTime;
+    document.getElementById('detailDocument').textContent = 
+        `${log.email_type.charAt(0).toUpperCase() + log.email_type.slice(1)} ${log.document_number || '-'}`;
+    document.getElementById('detailRecipient').textContent = log.recipient_email;
+    document.getElementById('detailAmount').textContent = 
+        log.total_amount !== null ? `${log.total_amount.toFixed(2)}` : '-';
+    document.getElementById('detailSubject').textContent = log.subject || '-';
+    document.getElementById('detailMessage').textContent = log.message || 'No message body';
+    
+    if (log.pdf_url) {
+        document.getElementById('detailPdfSection').style.display = 'block';
+        document.getElementById('detailPdfLink').href = log.pdf_url;
+    } else {
+        document.getElementById('detailPdfSection').style.display = 'none';
+    }
+    
+    new bootstrap.Modal(document.getElementById('emailDetailModal')).show();
+}
 
 loadCustomers();

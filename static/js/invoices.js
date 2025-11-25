@@ -300,7 +300,7 @@ async function openEmailModal(invoiceId) {
     }
     
     document.getElementById('emailTo').value = currentInvoice.client_email || '';
-    document.getElementById('emailSubject').value = `Invoice ${currentInvoice.invoice_number} from I.T. PAL Technology Solutions`;
+    document.getElementById('emailSubject').value = `Invoice ${currentInvoice.invoice_number} from IT PAL Technology Solutions`;
     document.getElementById('emailBody').value = `Dear ${currentInvoice.client_name},
 
 Please find attached invoice ${currentInvoice.invoice_number} for the amount of €${currentInvoice.total.toFixed(2)}.
@@ -308,7 +308,7 @@ Please find attached invoice ${currentInvoice.invoice_number} for the amount of 
 If you have any questions, please don't hesitate to contact us.
 
 Best regards,
-I.T. PAL Technology Solutions Ltd`;
+IT PAL Technology Solutions Ltd`;
     
     document.getElementById('emailAttachment').textContent = `${currentInvoice.invoice_number}.pdf`;
     

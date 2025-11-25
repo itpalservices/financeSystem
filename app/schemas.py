@@ -184,3 +184,23 @@ class EmailRequest(BaseModel):
     recipient_email: EmailStr
     subject: str
     message: Optional[str] = None
+
+class EmailLogResponse(BaseModel):
+    id: int
+    email_type: str
+    document_id: int
+    document_number: str
+    recipient_email: str
+    subject: str
+    message: str
+    pdf_url: Optional[str] = None
+    sent_at: datetime
+    user_id: Optional[int] = None
+    customer_id: Optional[int] = None
+    telephone1: Optional[str] = None
+    client_name: Optional[str] = None
+    company_name: Optional[str] = None
+    total_amount: Optional[float] = None
+    
+    class Config:
+        from_attributes = True

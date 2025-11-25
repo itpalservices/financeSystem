@@ -7,6 +7,8 @@ from app.database import get_db
 from app.models.user import User
 from app.models.quote import Quote, QuoteLineItem, QuoteStatus
 from app.models.invoice import Invoice, InvoiceLineItem, InvoiceStatus
+from app.models.customer import Customer
+from app.models.email_log import EmailLog, EmailType
 from app.schemas import QuoteCreate, QuoteResponse, QuoteUpdate, EmailRequest, InvoiceResponse
 from app.auth import get_current_user
 from app.utils.pdf_generator import generate_quote_pdf
@@ -311,5 +313,27 @@ def send_email(
         db.commit()
     
     send_quote_email(quote, email_data.recipient_email, email_data.message or "")
+    
+    customer = None
+    if quote.telephone1:
+        customer = db.query(Customer).filter(Customer.telephone1 == quote.telephone1).first()
+    
+    email_log = EmailLog(
+        email_type=EmailType.quote,
+        document_id=quote.id,
+        document_number=quote.quote_number,
+        recipient_email=email_data.recipient_email,
+        subject=email_data.subject,
+        message=email_data.message or "",
+        pdf_url=quote.pdf_url,
+        user_id=current_user.id,
+        customer_id=customer.id if customer else None,
+        telephone1=quote.telephone1,
+        client_name=quote.client_name,
+        company_name=quote.company_name,
+        total_amount=quote.total
+    )
+    db.add(email_log)
+    db.commit()
     
     return {"message": "Email sent successfully"}

@@ -343,7 +343,7 @@ async function openEmailModal(quoteId) {
     }
     
     document.getElementById('emailTo').value = currentQuote.client_email || '';
-    document.getElementById('emailSubject').value = `Quote ${currentQuote.quote_number} from I.T. PAL Technology Solutions`;
+    document.getElementById('emailSubject').value = `Quote ${currentQuote.quote_number} from IT PAL Technology Solutions`;
     document.getElementById('emailBody').value = `Dear ${currentQuote.client_name},
 
 Please find attached quote ${currentQuote.quote_number} for the amount of €${currentQuote.total.toFixed(2)}.
@@ -353,7 +353,7 @@ This quote is valid until ${formatDate(currentQuote.valid_until)}.
 If you have any questions or would like to proceed, please don't hesitate to contact us.
 
 Best regards,
-I.T. PAL Technology Solutions Ltd`;
+IT PAL Technology Solutions Ltd`;
     
     document.getElementById('emailAttachment').textContent = `${currentQuote.quote_number}.pdf`;
     

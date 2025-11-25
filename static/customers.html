@@ -235,6 +235,92 @@
         </div>
     </div>
 
+    <div class="modal fade" id="emailHistoryModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-envelope-open"></i> Email History - <span id="emailHistoryCustomerName"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date & Time</th>
+                                    <th>Type</th>
+                                    <th>Document</th>
+                                    <th>Recipient</th>
+                                    <th>Subject</th>
+                                    <th>Amount</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="emailHistoryTable">
+                                <tr>
+                                    <td colspan="7" class="text-center">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="emailDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-envelope"></i> Email Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Sent At:</strong>
+                            <p id="detailSentAt" class="mb-0"></p>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Document:</strong>
+                            <p id="detailDocument" class="mb-0"></p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Recipient:</strong>
+                            <p id="detailRecipient" class="mb-0"></p>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Amount:</strong>
+                            <p id="detailAmount" class="mb-0"></p>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Subject:</strong>
+                        <p id="detailSubject" class="mb-0"></p>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Message:</strong>
+                        <div id="detailMessage" class="border rounded p-3 bg-light" style="white-space: pre-wrap;"></div>
+                    </div>
+                    <div class="mb-3" id="detailPdfSection" style="display: none;">
+                        <strong>PDF Attachment:</strong>
+                        <a id="detailPdfLink" href="#" target="_blank" class="btn btn-sm btn-outline-primary ms-2">
+                            <i class="bi bi-file-pdf"></i> View PDF
+                        </a>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/js/api.js"></script>
     <script src="/static/js/customers.js"></script>
