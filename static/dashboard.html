@@ -63,6 +63,9 @@
                         <a class="nav-link" href="/customers"><i class="bi bi-people"></i> Customers</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="/analytics"><i class="bi bi-graph-up"></i> Analytics</a>
+                    </li>
+                    <li class="nav-item">
                         <button class="btn btn-outline-light btn-sm ms-3" onclick="logout()">
                             <i class="bi bi-box-arrow-right"></i> Logout
                         </button>
@@ -81,7 +84,7 @@
         </div>
 
         <div class="row g-4 mb-4">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="card stat-card shadow-sm">
                     <div class="card-body">
                         <h3 id="invoiceCount">0</h3>
@@ -89,7 +92,15 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
+                <div class="card stat-card shadow-sm">
+                    <div class="card-body">
+                        <h3 id="draftInvoiceCount">0</h3>
+                        <p><i class="bi bi-file-earmark"></i> Draft Invoices</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
                 <div class="card stat-card shadow-sm">
                     <div class="card-body">
                         <h3 id="quoteCount">0</h3>
@@ -97,11 +108,11 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="card stat-card shadow-sm">
                     <div class="card-body">
-                        <h3 id="draftCount">0</h3>
-                        <p><i class="bi bi-file-earmark"></i> Drafts</p>
+                        <h3 id="draftQuoteCount">0</h3>
+                        <p><i class="bi bi-file-earmark"></i> Draft Quotes</p>
                     </div>
                 </div>
             </div>
@@ -144,11 +155,9 @@
                 ]);
 
                 document.getElementById('invoiceCount').textContent = invoices.length;
+                document.getElementById('draftInvoiceCount').textContent = invoices.filter(inv => inv.status === 'draft').length;
                 document.getElementById('quoteCount').textContent = quotes.length;
-                
-                const draftCount = invoices.filter(inv => inv.status === 'draft').length + 
-                                  quotes.filter(q => q.status === 'draft').length;
-                document.getElementById('draftCount').textContent = draftCount;
+                document.getElementById('draftQuoteCount').textContent = quotes.filter(q => q.status === 'draft').length;
             } catch (error) {
                 console.error('Error loading dashboard:', error);
             }
