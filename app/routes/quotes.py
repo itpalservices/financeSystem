@@ -206,6 +206,8 @@ def convert_to_invoice(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    from app.models.customer import Customer
+    
     quote = db.query(Quote).filter(Quote.id == quote_id).first()
     if not quote:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quote not found")
@@ -213,8 +215,8 @@ def convert_to_invoice(
     if current_user.role != "admin" and quote.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     
-    if quote.status == QuoteStatus.converted:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Quote already converted")
+    if quote.status == QuoteStatus.invoiced:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Quote already converted to invoice")
     
     invoice_number = generate_invoice_number(db)
     
@@ -222,10 +224,16 @@ def convert_to_invoice(
         invoice_number=invoice_number,
         user_id=quote.user_id,
         client_name=quote.client_name,
+        company_name=quote.company_name,
         client_email=quote.client_email,
+        telephone1=quote.telephone1,
+        telephone2=quote.telephone2,
+        client_reg_no=quote.client_reg_no,
+        client_tax_id=quote.client_tax_id,
         client_address=quote.client_address,
         due_date=quote.valid_until,
         subtotal=quote.subtotal,
+        discount=quote.discount or 0.0,
         tax=quote.tax,
         total=quote.total,
         notes=quote.notes
@@ -239,11 +247,44 @@ def convert_to_invoice(
             description=item.description,
             quantity=item.quantity,
             unit_price=item.unit_price,
+            discount=item.discount or 0.0,
             total=item.total
         )
         db.add(invoice_line_item)
     
-    quote.status = QuoteStatus.converted
+    if quote.telephone1:
+        existing_customer = db.query(Customer).filter(Customer.telephone1 == quote.telephone1).first()
+        if existing_customer:
+            if quote.client_name and not existing_customer.name:
+                existing_customer.name = quote.client_name
+            if quote.company_name and not existing_customer.company_name:
+                existing_customer.company_name = quote.company_name
+            if quote.client_email and not existing_customer.email:
+                existing_customer.email = quote.client_email
+            if quote.telephone2 and not existing_customer.telephone2:
+                existing_customer.telephone2 = quote.telephone2
+            if quote.client_address and not existing_customer.address:
+                existing_customer.address = quote.client_address
+            if quote.client_reg_no and not existing_customer.client_reg_no:
+                existing_customer.client_reg_no = quote.client_reg_no
+            if quote.client_tax_id and not existing_customer.client_tax_id:
+                existing_customer.client_tax_id = quote.client_tax_id
+            existing_customer.updated_at = datetime.utcnow()
+        else:
+            new_customer = Customer(
+                name=quote.client_name,
+                company_name=quote.company_name,
+                email=quote.client_email,
+                telephone1=quote.telephone1,
+                telephone2=quote.telephone2,
+                address=quote.client_address,
+                client_reg_no=quote.client_reg_no,
+                client_tax_id=quote.client_tax_id,
+                is_active=True
+            )
+            db.add(new_customer)
+    
+    quote.status = QuoteStatus.invoiced
     quote.converted_to_invoice_id = new_invoice.id
     
     db.commit()

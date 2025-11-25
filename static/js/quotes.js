@@ -22,20 +22,21 @@ async function loadQuotes() {
     }
 }
 
-function renderQuotes() {
+function renderQuotes(quotesToRender = quotes) {
     const tbody = document.getElementById('quotesTable');
     
-    if (quotes.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No quotes found</td></tr>';
+    if (quotesToRender.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No quotes found</td></tr>';
         return;
     }
     
-    tbody.innerHTML = quotes.map(quote => {
+    tbody.innerHTML = quotesToRender.map(quote => {
         const statusBadge = getStatusBadge(quote.status);
         const pdfButtonText = quote.pdf_url ? 'Preview PDF' : 'Generate PDF';
         const pdfButtonIcon = quote.pdf_url ? 'bi-eye' : 'bi-file-pdf';
         const canEdit = quote.status === 'draft';
-        const convertBtn = quote.status !== 'converted' 
+        const canConvert = quote.status === 'issued';
+        const convertBtn = canConvert 
             ? `<button class="btn btn-outline-warning btn-sm" onclick="convertToInvoice(${quote.id})" title="Convert to Invoice">
                     <i class="bi bi-arrow-right-circle"></i>
                </button>` 
@@ -48,13 +49,12 @@ function renderQuotes() {
                     <i class="bi bi-check-circle"></i>
                </button>` 
             : '';
-        const displayName = quote.company_name 
-            ? (quote.client_name ? `${quote.client_name} (${quote.company_name})` : quote.company_name)
-            : (quote.client_name || '');
         return `
         <tr>
             <td><strong>${quote.quote_number}</strong></td>
-            <td>${displayName}<br><small class="text-muted">${quote.client_email || quote.telephone1}</small></td>
+            <td>${quote.client_name || '-'}</td>
+            <td>${quote.company_name || '-'}</td>
+            <td>${quote.client_email || '-'}</td>
             <td><strong>€${quote.total.toFixed(2)}</strong></td>
             <td>${statusBadge}</td>
             <td>${formatDate(quote.valid_until)}</td>
@@ -82,6 +82,7 @@ function getStatusBadge(status) {
     const badges = {
         'draft': '<span class="badge bg-secondary">Draft</span>',
         'issued': '<span class="badge bg-success">Issued</span>',
+        'invoiced': '<span class="badge bg-primary">Invoiced</span>',
         'sent': '<span class="badge bg-info">Sent</span>',
         'accepted': '<span class="badge bg-success">Accepted</span>',
         'rejected': '<span class="badge bg-danger">Rejected</span>',
@@ -462,5 +463,24 @@ function showSuccess(message) {
     const toast = new bootstrap.Toast(document.getElementById('successToast'), { delay: 3000 });
     toast.show();
 }
+
+// Search functionality
+document.getElementById('searchInput').addEventListener('input', (e) => {
+    const searchTerm = e.target.value.toLowerCase().trim();
+    
+    if (!searchTerm) {
+        renderQuotes(quotes);
+        return;
+    }
+    
+    const filteredQuotes = quotes.filter(quote => {
+        return quote.quote_number.toLowerCase().includes(searchTerm) ||
+               (quote.client_name && quote.client_name.toLowerCase().includes(searchTerm)) ||
+               (quote.company_name && quote.company_name.toLowerCase().includes(searchTerm)) ||
+               (quote.client_email && quote.client_email.toLowerCase().includes(searchTerm));
+    });
+    
+    renderQuotes(filteredQuotes);
+});
 
 loadQuotes();

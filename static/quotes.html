@@ -91,6 +91,15 @@
         <div id="error" class="alert alert-danger" style="display: none;"></div>
         <div id="success" class="alert alert-success" style="display: none;"></div>
 
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" id="searchInput" placeholder="Search by quote number, client name, company name, or email...">
+                </div>
+            </div>
+        </div>
+
         <div class="card shadow-sm">
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -98,7 +107,9 @@
                         <thead class="table-light">
                             <tr>
                                 <th>Quote #</th>
-                                <th>Client</th>
+                                <th>Client Name</th>
+                                <th>Company Name</th>
+                                <th>Email</th>
                                 <th>Total</th>
                                 <th>Status</th>
                                 <th>Valid Until</th>
@@ -107,7 +118,7 @@
                         </thead>
                         <tbody id="quotesTable">
                             <tr>
-                                <td colspan="6" class="text-center">Loading...</td>
+                                <td colspan="8" class="text-center">Loading...</td>
                             </tr>
                         </tbody>
                     </table>

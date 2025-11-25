@@ -70,6 +70,28 @@ The frontend utilizes Bootstrap 5.3.0 and Bootstrap Icons 1.10.0 for a modern, r
 
 ## Recent Changes
 
+**November 25, 2025 - Table Display & Quote-to-Invoice Improvements**
+- **Invoices table enhancements**:
+  - Separated Client Name and Company Name into individual columns
+  - Both columns are searchable via the search input
+  - Telephone column maintained for quick reference
+- **Quotes table enhancements**:
+  - Separated Client Name, Company Name, and Email into individual columns
+  - Added search functionality (search by quote number, client name, company name, or email)
+  - All fields searchable with null safety
+- **Quote status improvements**:
+  - Added "invoiced" status for quotes that have been converted to invoices
+  - Status badges: Draft (grey), Issued (green), Invoiced (blue)
+  - "Convert to Invoice" button only appears for quotes with "issued" status
+  - Draft quotes cannot be converted (must first be marked as issued)
+- **Convert to Invoice improvements**:
+  - All quote fields now transfer to invoice (including company_name, telephones, reg_no, tax_id, discount)
+  - Auto-syncs customer data: creates new customer if telephone1 doesn't exist, or updates missing fields if customer exists
+  - Quote status changes to "invoiced" after conversion
+- **Quote form enhancements**:
+  - Added Client Reg. No. and Client T.I.C. fields to quote creation/edit forms
+  - Quote forms now match invoice form structure for consistency
+
 **November 25, 2025 - UI/UX Improvements**
 - **Dashboard welcome**: Now displays username instead of email
 - **Simplified invoice/quote creation modals**:

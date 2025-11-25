@@ -8,6 +8,7 @@ from app.database import Base
 class QuoteStatus(str, enum.Enum):
     draft = "draft"
     issued = "issued"
+    invoiced = "invoiced"
 
 class Quote(Base):
     __tablename__ = "quotes"

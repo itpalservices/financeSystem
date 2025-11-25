@@ -29,7 +29,7 @@ function renderInvoices(invoicesToRender = invoices) {
     const tbody = document.getElementById('invoicesTable');
     
     if (invoicesToRender.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No invoices found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No invoices found</td></tr>';
         return;
     }
     
@@ -38,7 +38,6 @@ function renderInvoices(invoicesToRender = invoices) {
         const pdfButtonText = invoice.pdf_url ? 'Preview PDF' : 'Generate PDF';
         const pdfButtonIcon = invoice.pdf_url ? 'bi-eye' : 'bi-file-pdf';
         const canEdit = invoice.status === 'draft';
-        const clientInfo = invoice.company_name ? `${invoice.client_name} (${invoice.company_name})` : invoice.client_name;
         const editButton = canEdit ? `<button class="btn btn-outline-warning" onclick="editInvoice(${invoice.id})" title="Edit Draft">
                         <i class="bi bi-pencil"></i>
                     </button>` : '';
@@ -47,9 +46,10 @@ function renderInvoices(invoicesToRender = invoices) {
                     </button>` : '';
         
         return `
-        <tr data-invoice-number="${invoice.invoice_number}" data-client-name="${invoice.client_name}" data-company-name="${invoice.company_name || ''}" data-telephone="${invoice.telephone1 || ''}">
+        <tr>
             <td><strong>${invoice.invoice_number}</strong></td>
-            <td>${clientInfo}</td>
+            <td>${invoice.client_name || '-'}</td>
+            <td>${invoice.company_name || '-'}</td>
             <td>${invoice.telephone1 || '-'}</td>
             <td><strong>€${invoice.total.toFixed(2)}</strong></td>
             <td>${statusBadge}</td>
