@@ -1,10 +1,9 @@
 # Invoice & Quote Management System
 
 ## Overview
-This project is a full-stack invoice and quote management system designed to streamline business operations for I.T. PAL Technology Solutions Ltd. It provides functionalities for creating, managing, and sending professional invoices and quotes. The system includes user authentication, role-based access, PDF generation, and email notifications. The goal is to enhance efficiency in financial documentation and client communication.
+This project is a full-stack invoice and quote management system designed to streamline business operations for I.T. PAL Technology Solutions Ltd. It provides functionalities for creating, managing, and sending professional invoices and quotes. The system includes user authentication, role-based access, PDF generation, and email notifications. The goal is to enhance efficiency in financial documentation and client communication, thereby improving client communication and overall business operations.
 
 ## User Preferences
-
 ### Branding
 - **Company**: I.T. PAL Technology Solutions Ltd
 - **Color Scheme**: Teal/Blue (#1b7ca8 primary, #155a7a secondary)
@@ -26,7 +25,6 @@ This project is a full-stack invoice and quote management system designed to str
 - Current hash for password "123": `$2b$12$eGwnuOjqgo9DaQR2zAVFSe7Xl8UETyHshemaeG9bEhjRL.FRRRakq`
 
 ## System Architecture
-
 ### UI/UX Decisions
 The frontend utilizes Bootstrap 5.3.0 and Bootstrap Icons 1.10.0 for a modern, responsive user interface. Key UI/UX elements include:
 - Clean, modern design with gradient styling.
@@ -34,187 +32,41 @@ The frontend utilizes Bootstrap 5.3.0 and Bootstrap Icons 1.10.0 for a modern, r
 - Bootstrap modals for creation and editing forms.
 - Dynamic line item management within forms.
 - Status badges for visual clarity of invoice/quote status.
-- Dashboard with key statistics.
+- Dashboard with key statistics and analytics.
 - PDF preview modal after generation.
 - Email composition modal with editable subject/body.
+- All system messages (confirmations, errors, success) are handled via Bootstrap modals and toast notifications for a consistent user experience.
 
 ### Technical Implementations
-- **Backend Framework**: FastAPI 0.109.0 for high performance.
+- **Backend Framework**: FastAPI 0.109.0.
 - **Database**: PostgreSQL with SQLAlchemy 2.0.25 ORM.
-- **Authentication**: JWT tokens with bcrypt password hashing for secure user sessions and role-based access control (admin/user).
-- **PDF Generation**: ReportLab 4.0.9 for professional document creation.
+- **Authentication**: JWT tokens with bcrypt password hashing for secure user sessions and role-based access control.
+- **PDF Generation**: ReportLab 4.0.9 for professional document creation with dynamic content and layout.
 - **Object Storage**: S3-compatible storage (boto3) for PDFs, with fallback to local storage.
 - **Email Notifications**: Brevo API (sib-api-v3-sdk) for sending invoices/quotes.
-- **Frontend**: Vanilla HTML/CSS/JavaScript (ES6+) with Fetch API for API interactions.
+- **Frontend**: Vanilla HTML/CSS/JavaScript (ES6+) with Fetch API.
 - **Currency**: All financial values are handled in Euros (€).
-- **Discount System**: Comprehensive discount system supporting either overall document discount or per-line-item discounts, affecting subtotal, tax, and total calculations.
-- **Contact Fields**: Enhanced contact fields for clients, including optional company name, email, and two telephone numbers with Cyprus-specific validation.
-- **PDF Layout**: Standardized professional PDF footer with company contact information.
-- **Draft Functionality**: Users can save invoices/quotes as drafts or finalize them, with full editing capability for drafts.
-- **Search**: Real-time, case-insensitive search functionality for invoices across multiple fields.
+- **Discount System**: Supports either overall document discount or per-line-item discounts, affecting subtotal, tax, and total calculations.
+- **Contact Fields**: Enhanced contact fields for clients, including optional company name, email, and two telephone numbers with Cyprus-specific validation. Client Reg. No. and Client T.I.C. are also supported.
+- **PDF Layout**: Standardized professional PDF footer with company contact information and dynamic "Bill To" sections that only display filled fields.
+- **Draft Functionality**: Users can save invoices/quotes as drafts or finalize them. New documents are created as drafts by default.
+- **Search**: Real-time, case-insensitive search functionality for invoices and quotes across multiple fields.
+- **Customer Management**: Comprehensive module for managing customers with CRUD operations, real-time search, and auto-sync with invoice/quote creation/editing based on telephone number.
+- **Analytics Dashboard**: Provides comprehensive financial visualizations using Chart.js, including total revenue, draft amounts, month-over-month, year-over-year comparisons, and various charts for historical data analysis.
+- **Quote Status**: Quotes can have 'Draft', 'Issued', or 'Invoiced' statuses. "Convert to Invoice" functionality transfers all quote fields and updates customer data, changing the quote status to "Invoiced".
 
 ### Feature Specifications
-- **Authentication & Authorization**: User registration (admin-only), JWT login, role-based access, protected routes, bcrypt hashing.
-- **Invoice Management**: CRUD operations, PDF generation, email sending, automatic numbering, status management (draft/issued).
-- **Quote Management**: CRUD operations, PDF generation, email sending, automatic numbering, conversion to invoice, status management.
-- **Data Model**: Clearly defined models for Users, Invoices, Invoice Line Items, Quotes, and Quote Line Items, with appropriate relationships.
+- **Authentication & Authorization**: Admin-only user registration, JWT login, role-based access, protected routes, bcrypt hashing.
+- **Invoice Management**: CRUD operations, PDF generation, email sending, automatic numbering, status management (draft/issued), manual issuing process.
+- **Quote Management**: CRUD operations, PDF generation, email sending, automatic numbering, conversion to invoice, status management (draft/issued/invoiced).
+- **Customer Management**: Full CRUD, search, and active/inactive status toggle with auto-sync during invoice/quote creation/editing.
+- **Data Model**: Clearly defined models for Users, Invoices, Invoice Line Items, Quotes, Quote Line Items, and Customers with appropriate relationships.
 
 ## External Dependencies
-
-- **Database**: PostgreSQL (via Replit integration)
+- **Database**: PostgreSQL
 - **Email Service**: Brevo API (`sib-api-v3-sdk`)
 - **Object Storage**: S3-compatible service (`boto3`)
 - **Frontend Library**: Bootstrap 5.3.0
 - **Icon Library**: Bootstrap Icons 1.10.0
 - **PDF Generation Library**: ReportLab 4.0.9
-
-## Recent Changes
-
-**November 25, 2025 - Table Display & Quote-to-Invoice Improvements**
-- **Invoices table enhancements**:
-  - Separated Client Name and Company Name into individual columns
-  - Both columns are searchable via the search input
-  - Telephone column maintained for quick reference
-- **Quotes table enhancements**:
-  - Separated Client Name, Company Name, and Email into individual columns
-  - Added search functionality (search by quote number, client name, company name, or email)
-  - All fields searchable with null safety
-- **Quote status improvements**:
-  - Added "invoiced" status for quotes that have been converted to invoices
-  - Status badges: Draft (grey), Issued (green), Invoiced (blue)
-  - "Convert to Invoice" button only appears for quotes with "issued" status
-  - Draft quotes cannot be converted (must first be marked as issued)
-- **Convert to Invoice improvements**:
-  - All quote fields now transfer to invoice (including company_name, telephones, reg_no, tax_id, discount)
-  - Auto-syncs customer data: creates new customer if telephone1 doesn't exist, or updates missing fields if customer exists
-  - Quote status changes to "invoiced" after conversion
-- **Quote form enhancements**:
-  - Added Client Reg. No. and Client T.I.C. fields to quote creation/edit forms
-  - Quote forms now match invoice form structure for consistency
-
-**November 25, 2025 - UI/UX Improvements**
-- **Dashboard welcome**: Now displays username instead of email
-- **Simplified invoice/quote creation modals**:
-  - Removed "Save as Draft" button (redundant)
-  - Renamed "Create & Finalize" to "Create" 
-  - All new documents created as drafts, use "Mark as Issued" to finalize
-- **Bootstrap modals & toasts for all messages**:
-  - Replaced all browser confirm() dialogs with Bootstrap modals
-  - Custom button text for each action (Delete, Mark as Issued, Convert)
-  - Delete confirmation uses red danger styling for emphasis
-  - Replaced all browser alert() messages with Bootstrap toast notifications
-  - Success toasts (green) auto-dismiss after 3 seconds
-  - Error toasts (red) auto-dismiss after 5 seconds
-  - Professional, consistent UI across invoices and quotes
-- **Quote PDF improvements**:
-  - Title changed from "QUOTE" to "QUOTATION" (shows "QUOTATION DRAFT" for drafts)
-  - Removed status badge from info table (status indicated by title)
-  - Valid Until date prominently displayed
-- **Quote Mark as Issued**:
-  - Added "Mark as Issued" button to quotes table (for draft quotes)
-  - Confirmation dialog before finalizing
-- **Flexible client validation**:
-  - Frontend validation ensures at least Client Name OR Company Name is provided
-  - Error displays inside modal for better UX
-
-**November 21, 2025 - Final Production Configuration**
-- **Database cleanup**: Cleared all test invoices and customers for fresh start
-- **PDF footer updates**:
-  - Removed company address (Pera Kampou 6, Kato Polemidia, Limassol, 4170)
-  - Added bank details: IBAN: LT41 3250 0726 5105 4093 | BIC: REVOLT21 | BANK: Revolut Bank UAB
-  - Changed "Web: itpalsolutions.com" to "Website: www.itpalsolutions.com"
-- **TAX changed to VAT**:
-  - Updated all forms (invoice and quote creation) to display "VAT (%)" instead of "Tax (%)"
-  - Updated all PDFs to show "VAT" instead of "Tax"
-  - Backend tax field name remains the same for database compatibility
-- **Flexible client identification**:
-  - Client Name is now optional (was required)
-  - System requires either Client Name OR Company Name (at least one must be provided)
-  - Both fields can be filled if desired
-  - Backend validation ensures at least one is present
-
-**November 21, 2025 - Customer Management System & Auto-Sync**
-- Implemented complete customer management module:
-  - Customer model with all fields (name, company, email, telephone1/2, address, reg_no, tax_id, is_active)
-  - Full CRUD API with real-time search by name, company, email, or telephone
-  - Customer page with responsive table, add/edit modals, toggle active/inactive status
-  - Telephone1 is unique identifier for customers
-- Auto-sync customer data with invoices:
-  - Creating invoice: automatically creates customer if telephone1 doesn't exist
-  - Editing invoice: automatically updates customer details if telephone1 exists
-  - Telephone1 now required for invoices (used to match/create customers)
-- Navigation enhancement:
-  - Added "Customers" navigation link to all pages (dashboard, invoices, quotes)
-- Database cleanup:
-  - Cleared all test invoices to start sequential real invoice numbering (INV-00001+)
-
-**November 21, 2025 - Enhanced Customer Fields & Dynamic PDF Layout**
-- Added optional customer information fields:
-  - Client Reg. No. (Registration Number) - optional field
-  - Client T.I.C. (Tax Identification Code) - optional field
-  - Both fields stored in database and displayed in PDFs when provided
-- Implemented dynamic PDF Bill To section:
-  - Only shows filled/completed fields (no empty/null fields displayed)
-  - Intelligent two-column layout that balances fields automatically
-  - Saves vertical space to prevent multi-page invoices
-  - Includes all customer fields: name, company, email, telephones, reg no, tax ID, address
-- Enhanced line items handling:
-  - Changed description input from text field to textarea (2 rows)
-  - Added field labels to all line item inputs (Description, Quantity, Unit Price, Discount %)
-  - PDF descriptions now wrap properly with auto row height adjustment
-  - HTML special characters in descriptions are escaped to prevent rendering errors
-  - Line item table uses proper column widths to prevent overflow
-- Security improvements:
-  - HTML escaping prevents ReportLab parsing errors with special characters (<, >, &)
-  - Prevents potential XSS vulnerabilities in PDF generation
-
-**November 21, 2025 - Professional PDF Footer**
-- Updated PDF footer with official company information:
-  - Company Name: IT PAL TECHNOLOGY SOLUTIONS LTD (bold, teal color)
-  - Address: Pera Kampou 6, Kato Polemidia, Limassol, 4170
-  - Registration details: Reg. No.: HE482919 / T.I.C: 60254066D
-  - Contact: Tel: +357-97652017, Email: finance@itpalsolutions.com, Web: itpalsolutions.com
-  - Design: Teal separator line above footer, centered text layout with organized multi-line structure
-  - Applied to both invoice and quote PDFs for consistency
-
-**November 17, 2025 - PDF Labels, Due Date Removal & Manual Invoice Issuing**
-- Enhanced PDF Bill To section with field labels:
-  - Added labels: "Client Name:", "Tel:", "Tel 2:", "Company Name:", "Email:", "Address:"
-  - Applied to both invoice and quote PDFs using two-column layout
-- Removed due date functionality:
-  - Removed due_date field from invoice creation/edit forms
-  - Removed due_date column from invoices table
-  - Removed due_date from email templates
-  - Backend maintains optional due_date field in database for future use
-- Implemented manual invoice issuing workflow:
-  - Added "Mark as Issued" button in invoices table for draft invoices
-  - Added "Mark as Issued" button in edit modal (only visible when editing drafts)
-  - Button shows confirmation dialog before changing status
-  - Removed automatic status change when sending emails
-  - Users must manually mark invoices as issued using dedicated buttons
-- PDF regeneration improvements:
-  - PDFs automatically regenerate after editing (pdf_url cleared on update)
-  - Changes to fields like telephone 2 deletion now properly reflect in regenerated PDFs
-
-**November 17, 2025 - Discount System, Status Simplification & Search Functionality**
-- Simplified invoice/quote status system:
-  - Changed from "draft, sent, paid, overdue" to only "draft" and "issued"
-  - "issued" represents finalized invoices/quotes
-  - Backend, frontend, and email endpoints updated to use new status values
-- Implemented comprehensive discount system:
-  - Added overall discount field (percentage 0-100%) to invoices/quotes
-  - Added line item discount field (percentage 0-100%) to each line item
-  - Discounts are mutually exclusive: use either overall discount OR line item discounts
-  - Backend calculation flow: Line items → Subtotal → Overall Discount → Tax → Total
-  - PDF displays discount column in line items table if any item has discount > 0
-  - PDF displays overall discount in totals section if discount > 0
-- Enhanced invoice PDF layout:
-  - PDF title dynamically shows "INVOICE DRAFT" for draft status, "INVOICE" for issued status
-  - Removed status badge from PDF (status only indicated by title)
-  - Info table simplified to show only Invoice Number and Issue Date
-  - Bill To section restructured with two-column layout
-- Frontend enhancements:
-  - Added Telephone column to invoices table (displays telephone 1)
-  - Implemented real-time search functionality for invoices
-  - Overall discount field added to invoice/quote forms with validation
-  - Line item discount column added with validation
+- **Charting Library**: Chart.js
