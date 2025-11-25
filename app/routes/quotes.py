@@ -97,9 +97,9 @@ def get_quotes(
     db: Session = Depends(get_db)
 ):
     if current_user.role == "admin":
-        quotes = db.query(Quote).all()
+        quotes = db.query(Quote).order_by(Quote.id.desc()).all()
     else:
-        quotes = db.query(Quote).filter(Quote.user_id == current_user.id).all()
+        quotes = db.query(Quote).filter(Quote.user_id == current_user.id).order_by(Quote.id.desc()).all()
     return quotes
 
 @router.get("/{quote_id}", response_model=QuoteResponse)

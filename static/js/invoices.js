@@ -363,6 +363,8 @@ async function editInvoice(invoiceId) {
     
     document.querySelector('#createModal .modal-title').innerHTML = '<i class="bi bi-pencil"></i> Edit Draft Invoice';
     document.getElementById('markIssuedModalBtn').style.display = 'inline-block';
+    document.getElementById('submitBtnText').textContent = 'Save';
+    document.getElementById('submitBtnIcon').className = 'bi bi-check-lg';
     
     document.getElementById('clientName').value = invoice.client_name;
     document.getElementById('companyName').value = invoice.company_name || '';
@@ -417,6 +419,8 @@ async function editInvoice(invoiceId) {
     document.getElementById('createModal').addEventListener('hidden.bs.modal', function resetModal() {
         document.querySelector('#createModal .modal-title').innerHTML = '<i class="bi bi-file-earmark-plus"></i> Create Invoice';
         document.getElementById('markIssuedModalBtn').style.display = 'none';
+        document.getElementById('submitBtnText').textContent = 'Create';
+        document.getElementById('submitBtnIcon').className = 'bi bi-plus-circle';
         editingInvoiceId = null;
         document.getElementById('createForm').reset();
         resetLineItems();

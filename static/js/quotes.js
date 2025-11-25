@@ -152,6 +152,9 @@ function showModalError(message) {
 function resetQuoteForm() {
     editingQuoteId = null;
     document.querySelector('#createModal .modal-title').innerHTML = '<i class="bi bi-file-earmark-plus"></i> Create Quote';
+    document.getElementById('markIssuedModalBtn').style.display = 'none';
+    document.getElementById('submitBtnText').textContent = 'Create';
+    document.getElementById('submitBtnIcon').className = 'bi bi-plus-circle';
     document.getElementById('createForm').reset();
     const lineItemsContainer = document.getElementById('lineItems');
     lineItemsContainer.innerHTML = `
@@ -403,6 +406,9 @@ async function editQuote(quoteId) {
     }
     
     document.querySelector('#createModal .modal-title').innerHTML = '<i class="bi bi-pencil"></i> Edit Quote';
+    document.getElementById('markIssuedModalBtn').style.display = 'inline-block';
+    document.getElementById('submitBtnText').textContent = 'Save';
+    document.getElementById('submitBtnIcon').className = 'bi bi-check-lg';
     
     document.getElementById('clientName').value = quote.client_name || '';
     document.getElementById('companyName').value = quote.company_name || '';

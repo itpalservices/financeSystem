@@ -152,9 +152,9 @@ def get_invoices(
     db: Session = Depends(get_db)
 ):
     if current_user.role == "admin":
-        invoices = db.query(Invoice).all()
+        invoices = db.query(Invoice).order_by(Invoice.id.desc()).all()
     else:
-        invoices = db.query(Invoice).filter(Invoice.user_id == current_user.id).all()
+        invoices = db.query(Invoice).filter(Invoice.user_id == current_user.id).order_by(Invoice.id.desc()).all()
     return invoices
 
 @router.get("/{invoice_id}", response_model=InvoiceResponse)
