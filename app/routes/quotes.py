@@ -6,7 +6,7 @@ from datetime import datetime
 from app.database import get_db
 from app.models.user import User
 from app.models.quote import Quote, QuoteLineItem, QuoteStatus
-from app.models.invoice import Invoice, InvoiceLineItem
+from app.models.invoice import Invoice, InvoiceLineItem, InvoiceStatus
 from app.schemas import QuoteCreate, QuoteResponse, QuoteUpdate, EmailRequest, InvoiceResponse
 from app.auth import get_current_user
 from app.utils.pdf_generator import generate_quote_pdf
