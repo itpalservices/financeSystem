@@ -555,7 +555,7 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
     
     const filteredInvoices = invoices.filter(invoice => {
         return invoice.invoice_number.toLowerCase().includes(searchTerm) ||
-               invoice.client_name.toLowerCase().includes(searchTerm) ||
+               (invoice.client_name && invoice.client_name.toLowerCase().includes(searchTerm)) ||
                (invoice.company_name && invoice.company_name.toLowerCase().includes(searchTerm)) ||
                (invoice.telephone1 && invoice.telephone1.includes(searchTerm));
     });

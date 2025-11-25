@@ -20,6 +20,8 @@ class Quote(Base):
     client_email = Column(String, nullable=True)
     telephone1 = Column(String, nullable=True)
     telephone2 = Column(String, nullable=True)
+    client_reg_no = Column(String, nullable=True)
+    client_tax_id = Column(String, nullable=True)
     client_address = Column(Text)
     status = Column(Enum(QuoteStatus), default=QuoteStatus.draft, nullable=False)
     issue_date = Column(DateTime, default=datetime.utcnow)

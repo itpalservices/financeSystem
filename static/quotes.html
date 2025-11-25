@@ -158,18 +158,35 @@
                                     title="Phone must be 8 digits starting with 25, 22, 24, 23, 99, 95, 94, 96, or 97">
                             </div>
                             <div class="col-md-6 mb-3">
+                                <label for="clientRegNo" class="form-label">Client Reg. No.</label>
+                                <input type="text" class="form-control" id="clientRegNo" placeholder="Optional">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="clientTaxId" class="form-label">Client T.I.C.</label>
+                                <input type="text" class="form-control" id="clientTaxId" placeholder="Optional">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="clientAddress" class="form-label">Client Address</label>
+                                <textarea class="form-control" id="clientAddress" rows="2"></textarea>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
                                 <label for="validUntil" class="form-label">Valid Until *</label>
                                 <input type="date" class="form-control" id="validUntil" required>
                             </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="clientAddress" class="form-label">Client Address</label>
-                            <textarea class="form-control" id="clientAddress" rows="2"></textarea>
+                            <div class="col-md-6 mb-3">
+                                <label for="discount" class="form-label">Overall Discount (%)</label>
+                                <input type="number" class="form-control" id="discount" step="0.01" value="0" min="0" max="100">
+                                <small class="text-muted">Leave at 0 to use line item discounts instead</small>
+                            </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="tax" class="form-label">VAT (%)</label>
-                                <input type="number" class="form-control" id="tax" step="0.01" value="0">
+                                <input type="number" class="form-control" id="tax" step="0.01" value="0" min="0" max="100">
                             </div>
                         </div>
                         <div class="mb-3">
@@ -187,16 +204,24 @@
                             <div id="lineItems">
                                 <div class="line-item-row">
                                     <div class="row g-2">
-                                        <div class="col-md-5">
-                                            <input type="text" class="form-control item-desc" placeholder="Description *" required>
+                                        <div class="col-md-4">
+                                            <label class="form-label text-muted small mb-1">Description *</label>
+                                            <textarea class="form-control item-desc" rows="2" placeholder="Enter item description" required></textarea>
                                         </div>
                                         <div class="col-md-2">
-                                            <input type="number" class="form-control item-qty" placeholder="Qty *" min="1" required>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <input type="number" class="form-control item-price" placeholder="Unit Price *" step="0.01" required>
+                                            <label class="form-label text-muted small mb-1">Quantity *</label>
+                                            <input type="number" class="form-control item-qty" placeholder="Qty" min="1" required>
                                         </div>
                                         <div class="col-md-2">
+                                            <label class="form-label text-muted small mb-1">Unit Price *</label>
+                                            <input type="number" class="form-control item-price" placeholder="€0.00" step="0.01" required>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label text-muted small mb-1">Discount %</label>
+                                            <input type="number" class="form-control item-discount" placeholder="0" step="0.01" value="0" min="0" max="100">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label text-muted small mb-1">&nbsp;</label>
                                             <button type="button" class="btn btn-danger btn-sm w-100" onclick="removeLineItem(this)">
                                                 <i class="bi bi-trash"></i>
                                             </button>

@@ -36,19 +36,36 @@ def create_quote(
 ):
     quote_number = generate_quote_number(db)
     
-    subtotal = sum(item.quantity * item.unit_price for item in quote_data.line_items)
-    tax = quote_data.tax if quote_data.tax is not None else 0.0
-    total = subtotal + tax
+    subtotal = 0.0
+    for item in quote_data.line_items:
+        item_total = item.quantity * item.unit_price
+        if item.discount and item.discount > 0:
+            item_total = item_total * (1 - item.discount / 100)
+        subtotal += item_total
+    
+    overall_discount = quote_data.discount if quote_data.discount is not None else 0.0
+    discount_amount = subtotal * (overall_discount / 100) if overall_discount > 0 else 0
+    subtotal_after_discount = subtotal - discount_amount
+    
+    tax_rate = quote_data.tax if quote_data.tax is not None else 0.0
+    tax_amount = subtotal_after_discount * (tax_rate / 100)
+    total = subtotal_after_discount + tax_amount
     
     new_quote = Quote(
         quote_number=quote_number,
         user_id=current_user.id,
         client_name=quote_data.client_name,
+        company_name=quote_data.company_name,
         client_email=quote_data.client_email,
+        telephone1=quote_data.telephone1,
+        telephone2=quote_data.telephone2,
+        client_reg_no=quote_data.client_reg_no,
+        client_tax_id=quote_data.client_tax_id,
         client_address=quote_data.client_address,
         valid_until=quote_data.valid_until,
         subtotal=subtotal,
-        tax=tax,
+        discount=overall_discount,
+        tax=tax_rate,
         total=total,
         notes=quote_data.notes
     )
@@ -56,12 +73,17 @@ def create_quote(
     db.flush()
     
     for item in quote_data.line_items:
+        item_discount = item.discount if item.discount else 0.0
+        item_total = item.quantity * item.unit_price
+        if item_discount > 0:
+            item_total = item_total * (1 - item_discount / 100)
         line_item = QuoteLineItem(
             quote_id=new_quote.id,
             description=item.description,
             quantity=item.quantity,
             unit_price=item.unit_price,
-            total=item.quantity * item.unit_price
+            discount=item_discount,
+            total=item_total
         )
         db.add(line_item)
     

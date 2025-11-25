@@ -129,11 +129,13 @@ class InvoiceResponse(InvoiceBase):
         from_attributes = True
 
 class QuoteBase(BaseModel):
-    client_name: str
+    client_name: Optional[str] = None
     company_name: Optional[str] = None
     client_email: Optional[str] = None
     telephone1: Optional[str] = None
     telephone2: Optional[str] = None
+    client_reg_no: Optional[str] = None
+    client_tax_id: Optional[str] = None
     client_address: Optional[str] = None
     valid_until: datetime
     notes: Optional[str] = None
@@ -149,6 +151,8 @@ class QuoteUpdate(BaseModel):
     client_email: Optional[str] = None
     telephone1: Optional[str] = None
     telephone2: Optional[str] = None
+    client_reg_no: Optional[str] = None
+    client_tax_id: Optional[str] = None
     client_address: Optional[str] = None
     valid_until: Optional[datetime] = None
     status: Optional[QuoteStatus] = None
