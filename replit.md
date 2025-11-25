@@ -70,6 +70,27 @@ The frontend utilizes Bootstrap 5.3.0 and Bootstrap Icons 1.10.0 for a modern, r
 
 ## Recent Changes
 
+**November 25, 2025 - UI/UX Improvements**
+- **Dashboard welcome**: Now displays username instead of email
+- **Simplified invoice/quote creation modals**:
+  - Removed "Save as Draft" button (redundant)
+  - Renamed "Create & Finalize" to "Create" 
+  - All new documents created as drafts, use "Mark as Issued" to finalize
+- **Confirmation dialogs**:
+  - Added confirmation popup for "Mark as Issued" action
+  - Added confirmation popup for "Delete" action
+  - Applied to both invoices and quotes for safety
+- **Quote PDF improvements**:
+  - Title changed from "QUOTE" to "QUOTATION" (shows "QUOTATION DRAFT" for drafts)
+  - Removed status badge from info table (status indicated by title)
+  - Valid Until date prominently displayed
+- **Quote Mark as Issued**:
+  - Added "Mark as Issued" button to quotes table (for draft quotes)
+  - Confirmation dialog before finalizing
+- **Flexible client validation**:
+  - Frontend validation ensures at least Client Name OR Company Name is provided
+  - Error displays inside modal for better UX
+
 **November 21, 2025 - Final Production Configuration**
 - **Database cleanup**: Cleared all test invoices and customers for fresh start
 - **PDF footer updates**:
