@@ -43,16 +43,25 @@ function renderQuotes() {
         const editButton = canEdit ? `<button class="btn btn-outline-secondary" onclick="editQuote(${quote.id})" title="Edit Draft">
                         <i class="bi bi-pencil"></i>
                     </button>` : '';
+        const markIssuedBtn = quote.status === 'draft' 
+            ? `<button class="btn btn-outline-info" onclick="markAsIssued(${quote.id})" title="Mark as Issued">
+                    <i class="bi bi-check-circle"></i>
+               </button>` 
+            : '';
+        const displayName = quote.company_name 
+            ? (quote.client_name ? `${quote.client_name} (${quote.company_name})` : quote.company_name)
+            : (quote.client_name || '');
         return `
         <tr>
             <td><strong>${quote.quote_number}</strong></td>
-            <td>${quote.company_name ? `${quote.client_name} (${quote.company_name})` : quote.client_name}<br><small class="text-muted">${quote.client_email || quote.telephone1}</small></td>
+            <td>${displayName}<br><small class="text-muted">${quote.client_email || quote.telephone1}</small></td>
             <td><strong>€${quote.total.toFixed(2)}</strong></td>
             <td>${statusBadge}</td>
             <td>${formatDate(quote.valid_until)}</td>
             <td>
                 <div class="btn-group btn-group-sm" role="group">
                     ${editButton}
+                    ${markIssuedBtn}
                     ${convertBtn}
                     <button class="btn btn-outline-primary" onclick="generatePDF(${quote.id})" title="${pdfButtonText}">
                         <i class="bi ${pdfButtonIcon}"></i>
@@ -72,6 +81,7 @@ function renderQuotes() {
 function getStatusBadge(status) {
     const badges = {
         'draft': '<span class="badge bg-secondary">Draft</span>',
+        'issued': '<span class="badge bg-success">Issued</span>',
         'sent': '<span class="badge bg-info">Sent</span>',
         'accepted': '<span class="badge bg-success">Accepted</span>',
         'rejected': '<span class="badge bg-danger">Rejected</span>',
@@ -114,8 +124,31 @@ function removeLineItem(button) {
     }
 }
 
+function showModalError(message) {
+    let modalError = document.getElementById('modalError');
+    if (!modalError) {
+        const modalBody = document.querySelector('#createModal .modal-body');
+        modalError = document.createElement('div');
+        modalError.id = 'modalError';
+        modalError.className = 'alert alert-danger';
+        modalError.style.display = 'none';
+        modalBody.insertBefore(modalError, modalBody.firstChild);
+    }
+    modalError.textContent = message;
+    modalError.style.display = 'block';
+    setTimeout(() => modalError.style.display = 'none', 5000);
+}
+
 document.getElementById('createForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    
+    const clientName = document.getElementById('clientName').value.trim();
+    const companyName = document.getElementById('companyName').value.trim();
+    
+    if (!clientName && !companyName) {
+        showModalError('Please provide at least Client Name or Company Name');
+        return;
+    }
     
     const submitter = e.submitter;
     const action = submitter.getAttribute('value');
@@ -128,13 +161,13 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
     }));
     
     if (lineItems.length === 0) {
-        showError('Please add at least one line item');
+        showModalError('Please add at least one line item');
         return;
     }
     
     const data = {
-        client_name: document.getElementById('clientName').value,
-        company_name: document.getElementById('companyName').value || null,
+        client_name: clientName || null,
+        company_name: companyName || null,
         client_email: document.getElementById('clientEmail').value || null,
         telephone1: document.getElementById('telephone1').value,
         telephone2: document.getElementById('telephone2').value || null,
@@ -320,6 +353,47 @@ async function deleteQuote(quoteId) {
     } catch (error) {
         showError('Error deleting quote: ' + error.message);
     }
+}
+
+let editingQuoteId = null;
+
+async function markAsIssued(quoteId) {
+    const quote = quotes.find(q => q.id === quoteId);
+    if (!quote) {
+        showError('Quote not found');
+        return;
+    }
+    
+    if (quote.status !== 'draft') {
+        showError('Only draft quotes can be marked as issued');
+        return;
+    }
+    
+    const confirmed = await showConfirmDialog(
+        'Mark as Issued?',
+        `Mark quote ${quote.quote_number} as issued? This will finalize the quote.`
+    );
+    if (!confirmed) return;
+    
+    try {
+        await api.updateQuote(quoteId, { 
+            status: 'issued',
+            telephone1: quote.telephone1
+        });
+        showSuccess('Quote marked as issued successfully');
+        loadQuotes();
+    } catch (error) {
+        showError('Error marking quote as issued: ' + error.message);
+    }
+}
+
+async function markAsIssuedFromModal() {
+    if (!editingQuoteId) return;
+    
+    const modal = bootstrap.Modal.getInstance(document.getElementById('createModal'));
+    modal.hide();
+    
+    await markAsIssued(editingQuoteId);
 }
 
 async function showConfirmDialog(title, message) {

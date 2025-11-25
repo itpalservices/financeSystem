@@ -280,12 +280,13 @@ def generate_quote_pdf(quote, db: Session) -> str:
         alignment=TA_CENTER
     )
     
-    elements.append(Paragraph("QUOTE", title_style))
+    title_text = "QUOTATION DRAFT" if quote.status.value == "draft" else "QUOTATION"
+    elements.append(Paragraph(title_text, title_style))
     elements.append(Spacer(1, 0.2*inch))
     
     info_data = [
         ["Quote Number:", quote.quote_number, "Issue Date:", quote.issue_date.strftime("%d-%m-%Y")],
-        ["Status:", quote.status.value.upper(), "Valid Until:", quote.valid_until.strftime("%d-%m-%Y")]
+        ["Valid Until:", quote.valid_until.strftime("%d-%m-%Y"), "", ""]
     ]
     
     info_table = Table(info_data, colWidths=[1.5*inch, 2*inch, 1.5*inch, 2*inch])
@@ -299,9 +300,11 @@ def generate_quote_pdf(quote, db: Session) -> str:
     elements.append(info_table)
     elements.append(Spacer(1, 0.3*inch))
     
-    # Build Quote For section with two columns
+    # Build Quote For section with two columns - only show filled fields
     # Left column: Client name, Tel 1, Tel 2
-    left_column = [f"Client Name: {quote.client_name}"]
+    left_column = []
+    if quote.client_name:
+        left_column.append(f"Client Name: {html.escape(quote.client_name)}")
     if quote.telephone1:
         left_column.append(f"Tel: {quote.telephone1}")
     if quote.telephone2:
@@ -310,11 +313,11 @@ def generate_quote_pdf(quote, db: Session) -> str:
     # Right column: Company name, Email, Address
     right_column = []
     if quote.company_name:
-        right_column.append(f"Company Name: {quote.company_name}")
+        right_column.append(f"Company Name: {html.escape(quote.company_name)}")
     if quote.client_email:
         right_column.append(f"Email: {quote.client_email}")
     if quote.client_address:
-        right_column.append(f"Address: {quote.client_address}")
+        right_column.append(f"Address: {html.escape(quote.client_address)}")
     
     # Create two-column table for Quote For
     quote_for_data = [["Quote For:", ""]]

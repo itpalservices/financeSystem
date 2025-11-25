@@ -132,7 +132,7 @@
         async function loadDashboard() {
             try {
                 const user = await api.getCurrentUser();
-                document.getElementById('userEmail').textContent = user.email;
+                document.getElementById('userEmail').textContent = user.username;
                 document.getElementById('userRole').textContent = user.role;
 
                 const [invoices, quotes] = await Promise.all([
