@@ -198,7 +198,13 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
 });
 
 async function convertToInvoice(quoteId) {
-    if (!confirm('Convert this quote to an invoice?')) return;
+    const quote = quotes.find(q => q.id === quoteId);
+    const confirmed = await showConfirmDialog(
+        'Convert to Invoice?',
+        `Convert quote ${quote ? quote.quote_number : quoteId} to an invoice?`,
+        'Convert'
+    );
+    if (!confirmed) return;
     
     try {
         const result = await api.convertQuoteToInvoice(quoteId);
@@ -342,7 +348,9 @@ async function deleteQuote(quoteId) {
     const quote = quotes.find(q => q.id === quoteId);
     const confirmed = await showConfirmDialog(
         'Delete Quote?',
-        `Are you sure you want to permanently delete quote ${quote ? quote.quote_number : quoteId}? This action cannot be undone.`
+        `Are you sure you want to permanently delete quote ${quote ? quote.quote_number : quoteId}? This action cannot be undone.`,
+        'Delete',
+        true
     );
     if (!confirmed) return;
     
@@ -371,7 +379,8 @@ async function markAsIssued(quoteId) {
     
     const confirmed = await showConfirmDialog(
         'Mark as Issued?',
-        `Mark quote ${quote.quote_number} as issued? This will finalize the quote.`
+        `Mark quote ${quote.quote_number} as issued? This will finalize the quote.`,
+        'Mark as Issued'
     );
     if (!confirmed) return;
     
@@ -396,25 +405,50 @@ async function markAsIssuedFromModal() {
     await markAsIssued(editingQuoteId);
 }
 
-async function showConfirmDialog(title, message) {
+async function showConfirmDialog(title, message, confirmText = 'Confirm', isDanger = false) {
     return new Promise((resolve) => {
-        const result = confirm(`${title}\n\n${message}`);
-        resolve(result);
+        document.getElementById('confirmModalTitle').textContent = title;
+        document.getElementById('confirmModalMessage').textContent = message;
+        
+        const confirmBtn = document.getElementById('confirmModalBtn');
+        confirmBtn.textContent = confirmText;
+        confirmBtn.className = isDanger ? 'btn btn-danger' : 'btn btn-primary';
+        
+        const modalElement = document.getElementById('confirmModal');
+        const modal = new bootstrap.Modal(modalElement);
+        let resolved = false;
+        
+        const handleConfirm = () => {
+            resolved = true;
+            confirmBtn.removeEventListener('click', handleConfirm);
+            modal.hide();
+            resolve(true);
+        };
+        
+        const handleHidden = () => {
+            confirmBtn.removeEventListener('click', handleConfirm);
+            if (!resolved) {
+                resolve(false);
+            }
+        };
+        
+        confirmBtn.addEventListener('click', handleConfirm);
+        modalElement.addEventListener('hidden.bs.modal', handleHidden, { once: true });
+        
+        modal.show();
     });
 }
 
 function showError(message) {
-    const errorDiv = document.getElementById('error');
-    errorDiv.textContent = message;
-    errorDiv.style.display = 'block';
-    setTimeout(() => errorDiv.style.display = 'none', 5000);
+    document.getElementById('errorToastMessage').textContent = message;
+    const toast = new bootstrap.Toast(document.getElementById('errorToast'), { delay: 5000 });
+    toast.show();
 }
 
 function showSuccess(message) {
-    const successDiv = document.getElementById('success');
-    successDiv.textContent = message;
-    successDiv.style.display = 'block';
-    setTimeout(() => successDiv.style.display = 'none', 3000);
+    document.getElementById('successToastMessage').textContent = message;
+    const toast = new bootstrap.Toast(document.getElementById('successToast'), { delay: 3000 });
+    toast.show();
 }
 
 loadQuotes();

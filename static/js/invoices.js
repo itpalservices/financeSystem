@@ -428,7 +428,9 @@ async function deleteInvoice(invoiceId) {
     const invoice = invoices.find(inv => inv.id === invoiceId);
     const confirmed = await showConfirmDialog(
         'Delete Invoice?',
-        `Are you sure you want to permanently delete invoice ${invoice ? invoice.invoice_number : invoiceId}? This action cannot be undone.`
+        `Are you sure you want to permanently delete invoice ${invoice ? invoice.invoice_number : invoiceId}? This action cannot be undone.`,
+        'Delete',
+        true
     );
     if (!confirmed) return;
     
@@ -441,18 +443,44 @@ async function deleteInvoice(invoiceId) {
     }
 }
 
-async function showConfirmDialog(title, message) {
+async function showConfirmDialog(title, message, confirmText = 'Confirm', isDanger = false) {
     return new Promise((resolve) => {
-        const result = confirm(`${title}\n\n${message}`);
-        resolve(result);
+        document.getElementById('confirmModalTitle').textContent = title;
+        document.getElementById('confirmModalMessage').textContent = message;
+        
+        const confirmBtn = document.getElementById('confirmModalBtn');
+        confirmBtn.textContent = confirmText;
+        confirmBtn.className = isDanger ? 'btn btn-danger' : 'btn btn-primary';
+        
+        const modalElement = document.getElementById('confirmModal');
+        const modal = new bootstrap.Modal(modalElement);
+        let resolved = false;
+        
+        const handleConfirm = () => {
+            resolved = true;
+            confirmBtn.removeEventListener('click', handleConfirm);
+            modal.hide();
+            resolve(true);
+        };
+        
+        const handleHidden = () => {
+            confirmBtn.removeEventListener('click', handleConfirm);
+            if (!resolved) {
+                resolve(false);
+            }
+        };
+        
+        confirmBtn.addEventListener('click', handleConfirm);
+        modalElement.addEventListener('hidden.bs.modal', handleHidden, { once: true });
+        
+        modal.show();
     });
 }
 
 function showError(message) {
-    const errorDiv = document.getElementById('error');
-    errorDiv.textContent = message;
-    errorDiv.style.display = 'block';
-    setTimeout(() => errorDiv.style.display = 'none', 5000);
+    document.getElementById('errorToastMessage').textContent = message;
+    const toast = new bootstrap.Toast(document.getElementById('errorToast'), { delay: 5000 });
+    toast.show();
 }
 
 function showModalError(message) {
@@ -471,10 +499,9 @@ function showModalError(message) {
 }
 
 function showSuccess(message) {
-    const successDiv = document.getElementById('success');
-    successDiv.textContent = message;
-    successDiv.style.display = 'block';
-    setTimeout(() => successDiv.style.display = 'none', 3000);
+    document.getElementById('successToastMessage').textContent = message;
+    const toast = new bootstrap.Toast(document.getElementById('successToast'), { delay: 3000 });
+    toast.show();
 }
 
 async function markAsIssued(invoiceId) {
@@ -491,7 +518,8 @@ async function markAsIssued(invoiceId) {
     
     const confirmed = await showConfirmDialog(
         'Mark as Issued?',
-        `Mark invoice ${invoice.invoice_number} as issued? This will finalize the invoice.`
+        `Mark invoice ${invoice.invoice_number} as issued? This will finalize the invoice.`,
+        'Mark as Issued'
     );
     if (!confirmed) return;
     
