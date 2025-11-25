@@ -4,6 +4,7 @@ if (!checkAuth()) {
 
 let quotes = [];
 let currentQuote = null;
+let editingQuoteId = null;
 
 function formatDate(dateString) {
     const date = new Date(dateString);
@@ -26,7 +27,7 @@ function renderQuotes(quotesToRender = quotes) {
     const tbody = document.getElementById('quotesTable');
     
     if (quotesToRender.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No quotes found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center">No quotes found</td></tr>';
         return;
     }
     
@@ -55,6 +56,7 @@ function renderQuotes(quotesToRender = quotes) {
             <td>${quote.client_name || '-'}</td>
             <td>${quote.company_name || '-'}</td>
             <td>${quote.client_email || '-'}</td>
+            <td>${quote.telephone1 || '-'}</td>
             <td><strong>€${quote.total.toFixed(2)}</strong></td>
             <td>${statusBadge}</td>
             <td>${formatDate(quote.valid_until)}</td>
@@ -148,6 +150,45 @@ function showModalError(message) {
     setTimeout(() => modalError.style.display = 'none', 5000);
 }
 
+function resetQuoteForm() {
+    editingQuoteId = null;
+    document.querySelector('#createModal .modal-title').innerHTML = '<i class="bi bi-file-earmark-plus"></i> Create Quote';
+    document.getElementById('createForm').reset();
+    const lineItemsContainer = document.getElementById('lineItems');
+    lineItemsContainer.innerHTML = `
+        <div class="line-item-row">
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <label class="form-label text-muted small mb-1">Description *</label>
+                    <textarea class="form-control item-desc" rows="2" placeholder="Enter item description" required></textarea>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-muted small mb-1">Quantity *</label>
+                    <input type="number" class="form-control item-qty" placeholder="Qty" min="1" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-muted small mb-1">Unit Price *</label>
+                    <input type="number" class="form-control item-price" placeholder="€0.00" step="0.01" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-muted small mb-1">Discount %</label>
+                    <input type="number" class="form-control item-discount" placeholder="0" step="0.01" value="0" min="0" max="100">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-muted small mb-1">&nbsp;</label>
+                    <button type="button" class="btn btn-danger btn-sm w-100" onclick="removeLineItem(this)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+document.getElementById('createModal').addEventListener('hidden.bs.modal', function() {
+    resetQuoteForm();
+});
+
 document.getElementById('createForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -158,9 +199,6 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
         showModalError('Please provide at least Client Name or Company Name');
         return;
     }
-    
-    const submitter = e.submitter;
-    const action = submitter.getAttribute('value');
     
     const lineItemsElements = document.querySelectorAll('.line-item-row');
     const lineItems = Array.from(lineItemsElements).map(item => ({
@@ -188,25 +226,24 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
         discount: parseFloat(document.getElementById('discount').value) || 0,
         tax: parseFloat(document.getElementById('tax').value) || 0,
         notes: document.getElementById('notes').value,
-        status: action,
         line_items: lineItems
     };
     
     try {
-        const quote = await api.createQuote(data);
-        showSuccess(`Quote ${action === 'draft' ? 'saved as draft' : 'created'} successfully`);
+        if (editingQuoteId) {
+            await api.updateQuote(editingQuoteId, data);
+            showSuccess('Quote updated successfully');
+        } else {
+            await api.createQuote(data);
+            showSuccess('Quote created successfully');
+        }
         
         const modal = bootstrap.Modal.getInstance(document.getElementById('createModal'));
         modal.hide();
-        document.getElementById('createForm').reset();
         
         loadQuotes();
-        
-        if (action === 'sent') {
-            setTimeout(() => generatePDF(quote.id), 500);
-        }
     } catch (error) {
-        showError('Error creating quote: ' + error.message);
+        showError('Error ' + (editingQuoteId ? 'updating' : 'creating') + ' quote: ' + error.message);
     }
 });
 
@@ -354,7 +391,74 @@ document.getElementById('emailForm').addEventListener('submit', async (e) => {
 });
 
 async function editQuote(quoteId) {
-    showError('Edit functionality coming soon. For now, please delete and recreate the draft quote.');
+    editingQuoteId = quoteId;
+    const quote = quotes.find(q => q.id === quoteId);
+    if (!quote) {
+        showError('Quote not found');
+        return;
+    }
+    
+    if (quote.status !== 'draft') {
+        showError('Only draft quotes can be edited');
+        return;
+    }
+    
+    document.querySelector('#createModal .modal-title').innerHTML = '<i class="bi bi-pencil"></i> Edit Quote';
+    
+    document.getElementById('clientName').value = quote.client_name || '';
+    document.getElementById('companyName').value = quote.company_name || '';
+    document.getElementById('clientEmail').value = quote.client_email || '';
+    document.getElementById('telephone1').value = quote.telephone1 || '';
+    document.getElementById('telephone2').value = quote.telephone2 || '';
+    document.getElementById('clientRegNo').value = quote.client_reg_no || '';
+    document.getElementById('clientTaxId').value = quote.client_tax_id || '';
+    document.getElementById('clientAddress').value = quote.client_address || '';
+    document.getElementById('validUntil').value = quote.valid_until ? quote.valid_until.split('T')[0] : '';
+    document.getElementById('discount').value = quote.discount || 0;
+    document.getElementById('tax').value = quote.tax || 0;
+    document.getElementById('notes').value = quote.notes || '';
+    
+    const lineItemsContainer = document.getElementById('lineItems');
+    lineItemsContainer.innerHTML = '';
+    
+    if (quote.line_items && quote.line_items.length > 0) {
+        quote.line_items.forEach((item, index) => {
+            const newItem = document.createElement('div');
+            newItem.className = 'line-item-row';
+            newItem.innerHTML = `
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <label class="form-label text-muted small mb-1">Description *</label>
+                        <textarea class="form-control item-desc" rows="2" placeholder="Enter item description" required>${item.description || ''}</textarea>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-muted small mb-1">Quantity *</label>
+                        <input type="number" class="form-control item-qty" placeholder="Qty" min="1" value="${item.quantity}" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-muted small mb-1">Unit Price *</label>
+                        <input type="number" class="form-control item-price" placeholder="€0.00" step="0.01" value="${item.unit_price}" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-muted small mb-1">Discount %</label>
+                        <input type="number" class="form-control item-discount" placeholder="0" step="0.01" value="${item.discount || 0}" min="0" max="100">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-muted small mb-1">&nbsp;</label>
+                        <button type="button" class="btn btn-danger btn-sm w-100" onclick="removeLineItem(this)">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            lineItemsContainer.appendChild(newItem);
+        });
+    } else {
+        addLineItem();
+    }
+    
+    const modal = new bootstrap.Modal(document.getElementById('createModal'));
+    modal.show();
 }
 
 async function deleteQuote(quoteId) {
@@ -375,8 +479,6 @@ async function deleteQuote(quoteId) {
         showError('Error deleting quote: ' + error.message);
     }
 }
-
-let editingQuoteId = null;
 
 async function markAsIssued(quoteId) {
     const quote = quotes.find(q => q.id === quoteId);
@@ -477,7 +579,8 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
         return quote.quote_number.toLowerCase().includes(searchTerm) ||
                (quote.client_name && quote.client_name.toLowerCase().includes(searchTerm)) ||
                (quote.company_name && quote.company_name.toLowerCase().includes(searchTerm)) ||
-               (quote.client_email && quote.client_email.toLowerCase().includes(searchTerm));
+               (quote.client_email && quote.client_email.toLowerCase().includes(searchTerm)) ||
+               (quote.telephone1 && quote.telephone1.includes(searchTerm));
     });
     
     renderQuotes(filteredQuotes);

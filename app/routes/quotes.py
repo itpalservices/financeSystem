@@ -141,6 +141,10 @@ def update_quote(
         quote.telephone1 = quote_data.telephone1
     if quote_data.telephone2 is not None:
         quote.telephone2 = quote_data.telephone2
+    if quote_data.client_reg_no is not None:
+        quote.client_reg_no = quote_data.client_reg_no
+    if quote_data.client_tax_id is not None:
+        quote.client_tax_id = quote_data.client_tax_id
     if quote_data.client_address is not None:
         quote.client_address = quote_data.client_address
     if quote_data.valid_until is not None:
@@ -149,35 +153,43 @@ def update_quote(
         quote.status = quote_data.status
     if quote_data.notes is not None:
         quote.notes = quote_data.notes
+    if quote_data.discount is not None:
+        quote.discount = quote_data.discount
+    if quote_data.tax is not None:
+        quote.tax = quote_data.tax
     
     quote.pdf_url = None
     
     if quote_data.line_items is not None:
         db.query(QuoteLineItem).filter(QuoteLineItem.quote_id == quote_id).delete()
         
-        subtotal = sum(item.quantity * item.unit_price for item in quote_data.line_items)
-        
+        subtotal = 0.0
         for item in quote_data.line_items:
+            item_total = item.quantity * item.unit_price
+            item_discount = item.discount if item.discount else 0.0
+            if item_discount > 0:
+                item_total = item_total * (1 - item_discount / 100)
+            subtotal += item_total
+            
             line_item = QuoteLineItem(
                 quote_id=quote.id,
                 description=item.description,
                 quantity=item.quantity,
                 unit_price=item.unit_price,
-                total=item.quantity * item.unit_price
+                discount=item_discount,
+                total=item_total
             )
             db.add(line_item)
         
         quote.subtotal = subtotal
-    
-    if "tax" in quote_data.model_fields_set:
-        quote.tax = quote_data.tax or 0.0
-        db.flush()
-        current_line_items = db.query(QuoteLineItem).filter(QuoteLineItem.quote_id == quote_id).all()
-        if current_line_items:
-            quote.subtotal = sum(item.total for item in current_line_items)
-        quote.total = quote.subtotal + quote.tax
-    elif quote_data.line_items is not None:
-        quote.total = quote.subtotal + (quote.tax or 0.0)
+        
+        overall_discount = quote.discount or 0.0
+        discount_amount = subtotal * (overall_discount / 100) if overall_discount > 0 else 0
+        subtotal_after_discount = subtotal - discount_amount
+        
+        tax_rate = quote.tax or 0.0
+        tax_amount = subtotal_after_discount * (tax_rate / 100)
+        quote.total = subtotal_after_discount + tax_amount
     
     quote.updated_at = datetime.utcnow()
     db.commit()
