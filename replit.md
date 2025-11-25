@@ -76,10 +76,14 @@ The frontend utilizes Bootstrap 5.3.0 and Bootstrap Icons 1.10.0 for a modern, r
   - Removed "Save as Draft" button (redundant)
   - Renamed "Create & Finalize" to "Create" 
   - All new documents created as drafts, use "Mark as Issued" to finalize
-- **Confirmation dialogs**:
-  - Added confirmation popup for "Mark as Issued" action
-  - Added confirmation popup for "Delete" action
-  - Applied to both invoices and quotes for safety
+- **Bootstrap modals & toasts for all messages**:
+  - Replaced all browser confirm() dialogs with Bootstrap modals
+  - Custom button text for each action (Delete, Mark as Issued, Convert)
+  - Delete confirmation uses red danger styling for emphasis
+  - Replaced all browser alert() messages with Bootstrap toast notifications
+  - Success toasts (green) auto-dismiss after 3 seconds
+  - Error toasts (red) auto-dismiss after 5 seconds
+  - Professional, consistent UI across invoices and quotes
 - **Quote PDF improvements**:
   - Title changed from "QUOTE" to "QUOTATION" (shows "QUOTATION DRAFT" for drafts)
   - Removed status badge from info table (status indicated by title)
