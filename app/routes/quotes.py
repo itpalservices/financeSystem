@@ -266,6 +266,10 @@ def convert_to_invoice(
     
     if quote.telephone1:
         existing_customer = db.query(Customer).filter(Customer.telephone1 == quote.telephone1).first()
+        
+        if not existing_customer and quote.client_email:
+            existing_customer = db.query(Customer).filter(Customer.email == quote.client_email).first()
+        
         if existing_customer:
             if quote.client_name and not existing_customer.name:
                 existing_customer.name = quote.client_name
@@ -273,6 +277,8 @@ def convert_to_invoice(
                 existing_customer.company_name = quote.company_name
             if quote.client_email and not existing_customer.email:
                 existing_customer.email = quote.client_email
+            if quote.telephone1 and not existing_customer.telephone1:
+                existing_customer.telephone1 = quote.telephone1
             if quote.telephone2 and not existing_customer.telephone2:
                 existing_customer.telephone2 = quote.telephone2
             if quote.client_address and not existing_customer.address:
