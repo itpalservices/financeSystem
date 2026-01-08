@@ -93,6 +93,8 @@ class InvoiceBase(BaseModel):
     notes: Optional[str] = None
     discount: Optional[float] = 0.0
     tax: Optional[float] = 0.0
+    project_id: Optional[int] = None
+    milestone_id: Optional[int] = None
 
 class InvoiceCreate(InvoiceBase):
     line_items: List[LineItemCreate]
@@ -112,6 +114,8 @@ class InvoiceUpdate(BaseModel):
     discount: Optional[float] = None
     tax: Optional[float] = None
     line_items: Optional[List[LineItemCreate]] = None
+    project_id: Optional[int] = None
+    milestone_id: Optional[int] = None
 
 class InvoiceResponse(InvoiceBase):
     id: int
@@ -132,6 +136,8 @@ class InvoiceResponse(InvoiceBase):
     cancelled_by: Optional[int] = None
     cancel_reason: Optional[str] = None
     customer_snapshot: Optional[dict] = None
+    project_id: Optional[int] = None
+    milestone_id: Optional[int] = None
     
     class Config:
         from_attributes = True

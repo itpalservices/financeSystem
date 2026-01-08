@@ -8,6 +8,7 @@ from app.models.user import User
 from app.models.invoice import Invoice, InvoiceLineItem, InvoiceStatus
 from app.models.customer import Customer
 from app.models.email_log import EmailLog, EmailType
+from app.models.project import Project, Milestone
 from app.schemas import InvoiceCreate, InvoiceResponse, InvoiceUpdate, EmailRequest, CancelRequest
 from app.auth import get_current_user
 from app.utils.pdf_generator import generate_invoice_pdf
@@ -93,6 +94,34 @@ def create_invoice(
             detail="Either Client Name or Company Name must be provided"
         )
     
+    project = None
+    milestone = None
+    
+    if invoice_data.project_id:
+        project = db.query(Project).filter(Project.id == invoice_data.project_id).first()
+        if not project:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+        
+        project_customer = db.query(Customer).filter(Customer.id == project.customer_id).first()
+        if project_customer and project_customer.telephone1 != invoice_data.telephone1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invoice customer does not match project customer. Telephone numbers must match."
+            )
+    
+    if invoice_data.milestone_id:
+        if not invoice_data.project_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Project must be selected when assigning a milestone"
+            )
+        milestone = db.query(Milestone).filter(
+            Milestone.id == invoice_data.milestone_id,
+            Milestone.project_id == invoice_data.project_id
+        ).first()
+        if not milestone:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Milestone not found in this project")
+    
     invoice_number = generate_invoice_number(db)
     
     # Calculate line item totals with discount if line items have discount
@@ -137,7 +166,9 @@ def create_invoice(
         discount=discount_percentage,
         tax=tax_percentage,
         total=total,
-        notes=invoice_data.notes
+        notes=invoice_data.notes,
+        project_id=invoice_data.project_id,
+        milestone_id=invoice_data.milestone_id
     )
     db.add(new_invoice)
     db.flush()
@@ -227,6 +258,40 @@ def update_invoice(
         invoice.status = invoice_data.status
     if invoice_data.notes is not None:
         invoice.notes = invoice_data.notes
+    
+    if invoice_data.project_id is not None:
+        if invoice_data.project_id == 0:
+            invoice.project_id = None
+            invoice.milestone_id = None
+        else:
+            project = db.query(Project).filter(Project.id == invoice_data.project_id).first()
+            if not project:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+            
+            project_customer = db.query(Customer).filter(Customer.id == project.customer_id).first()
+            if project_customer and project_customer.telephone1 != invoice.telephone1:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invoice customer does not match project customer. Telephone numbers must match."
+                )
+            invoice.project_id = invoice_data.project_id
+    
+    if invoice_data.milestone_id is not None:
+        if invoice_data.milestone_id == 0:
+            invoice.milestone_id = None
+        else:
+            if not invoice.project_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Project must be selected when assigning a milestone"
+                )
+            milestone = db.query(Milestone).filter(
+                Milestone.id == invoice_data.milestone_id,
+                Milestone.project_id == invoice.project_id
+            ).first()
+            if not milestone:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Milestone not found in this project")
+            invoice.milestone_id = invoice_data.milestone_id
     
     if old_status == InvoiceStatus.draft and invoice.status == InvoiceStatus.issued:
         invoice.issued_at = datetime.utcnow()

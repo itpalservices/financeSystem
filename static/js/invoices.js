@@ -5,6 +5,8 @@ if (!checkAuth()) {
 let invoices = [];
 let currentInvoice = null;
 let editingInvoiceId = null;
+let projects = [];
+let currentMilestones = [];
 
 function formatDate(dateString) {
     const date = new Date(dateString);
@@ -29,7 +31,7 @@ function renderInvoices(invoicesToRender = invoices) {
     const tbody = document.getElementById('invoicesTable');
     
     if (invoicesToRender.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No invoices found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No invoices found</td></tr>';
         return;
     }
     
@@ -58,12 +60,15 @@ function renderInvoices(invoicesToRender = invoices) {
         
         const cancelledInfo = isCancelled && invoice.cancel_reason ? `<small class="text-muted d-block">Reason: ${invoice.cancel_reason}</small>` : '';
         
+        const projectInfo = invoice.project_id ? `<a href="/projects" class="text-decoration-none"><i class="bi bi-folder"></i></a>` : '-';
+        
         return `
         <tr class="${isCancelled ? 'table-secondary' : ''}">
             <td><strong>${invoice.invoice_number}</strong>${cancelledInfo}</td>
             <td>${invoice.client_name || '-'}</td>
             <td>${invoice.company_name || '-'}</td>
             <td>${invoice.telephone1 || '-'}</td>
+            <td>${projectInfo}</td>
             <td><strong>€${invoice.total.toFixed(2)}</strong></td>
             <td>${statusBadge}</td>
             <td>
@@ -195,6 +200,9 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
         return;
     }
     
+    const projectId = document.getElementById('projectId')?.value;
+    const milestoneId = document.getElementById('milestoneId')?.value;
+    
     const data = {
         client_name: clientName || null,
         company_name: companyName || null,
@@ -208,7 +216,9 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
         tax: parseFloat(document.getElementById('tax').value) || 0,
         notes: document.getElementById('notes').value,
         status: action,
-        line_items: lineItems
+        line_items: lineItems,
+        project_id: projectId ? parseInt(projectId) : null,
+        milestone_id: milestoneId ? parseInt(milestoneId) : null
     };
     
     try {
@@ -391,6 +401,21 @@ async function editInvoice(invoiceId) {
     document.getElementById('tax').value = invoice.tax || 0;
     document.getElementById('notes').value = invoice.notes || '';
     
+    // Set project and milestone values
+    if (document.getElementById('projectId')) {
+        document.getElementById('projectId').value = invoice.project_id || '';
+        if (invoice.project_id) {
+            loadProjectMilestones().then(() => {
+                if (invoice.milestone_id && document.getElementById('milestoneId')) {
+                    document.getElementById('milestoneId').value = invoice.milestone_id;
+                }
+            });
+        } else {
+            document.getElementById('milestoneId').value = '';
+            document.getElementById('milestoneId').disabled = true;
+        }
+    }
+    
     const lineItemsContainer = document.getElementById('lineItems');
     lineItemsContainer.innerHTML = '';
     
@@ -437,6 +462,11 @@ async function editInvoice(invoiceId) {
         editingInvoiceId = null;
         document.getElementById('createForm').reset();
         resetLineItems();
+        if (document.getElementById('projectId')) {
+            document.getElementById('projectId').value = '';
+            document.getElementById('milestoneId').value = '';
+            document.getElementById('milestoneId').disabled = true;
+        }
         document.getElementById('createModal').removeEventListener('hidden.bs.modal', resetModal);
     }, { once: true });
 }
@@ -644,4 +674,99 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
     renderInvoices(filteredInvoices);
 });
 
+async function loadProjects() {
+    try {
+        const response = await fetch('/api/projects/search/dropdown', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (response.ok) {
+            projects = await response.json();
+            populateProjectDropdown();
+        }
+    } catch (error) {
+        console.error('Error loading projects:', error);
+    }
+}
+
+function populateProjectDropdown() {
+    const projectSelect = document.getElementById('projectId');
+    if (!projectSelect) return;
+    
+    projectSelect.innerHTML = '<option value="">No Project</option>';
+    projects.forEach(project => {
+        const customerName = project.company_name || project.customer_name || '';
+        projectSelect.innerHTML += `<option value="${project.id}" data-customer-tel="${project.customer_telephone || ''}">${project.project_code} - ${project.title} (${customerName})</option>`;
+    });
+}
+
+async function loadProjectMilestones() {
+    const projectId = document.getElementById('projectId').value;
+    const milestoneSelect = document.getElementById('milestoneId');
+    const projectWarning = document.getElementById('projectWarning');
+    const milestoneWarning = document.getElementById('milestoneWarning');
+    
+    projectWarning.style.display = 'none';
+    milestoneWarning.style.display = 'none';
+    
+    if (!projectId) {
+        milestoneSelect.innerHTML = '<option value="">Select Project First</option>';
+        milestoneSelect.disabled = true;
+        currentMilestones = [];
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/projects/${projectId}/milestones`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        
+        if (response.ok) {
+            currentMilestones = await response.json();
+            milestoneSelect.innerHTML = '<option value="">No Milestone</option>';
+            currentMilestones.forEach(m => {
+                milestoneSelect.innerHTML += `<option value="${m.id}" data-expected="${m.expected_amount}">${m.milestone_no}. ${m.label} (€${m.expected_amount.toFixed(2)})</option>`;
+            });
+            milestoneSelect.disabled = false;
+        }
+    } catch (error) {
+        console.error('Error loading milestones:', error);
+        milestoneSelect.innerHTML = '<option value="">Error loading milestones</option>';
+    }
+}
+
+function checkMilestoneWarning() {
+    const milestoneSelect = document.getElementById('milestoneId');
+    const milestoneWarning = document.getElementById('milestoneWarning');
+    
+    if (!milestoneSelect || !milestoneSelect.value) {
+        milestoneWarning.style.display = 'none';
+        return;
+    }
+    
+    const selectedOption = milestoneSelect.options[milestoneSelect.selectedIndex];
+    const expectedAmount = parseFloat(selectedOption.dataset.expected) || 0;
+    
+    const lineItems = document.querySelectorAll('.line-item-row');
+    let subtotal = 0;
+    lineItems.forEach(row => {
+        const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+        const price = parseFloat(row.querySelector('.item-price').value) || 0;
+        const discount = parseFloat(row.querySelector('.item-discount').value) || 0;
+        subtotal += qty * price * (1 - discount / 100);
+    });
+    
+    const overallDiscount = parseFloat(document.getElementById('discount').value) || 0;
+    const tax = parseFloat(document.getElementById('tax').value) || 0;
+    const afterDiscount = subtotal * (1 - overallDiscount / 100);
+    const total = afterDiscount * (1 + tax / 100);
+    
+    if (expectedAmount > 0 && Math.abs(total - expectedAmount) > 0.01) {
+        milestoneWarning.innerHTML = `<i class="bi bi-exclamation-triangle"></i> Invoice total (€${total.toFixed(2)}) differs from milestone expected amount (€${expectedAmount.toFixed(2)})`;
+        milestoneWarning.style.display = 'block';
+    } else {
+        milestoneWarning.style.display = 'none';
+    }
+}
+
 loadInvoices();
+loadProjects();

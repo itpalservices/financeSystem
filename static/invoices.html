@@ -116,6 +116,7 @@
                                 <th>Client Name</th>
                                 <th>Company Name</th>
                                 <th>Telephone</th>
+                                <th>Project</th>
                                 <th>Total</th>
                                 <th>Status</th>
                                 <th>Actions</th>
@@ -123,7 +124,7 @@
                         </thead>
                         <tbody id="invoicesTable">
                             <tr>
-                                <td colspan="7" class="text-center">Loading...</td>
+                                <td colspan="8" class="text-center">Loading...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -202,6 +203,24 @@
                         <div class="mb-3">
                             <label for="notes" class="form-label">Notes</label>
                             <textarea class="form-control" id="notes" rows="2"></textarea>
+                        </div>
+                        <hr>
+                        <h6><i class="bi bi-folder"></i> Project Allocation (Optional)</h6>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="projectId" class="form-label">Project</label>
+                                <select class="form-select" id="projectId" onchange="loadProjectMilestones()">
+                                    <option value="">No Project</option>
+                                </select>
+                                <div id="projectWarning" class="text-warning small mt-1" style="display: none;"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="milestoneId" class="form-label">Milestone / Installment</label>
+                                <select class="form-select" id="milestoneId" disabled>
+                                    <option value="">Select Project First</option>
+                                </select>
+                                <div id="milestoneWarning" class="text-warning small mt-1" style="display: none;"></div>
+                            </div>
                         </div>
                         <hr>
                         <div class="mb-3">
