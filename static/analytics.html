@@ -218,6 +218,98 @@
                 </div>
             </div>
         </div>
+
+        <h3 class="mt-5 mb-4"><i class="bi bi-folder"></i> Project Analytics</h3>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="card stat-card shadow-sm" style="border-left-color: #28a745;">
+                    <div class="card-body">
+                        <h3 id="activeProjectsCount" style="color: #28a745;">0</h3>
+                        <p><i class="bi bi-folder-fill"></i> Active Projects</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card shadow-sm" style="border-left-color: #6c757d;">
+                    <div class="card-body">
+                        <h3 id="totalProjectsCount" style="color: #6c757d;">0</h3>
+                        <p><i class="bi bi-folder"></i> Total Projects</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card shadow-sm" style="border-left-color: #17a2b8;">
+                    <div class="card-body">
+                        <h3 id="closedProjectsCount" style="color: #17a2b8;">0</h3>
+                        <p><i class="bi bi-folder-check"></i> Closed Projects</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card shadow-sm" style="border-left-color: #1b7ca8;">
+                    <div class="card-body">
+                        <h3 id="projectRevenueTotal">€0</h3>
+                        <p><i class="bi bi-currency-euro"></i> Project Revenue</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-trophy"></i> Top Projects by Revenue</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="topProjectsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-bar-chart-steps"></i> Milestone Progress</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="milestoneChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-table"></i> Top Projects Details</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Project Code</th>
+                                <th>Title</th>
+                                <th>Customer</th>
+                                <th>Status</th>
+                                <th class="text-end">Budget</th>
+                                <th class="text-end">Invoiced</th>
+                                <th class="text-end">Budget Used</th>
+                            </tr>
+                        </thead>
+                        <tbody id="topProjectsTable">
+                            <tr>
+                                <td colspan="7" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -228,10 +320,13 @@
         }
 
         let analyticsData = null;
+        let projectAnalyticsData = null;
         let monthlyChart = null;
         let statusChart = null;
         let yearComparisonChart = null;
         let trendChart = null;
+        let topProjectsChart = null;
+        let milestoneChart = null;
 
         const chartColors = {
             primary: '#1b7ca8',
@@ -247,18 +342,154 @@
         async function loadAnalytics() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/analytics', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const [analyticsResponse, projectResponse] = await Promise.all([
+                    fetch('/api/analytics', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }),
+                    fetch('/api/analytics/projects', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    })
+                ]);
                 
-                if (!response.ok) throw new Error('Failed to load analytics');
+                if (!analyticsResponse.ok) throw new Error('Failed to load analytics');
                 
-                analyticsData = await response.json();
+                analyticsData = await analyticsResponse.json();
+                if (projectResponse.ok) {
+                    projectAnalyticsData = await projectResponse.json();
+                }
+                
                 updateDisplay();
                 initializeCharts();
+                if (projectAnalyticsData) {
+                    updateProjectDisplay();
+                    initializeProjectCharts();
+                }
             } catch (error) {
                 console.error('Error loading analytics:', error);
             }
+        }
+        
+        function updateProjectDisplay() {
+            document.getElementById('activeProjectsCount').textContent = projectAnalyticsData.active_projects;
+            document.getElementById('totalProjectsCount').textContent = projectAnalyticsData.total_projects;
+            document.getElementById('closedProjectsCount').textContent = projectAnalyticsData.closed_projects;
+            document.getElementById('projectRevenueTotal').textContent = `€${projectAnalyticsData.total_project_revenue.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+        }
+        
+        function initializeProjectCharts() {
+            if (!projectAnalyticsData) return;
+            
+            const topProjects = projectAnalyticsData.top_projects.slice(0, 5);
+            
+            if (topProjectsChart) topProjectsChart.destroy();
+            const topProjectsCtx = document.getElementById('topProjectsChart').getContext('2d');
+            topProjectsChart = new Chart(topProjectsCtx, {
+                type: 'bar',
+                data: {
+                    labels: topProjects.map(p => p.project_code),
+                    datasets: [{
+                        label: 'Revenue (€)',
+                        data: topProjects.map(p => p.invoiced_total),
+                        backgroundColor: chartColors.primaryAlpha,
+                        borderColor: chartColors.primary,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '€' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            const milestones = projectAnalyticsData.milestone_progress.slice(0, 10);
+            
+            if (milestoneChart) milestoneChart.destroy();
+            const milestoneCtx = document.getElementById('milestoneChart').getContext('2d');
+            milestoneChart = new Chart(milestoneCtx, {
+                type: 'bar',
+                data: {
+                    labels: milestones.map(m => `${m.project_code} #${m.milestone_no}`),
+                    datasets: [
+                        {
+                            label: 'Expected',
+                            data: milestones.map(m => m.expected_amount),
+                            backgroundColor: 'rgba(108, 117, 125, 0.3)',
+                            borderColor: '#6c757d',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Invoiced',
+                            data: milestones.map(m => m.invoiced_amount),
+                            backgroundColor: chartColors.success + '99',
+                            borderColor: chartColors.success,
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '€' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            updateTopProjectsTable();
+        }
+        
+        function updateTopProjectsTable() {
+            const tbody = document.getElementById('topProjectsTable');
+            if (!projectAnalyticsData || projectAnalyticsData.top_projects.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No projects found</td></tr>';
+                return;
+            }
+            
+            let html = '';
+            projectAnalyticsData.top_projects.slice(0, 10).forEach(project => {
+                const statusBadge = project.status === 'active' ? 'bg-success' : 
+                                   project.status === 'closed' ? 'bg-secondary' : 'bg-danger';
+                const customerName = project.company_name || project.customer_name || '-';
+                const budgetUsed = project.budget_utilization !== null ? 
+                    `${project.budget_utilization}%` : '-';
+                
+                html += `
+                    <tr>
+                        <td><a href="/projects/view/${project.project_id}">${project.project_code}</a></td>
+                        <td>${project.title}</td>
+                        <td>${customerName}</td>
+                        <td><span class="badge ${statusBadge}">${project.status}</span></td>
+                        <td class="text-end">€${project.budget.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                        <td class="text-end">€${project.invoiced_total.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                        <td class="text-end">${budgetUsed}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
         }
 
         function updateDisplay() {

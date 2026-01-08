@@ -52,7 +52,8 @@ The frontend utilizes Bootstrap 5.3.0 and Bootstrap Icons 1.10.0 for a modern, r
 - **Draft Functionality**: Users can save invoices/quotes as drafts or finalize them. New documents are created as drafts by default.
 - **Search**: Real-time, case-insensitive search functionality for invoices and quotes across multiple fields.
 - **Customer Management**: Comprehensive module for managing customers with CRUD operations, real-time search, and auto-sync with invoice/quote creation/editing based on telephone number.
-- **Analytics Dashboard**: Provides comprehensive financial visualizations using Chart.js, including total revenue, draft amounts, month-over-month, year-over-year comparisons, and various charts for historical data analysis.
+- **Analytics Dashboard**: Provides comprehensive financial visualizations using Chart.js, including total revenue, draft amounts, month-over-month, year-over-year comparisons, various charts for historical data analysis, and project-based analytics with top projects and milestone progress.
+- **Project Management**: Complete module for organizing work with customers. Projects have year-based codes (PRJ-YYYY-NNNNNN), customer links, status tracking (active/closed/cancelled), budgets, and support milestones/installments. Invoices can be linked to projects and milestones with customer validation, amount warnings, and immutable locking after issuance.
 - **Quote Status**: Quotes can have 'Draft', 'Issued', 'Invoiced', or 'Cancelled' statuses. "Convert to Invoice" functionality transfers all quote fields and updates customer data, changing the quote status to "Invoiced".
 - **Document Integrity**: Issued documents cannot be edited or deleted - they must be cancelled instead with a mandatory reason. Cancelled documents are preserved for audit purposes with grey styling and disabled actions.
 - **Customer Snapshot**: When documents are issued, customer details are captured and frozen at that moment for historical accuracy.
@@ -64,7 +65,9 @@ The frontend utilizes Bootstrap 5.3.0 and Bootstrap Icons 1.10.0 for a modern, r
 - **Quote Management**: CRUD operations, PDF generation, email sending, year-based automatic numbering (QUO-YYYY-NNNNNN), conversion to invoice, status management (draft/issued/invoiced/cancelled), document locking for issued documents.
 - **Document Numbering**: Year-based format resets counter each new year (e.g., INV-2026-000001, QUO-2026-000001).
 - **Customer Management**: Full CRUD, search, and active/inactive status toggle with auto-sync during invoice/quote creation/editing.
-- **Data Model**: Clearly defined models for Users, Invoices, Invoice Line Items, Quotes, Quote Line Items, and Customers with appropriate relationships.
+- **Project Management**: Full CRUD for projects with year-based numbering (PRJ-YYYY-NNNNNN), customer links, status management (active/closed/cancelled), budget tracking, and milestone/installment support. Invoices can be allocated to projects and milestones with customer validation (telephone matching), amount warnings, and immutable locking after issuance. Projects/milestones cannot be deleted if linked to invoices.
+- **Project Analytics**: Revenue per project, top projects by revenue, milestone progress tracking with expected vs. invoiced amounts, and budget utilization percentages.
+- **Data Model**: Clearly defined models for Users, Invoices, Invoice Line Items, Quotes, Quote Line Items, Customers, Projects, and Milestones with appropriate relationships.
 
 ## External Dependencies
 - **Database**: PostgreSQL
