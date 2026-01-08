@@ -16,11 +16,21 @@ from app.utils.email_sender import send_invoice_email
 router = APIRouter()
 
 def generate_invoice_number(db: Session) -> str:
-    last_invoice = db.query(Invoice).order_by(Invoice.id.desc()).first()
+    """Generate year-based invoice number: INV-YYYY-NNNNNN"""
+    current_year = datetime.now().year
+    year_prefix = f"INV-{current_year}-"
+    
+    last_invoice = db.query(Invoice).filter(
+        Invoice.invoice_number.like(f"{year_prefix}%")
+    ).order_by(Invoice.id.desc()).first()
+    
     if last_invoice:
-        last_number = int(last_invoice.invoice_number.split('-')[1])
-        return f"INV-{last_number + 1:05d}"
-    return "INV-00001"
+        try:
+            last_number = int(last_invoice.invoice_number.split('-')[2])
+            return f"{year_prefix}{last_number + 1:06d}"
+        except (IndexError, ValueError):
+            return f"{year_prefix}000001"
+    return f"{year_prefix}000001"
 
 def sync_customer(db: Session, client_name: str, company_name: str, client_email: str, 
                  telephone1: str, telephone2: str, client_address: str, 

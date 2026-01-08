@@ -17,18 +17,38 @@ from app.utils.email_sender import send_quote_email
 router = APIRouter()
 
 def generate_quote_number(db: Session) -> str:
-    last_quote = db.query(Quote).order_by(Quote.id.desc()).first()
+    """Generate year-based quote number: QUO-YYYY-NNNNNN"""
+    current_year = datetime.now().year
+    year_prefix = f"QUO-{current_year}-"
+    
+    last_quote = db.query(Quote).filter(
+        Quote.quote_number.like(f"{year_prefix}%")
+    ).order_by(Quote.id.desc()).first()
+    
     if last_quote:
-        last_number = int(last_quote.quote_number.split('-')[1])
-        return f"QUO-{last_number + 1:05d}"
-    return "QUO-00001"
+        try:
+            last_number = int(last_quote.quote_number.split('-')[2])
+            return f"{year_prefix}{last_number + 1:06d}"
+        except (IndexError, ValueError):
+            return f"{year_prefix}000001"
+    return f"{year_prefix}000001"
 
 def generate_invoice_number(db: Session) -> str:
-    last_invoice = db.query(Invoice).order_by(Invoice.id.desc()).first()
+    """Generate year-based invoice number: INV-YYYY-NNNNNN"""
+    current_year = datetime.now().year
+    year_prefix = f"INV-{current_year}-"
+    
+    last_invoice = db.query(Invoice).filter(
+        Invoice.invoice_number.like(f"{year_prefix}%")
+    ).order_by(Invoice.id.desc()).first()
+    
     if last_invoice:
-        last_number = int(last_invoice.invoice_number.split('-')[1])
-        return f"INV-{last_number + 1:05d}"
-    return "INV-00001"
+        try:
+            last_number = int(last_invoice.invoice_number.split('-')[2])
+            return f"{year_prefix}{last_number + 1:06d}"
+        except (IndexError, ValueError):
+            return f"{year_prefix}000001"
+    return f"{year_prefix}000001"
 
 @router.post("", response_model=QuoteResponse, status_code=status.HTTP_201_CREATED)
 def create_quote(

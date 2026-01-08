@@ -60,8 +60,9 @@ The frontend utilizes Bootstrap 5.3.0 and Bootstrap Icons 1.10.0 for a modern, r
 
 ### Feature Specifications
 - **Authentication & Authorization**: Admin-only user registration, JWT login, role-based access, protected routes, bcrypt hashing.
-- **Invoice Management**: CRUD operations, PDF generation, email sending, automatic numbering, status management (draft/issued/cancelled), document locking for issued documents.
-- **Quote Management**: CRUD operations, PDF generation, email sending, automatic numbering, conversion to invoice, status management (draft/issued/invoiced/cancelled), document locking for issued documents.
+- **Invoice Management**: CRUD operations, PDF generation, email sending, year-based automatic numbering (INV-YYYY-NNNNNN), status management (draft/issued/cancelled), document locking for issued documents.
+- **Quote Management**: CRUD operations, PDF generation, email sending, year-based automatic numbering (QUO-YYYY-NNNNNN), conversion to invoice, status management (draft/issued/invoiced/cancelled), document locking for issued documents.
+- **Document Numbering**: Year-based format resets counter each new year (e.g., INV-2026-000001, QUO-2026-000001).
 - **Customer Management**: Full CRUD, search, and active/inactive status toggle with auto-sync during invoice/quote creation/editing.
 - **Data Model**: Clearly defined models for Users, Invoices, Invoice Line Items, Quotes, Quote Line Items, and Customers with appropriate relationships.
 
