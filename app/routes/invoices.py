@@ -368,6 +368,10 @@ def cancel_invoice(
     invoice.cancelled_by = current_user.id
     invoice.cancel_reason = cancel_data.reason
     
+    # Generate and lock the cancelled PDF immediately
+    pdf_url = generate_invoice_pdf(invoice, db)
+    invoice.pdf_url = pdf_url
+    
     db.commit()
     db.refresh(invoice)
     return invoice
@@ -384,6 +388,16 @@ def generate_pdf(
     
     if current_user.role != "admin" and invoice.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    
+    # For cancelled invoices, always return existing PDF (preserve immutability)
+    if invoice.status == InvoiceStatus.cancelled:
+        if invoice.pdf_url:
+            return {"message": "PDF retrieved successfully", "pdf_url": invoice.pdf_url}
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cancelled invoice PDF not available. Contact support."
+            )
     
     pdf_url = generate_invoice_pdf(invoice, db)
     invoice.pdf_url = pdf_url

@@ -70,7 +70,7 @@ function renderInvoices(invoicesToRender = invoices) {
                 <div class="btn-group btn-group-sm" role="group">
                     ${editButton}
                     ${markIssuedButton}
-                    <button class="btn btn-outline-primary" onclick="generatePDF(${invoice.id})" title="${pdfButtonText}" ${isCancelled ? 'disabled' : ''}>
+                    <button class="btn btn-outline-primary" onclick="generatePDF(${invoice.id})" title="${isCancelled ? 'View Cancelled PDF' : pdfButtonText}">
                         <i class="bi ${pdfButtonIcon}"></i>
                     </button>
                     <button class="btn btn-outline-success" onclick="openEmailModal(${invoice.id})" title="Send Email" ${isCancelled ? 'disabled' : ''}>
@@ -460,6 +460,21 @@ async function deleteInvoice(invoiceId) {
     }
 }
 
+function toggleOtherReason(type) {
+    const select = document.getElementById('cancelReasonSelect');
+    const container = document.getElementById('otherReasonContainer');
+    const textInput = document.getElementById('otherReasonText');
+    
+    if (select.value === 'Other') {
+        container.style.display = 'block';
+        textInput.required = true;
+    } else {
+        container.style.display = 'none';
+        textInput.required = false;
+        textInput.value = '';
+    }
+}
+
 function openCancelModal(invoiceId) {
     const invoice = invoices.find(inv => inv.id === invoiceId);
     if (!invoice) {
@@ -469,7 +484,9 @@ function openCancelModal(invoiceId) {
     
     document.getElementById('cancelInvoiceId').value = invoiceId;
     document.getElementById('cancelInvoiceNumber').textContent = invoice.invoice_number;
-    document.getElementById('cancelReason').value = '';
+    document.getElementById('cancelReasonSelect').value = '';
+    document.getElementById('otherReasonText').value = '';
+    document.getElementById('otherReasonContainer').style.display = 'none';
     
     const modal = new bootstrap.Modal(document.getElementById('cancelModal'));
     modal.show();
@@ -477,11 +494,21 @@ function openCancelModal(invoiceId) {
 
 document.getElementById('confirmCancelBtn').addEventListener('click', async function() {
     const invoiceId = parseInt(document.getElementById('cancelInvoiceId').value);
-    const reason = document.getElementById('cancelReason').value.trim();
+    const selectValue = document.getElementById('cancelReasonSelect').value;
+    const otherText = document.getElementById('otherReasonText').value.trim();
     
-    if (!reason) {
-        showError('Please enter a reason for cancelling the invoice');
+    if (!selectValue) {
+        showError('Please select a reason for cancelling the invoice');
         return;
+    }
+    
+    let reason = selectValue;
+    if (selectValue === 'Other') {
+        if (!otherText) {
+            showError('Please specify the reason for cancelling');
+            return;
+        }
+        reason = `Other: ${otherText}`;
     }
     
     try {

@@ -294,6 +294,10 @@ def cancel_quote(
     quote.cancelled_by = current_user.id
     quote.cancel_reason = cancel_data.reason
     
+    # Generate and lock the cancelled PDF immediately
+    pdf_url = generate_quote_pdf(quote, db)
+    quote.pdf_url = pdf_url
+    
     db.commit()
     db.refresh(quote)
     return quote
@@ -370,6 +374,16 @@ def generate_pdf(
     
     if current_user.role != "admin" and quote.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    
+    # For cancelled quotes, always return existing PDF (preserve immutability)
+    if quote.status == QuoteStatus.cancelled:
+        if quote.pdf_url:
+            return {"message": "PDF retrieved successfully", "pdf_url": quote.pdf_url}
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cancelled quote PDF not available. Contact support."
+            )
     
     pdf_url = generate_quote_pdf(quote, db)
     quote.pdf_url = pdf_url

@@ -50,8 +50,23 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
     )
     
     # Change title based on status
-    title_text = "INVOICE DRAFT" if invoice.status.value == "draft" else "INVOICE"
-    elements.append(Paragraph(title_text, title_style))
+    if invoice.status.value == "draft":
+        title_text = "INVOICE DRAFT"
+        elements.append(Paragraph(title_text, title_style))
+    elif invoice.status.value == "cancelled" and invoice.cancelled_at is not None:
+        # Use red title for cancelled invoices (with verified metadata)
+        cancelled_title_style = ParagraphStyle(
+            'CancelledTitleStyle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            textColor=colors.red,
+            spaceAfter=30,
+            alignment=TA_CENTER
+        )
+        elements.append(Paragraph("CANCELLED INVOICE", cancelled_title_style))
+    else:
+        title_text = "INVOICE"
+        elements.append(Paragraph(title_text, title_style))
     elements.append(Spacer(1, 0.2*inch))
     
     # Remove status from PDF, only show Invoice Number and Issue Date
@@ -280,8 +295,24 @@ def generate_quote_pdf(quote, db: Session) -> str:
         alignment=TA_CENTER
     )
     
-    title_text = "QUOTATION DRAFT" if quote.status.value == "draft" else "QUOTATION"
-    elements.append(Paragraph(title_text, title_style))
+    # Change title based on status
+    if quote.status.value == "draft":
+        title_text = "QUOTATION DRAFT"
+        elements.append(Paragraph(title_text, title_style))
+    elif quote.status.value == "cancelled" and quote.cancelled_at is not None:
+        # Use red title for cancelled quotes (with verified metadata)
+        cancelled_title_style = ParagraphStyle(
+            'CancelledTitleStyle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            textColor=colors.red,
+            spaceAfter=30,
+            alignment=TA_CENTER
+        )
+        elements.append(Paragraph("CANCELLED QUOTATION", cancelled_title_style))
+    else:
+        title_text = "QUOTATION"
+        elements.append(Paragraph(title_text, title_style))
     elements.append(Spacer(1, 0.2*inch))
     
     info_data = [

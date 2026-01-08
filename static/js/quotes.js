@@ -78,7 +78,7 @@ function renderQuotes(quotesToRender = quotes) {
                     ${editButton}
                     ${markIssuedBtn}
                     ${convertBtn}
-                    <button class="btn btn-outline-primary" onclick="generatePDF(${quote.id})" title="${pdfButtonText}" ${isCancelled ? 'disabled' : ''}>
+                    <button class="btn btn-outline-primary" onclick="generatePDF(${quote.id})" title="${isCancelled ? 'View Cancelled PDF' : pdfButtonText}">
                         <i class="bi ${pdfButtonIcon}"></i>
                     </button>
                     <button class="btn btn-outline-success" onclick="openEmailModal(${quote.id})" title="Send Email" ${isCancelled ? 'disabled' : ''}>
@@ -499,6 +499,21 @@ async function deleteQuote(quoteId) {
     }
 }
 
+function toggleOtherReason(type) {
+    const select = document.getElementById('cancelReasonSelect');
+    const container = document.getElementById('otherReasonContainer');
+    const textInput = document.getElementById('otherReasonText');
+    
+    if (select.value === 'Other') {
+        container.style.display = 'block';
+        textInput.required = true;
+    } else {
+        container.style.display = 'none';
+        textInput.required = false;
+        textInput.value = '';
+    }
+}
+
 function openCancelModal(quoteId) {
     const quote = quotes.find(q => q.id === quoteId);
     if (!quote) {
@@ -508,7 +523,9 @@ function openCancelModal(quoteId) {
     
     document.getElementById('cancelQuoteId').value = quoteId;
     document.getElementById('cancelQuoteNumber').textContent = quote.quote_number;
-    document.getElementById('cancelReason').value = '';
+    document.getElementById('cancelReasonSelect').value = '';
+    document.getElementById('otherReasonText').value = '';
+    document.getElementById('otherReasonContainer').style.display = 'none';
     
     const modal = new bootstrap.Modal(document.getElementById('cancelModal'));
     modal.show();
@@ -516,11 +533,21 @@ function openCancelModal(quoteId) {
 
 document.getElementById('confirmCancelBtn').addEventListener('click', async function() {
     const quoteId = parseInt(document.getElementById('cancelQuoteId').value);
-    const reason = document.getElementById('cancelReason').value.trim();
+    const selectValue = document.getElementById('cancelReasonSelect').value;
+    const otherText = document.getElementById('otherReasonText').value.trim();
     
-    if (!reason) {
-        showError('Please enter a reason for cancelling the quote');
+    if (!selectValue) {
+        showError('Please select a reason for cancelling the quote');
         return;
+    }
+    
+    let reason = selectValue;
+    if (selectValue === 'Other') {
+        if (!otherText) {
+            showError('Please specify the reason for cancelling');
+            return;
+        }
+        reason = `Other: ${otherText}`;
     }
     
     try {

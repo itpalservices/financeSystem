@@ -337,7 +337,20 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Reason for cancelling <span class="text-danger">*</span></label>
-                        <textarea class="form-control" id="cancelReason" rows="3" placeholder="Enter the reason for cancelling this invoice..." required></textarea>
+                        <select class="form-select" id="cancelReasonSelect" onchange="toggleOtherReason('invoice')" required>
+                            <option value="">-- Select a reason --</option>
+                            <option value="Duplicate invoice created">Duplicate invoice created</option>
+                            <option value="Incorrect client details">Incorrect client details</option>
+                            <option value="Incorrect pricing or amounts">Incorrect pricing or amounts</option>
+                            <option value="Client requested cancellation">Client requested cancellation</option>
+                            <option value="Service/Product not delivered">Service/Product not delivered</option>
+                            <option value="Payment dispute">Payment dispute</option>
+                            <option value="Other">Other (specify below)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="otherReasonContainer" style="display: none;">
+                        <label class="form-label">Please specify <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="otherReasonText" rows="2" placeholder="Enter the specific reason..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
