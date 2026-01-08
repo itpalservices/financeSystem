@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, Text, Boolean
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, Text, Boolean, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
@@ -9,6 +9,7 @@ class QuoteStatus(str, enum.Enum):
     draft = "draft"
     issued = "issued"
     invoiced = "invoiced"
+    voided = "voided"
 
 class Quote(Base):
     __tablename__ = "quotes"
@@ -37,7 +38,18 @@ class Quote(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    user = relationship("User", back_populates="quotes")
+    issued_at = Column(DateTime, nullable=True)
+    issued_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    
+    voided_at = Column(DateTime, nullable=True)
+    voided_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    void_reason = Column(Text, nullable=True)
+    
+    customer_snapshot = Column(JSON, nullable=True)
+    
+    user = relationship("User", back_populates="quotes", foreign_keys=[user_id])
+    issuer = relationship("User", foreign_keys=[issued_by])
+    voider = relationship("User", foreign_keys=[voided_by])
     line_items = relationship("QuoteLineItem", back_populates="quote", cascade="all, delete-orphan")
 
 class QuoteLineItem(Base):

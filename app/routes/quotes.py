@@ -9,7 +9,7 @@ from app.models.quote import Quote, QuoteLineItem, QuoteStatus
 from app.models.invoice import Invoice, InvoiceLineItem, InvoiceStatus
 from app.models.customer import Customer
 from app.models.email_log import EmailLog, EmailType
-from app.schemas import QuoteCreate, QuoteResponse, QuoteUpdate, EmailRequest, InvoiceResponse
+from app.schemas import QuoteCreate, QuoteResponse, QuoteUpdate, EmailRequest, InvoiceResponse, VoidRequest
 from app.auth import get_current_user
 from app.utils.pdf_generator import generate_quote_pdf
 from app.utils.email_sender import send_quote_email
@@ -133,6 +133,14 @@ def update_quote(
     if current_user.role != "admin" and quote.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     
+    if quote.status in [QuoteStatus.issued, QuoteStatus.invoiced, QuoteStatus.voided]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot edit {quote.status.value} quote. Void and re-create if changes are needed."
+        )
+    
+    old_status = quote.status
+    
     if quote_data.client_name is not None:
         quote.client_name = quote_data.client_name
     if quote_data.company_name is not None:
@@ -159,6 +167,21 @@ def update_quote(
         quote.discount = quote_data.discount
     if quote_data.tax is not None:
         quote.tax = quote_data.tax
+    
+    if old_status == QuoteStatus.draft and quote.status == QuoteStatus.issued:
+        quote.issued_at = datetime.utcnow()
+        quote.issued_by = current_user.id
+        quote.customer_snapshot = {
+            "client_name": quote.client_name,
+            "company_name": quote.company_name,
+            "client_email": quote.client_email,
+            "telephone1": quote.telephone1,
+            "telephone2": quote.telephone2,
+            "client_address": quote.client_address,
+            "client_reg_no": quote.client_reg_no,
+            "client_tax_id": quote.client_tax_id,
+            "snapshot_at": datetime.utcnow().isoformat()
+        }
     
     quote.pdf_url = None
     
@@ -211,8 +234,49 @@ def delete_quote(
     if current_user.role != "admin" and quote.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     
+    if quote.status != QuoteStatus.draft:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only draft quotes can be deleted. Use void to cancel issued quotes."
+        )
+    
     db.delete(quote)
     db.commit()
+
+@router.post("/{quote_id}/void", response_model=QuoteResponse)
+def void_quote(
+    quote_id: int,
+    void_data: VoidRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    quote = db.query(Quote).filter(Quote.id == quote_id).first()
+    if not quote:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quote not found")
+    
+    if current_user.role != "admin" and quote.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    
+    if quote.status == QuoteStatus.draft:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Draft quotes should be deleted, not voided."
+        )
+    
+    if quote.status == QuoteStatus.voided:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Quote is already voided."
+        )
+    
+    quote.status = QuoteStatus.voided
+    quote.voided_at = datetime.utcnow()
+    quote.voided_by = current_user.id
+    quote.void_reason = void_data.reason
+    
+    db.commit()
+    db.refresh(quote)
+    return quote
 
 @router.post("/{quote_id}/convert-to-invoice", response_model=InvoiceResponse)
 def convert_to_invoice(

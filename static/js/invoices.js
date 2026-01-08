@@ -38,6 +38,9 @@ function renderInvoices(invoicesToRender = invoices) {
         const pdfButtonText = invoice.pdf_url ? 'Preview PDF' : 'Generate PDF';
         const pdfButtonIcon = invoice.pdf_url ? 'bi-eye' : 'bi-file-pdf';
         const canEdit = invoice.status === 'draft';
+        const isIssued = invoice.status === 'issued';
+        const isVoided = invoice.status === 'voided';
+        
         const editButton = canEdit ? `<button class="btn btn-outline-warning" onclick="editInvoice(${invoice.id})" title="Edit Draft">
                         <i class="bi bi-pencil"></i>
                     </button>` : '';
@@ -45,9 +48,19 @@ function renderInvoices(invoicesToRender = invoices) {
                         <i class="bi bi-check-circle"></i>
                     </button>` : '';
         
+        const deleteButton = canEdit ? `<button class="btn btn-outline-danger" onclick="deleteInvoice(${invoice.id})" title="Delete Draft">
+                        <i class="bi bi-trash"></i>
+                    </button>` : '';
+        
+        const voidButton = isIssued ? `<button class="btn btn-outline-danger" onclick="openVoidModal(${invoice.id})" title="Void Invoice">
+                        <i class="bi bi-x-circle"></i>
+                    </button>` : '';
+        
+        const voidedInfo = isVoided && invoice.void_reason ? `<small class="text-muted d-block">Reason: ${invoice.void_reason}</small>` : '';
+        
         return `
-        <tr>
-            <td><strong>${invoice.invoice_number}</strong></td>
+        <tr class="${isVoided ? 'table-secondary' : ''}">
+            <td><strong>${invoice.invoice_number}</strong>${voidedInfo}</td>
             <td>${invoice.client_name || '-'}</td>
             <td>${invoice.company_name || '-'}</td>
             <td>${invoice.telephone1 || '-'}</td>
@@ -57,15 +70,14 @@ function renderInvoices(invoicesToRender = invoices) {
                 <div class="btn-group btn-group-sm" role="group">
                     ${editButton}
                     ${markIssuedButton}
-                    <button class="btn btn-outline-primary" onclick="generatePDF(${invoice.id})" title="${pdfButtonText}">
+                    <button class="btn btn-outline-primary" onclick="generatePDF(${invoice.id})" title="${pdfButtonText}" ${isVoided ? 'disabled' : ''}>
                         <i class="bi ${pdfButtonIcon}"></i>
                     </button>
-                    <button class="btn btn-outline-success" onclick="openEmailModal(${invoice.id})" title="Send Email">
+                    <button class="btn btn-outline-success" onclick="openEmailModal(${invoice.id})" title="Send Email" ${isVoided ? 'disabled' : ''}>
                         <i class="bi bi-envelope"></i>
                     </button>
-                    <button class="btn btn-outline-danger" onclick="deleteInvoice(${invoice.id})" title="Delete">
-                        <i class="bi bi-trash"></i>
-                    </button>
+                    ${voidButton}
+                    ${deleteButton}
                 </div>
             </td>
         </tr>
@@ -75,7 +87,8 @@ function renderInvoices(invoicesToRender = invoices) {
 function getStatusBadge(status) {
     const badges = {
         'draft': '<span class="badge bg-secondary">Draft</span>',
-        'issued': '<span class="badge bg-success">Issued</span>'
+        'issued': '<span class="badge bg-success">Issued</span>',
+        'voided': '<span class="badge bg-danger">Voided</span>'
     };
     return badges[status] || `<span class="badge bg-secondary">${status}</span>`;
 }
@@ -446,6 +459,43 @@ async function deleteInvoice(invoiceId) {
         showError('Error deleting invoice: ' + error.message);
     }
 }
+
+function openVoidModal(invoiceId) {
+    const invoice = invoices.find(inv => inv.id === invoiceId);
+    if (!invoice) {
+        showError('Invoice not found');
+        return;
+    }
+    
+    document.getElementById('voidInvoiceId').value = invoiceId;
+    document.getElementById('voidInvoiceNumber').textContent = invoice.invoice_number;
+    document.getElementById('voidReason').value = '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('voidModal'));
+    modal.show();
+}
+
+document.getElementById('confirmVoidBtn').addEventListener('click', async function() {
+    const invoiceId = parseInt(document.getElementById('voidInvoiceId').value);
+    const reason = document.getElementById('voidReason').value.trim();
+    
+    if (!reason) {
+        showError('Please enter a reason for voiding the invoice');
+        return;
+    }
+    
+    try {
+        await api.voidInvoice(invoiceId, reason);
+        showSuccess('Invoice voided successfully');
+        
+        const modal = bootstrap.Modal.getInstance(document.getElementById('voidModal'));
+        modal.hide();
+        
+        loadInvoices();
+    } catch (error) {
+        showError('Error voiding invoice: ' + error.message);
+    }
+});
 
 async function showConfirmDialog(title, message, confirmText = 'Confirm', isDanger = false) {
     return new Promise((resolve) => {

@@ -125,9 +125,18 @@ class InvoiceResponse(InvoiceBase):
     line_items: List[LineItemResponse]
     created_at: datetime
     updated_at: datetime
+    issued_at: Optional[datetime] = None
+    issued_by: Optional[int] = None
+    voided_at: Optional[datetime] = None
+    voided_by: Optional[int] = None
+    void_reason: Optional[str] = None
+    customer_snapshot: Optional[dict] = None
     
     class Config:
         from_attributes = True
+
+class VoidRequest(BaseModel):
+    reason: str
 
 class QuoteBase(BaseModel):
     client_name: Optional[str] = None
@@ -176,6 +185,12 @@ class QuoteResponse(QuoteBase):
     converted_to_invoice_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
+    issued_at: Optional[datetime] = None
+    issued_by: Optional[int] = None
+    voided_at: Optional[datetime] = None
+    voided_by: Optional[int] = None
+    void_reason: Optional[str] = None
+    customer_snapshot: Optional[dict] = None
     
     class Config:
         from_attributes = True

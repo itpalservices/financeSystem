@@ -116,6 +116,15 @@ const api = {
         return handleResponse(response);
     },
     
+    async voidInvoice(id, reason) {
+        const response = await fetch(`${API_BASE}/invoices/${id}/void`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ reason }),
+        });
+        return handleResponse(response);
+    },
+    
     async generateInvoicePDF(id) {
         const response = await fetch(`${API_BASE}/invoices/${id}/generate-pdf`, {
             method: 'POST',
@@ -173,6 +182,15 @@ const api = {
         if (response.status === 204) {
             return { success: true };
         }
+        return handleResponse(response);
+    },
+    
+    async voidQuote(id, reason) {
+        const response = await fetch(`${API_BASE}/quotes/${id}/void`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ reason }),
+        });
         return handleResponse(response);
     },
     

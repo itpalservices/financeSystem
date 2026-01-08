@@ -8,7 +8,7 @@ from app.models.user import User
 from app.models.invoice import Invoice, InvoiceLineItem, InvoiceStatus
 from app.models.customer import Customer
 from app.models.email_log import EmailLog, EmailType
-from app.schemas import InvoiceCreate, InvoiceResponse, InvoiceUpdate, EmailRequest
+from app.schemas import InvoiceCreate, InvoiceResponse, InvoiceUpdate, EmailRequest, VoidRequest
 from app.auth import get_current_user
 from app.utils.pdf_generator import generate_invoice_pdf
 from app.utils.email_sender import send_invoice_email
@@ -187,6 +187,12 @@ def update_invoice(
     if current_user.role != "admin" and invoice.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     
+    if invoice.status in [InvoiceStatus.issued, InvoiceStatus.voided]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail=f"Cannot edit {invoice.status.value} invoice. Void and re-issue if changes are needed."
+        )
+    
     old_status = invoice.status
     
     if invoice_data.client_name is not None:
@@ -213,6 +219,19 @@ def update_invoice(
         invoice.notes = invoice_data.notes
     
     if old_status == InvoiceStatus.draft and invoice.status == InvoiceStatus.issued:
+        invoice.issued_at = datetime.utcnow()
+        invoice.issued_by = current_user.id
+        invoice.customer_snapshot = {
+            "client_name": invoice.client_name,
+            "company_name": invoice.company_name,
+            "client_email": invoice.client_email,
+            "telephone1": invoice.telephone1,
+            "telephone2": invoice.telephone2,
+            "client_address": invoice.client_address,
+            "client_reg_no": invoice.client_reg_no,
+            "client_tax_id": invoice.client_tax_id,
+            "snapshot_at": datetime.utcnow().isoformat()
+        }
         sync_customer(
             db,
             client_name=invoice.client_name,
@@ -299,8 +318,49 @@ def delete_invoice(
     if current_user.role != "admin" and invoice.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     
+    if invoice.status != InvoiceStatus.draft:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only draft invoices can be deleted. Use void to cancel issued invoices."
+        )
+    
     db.delete(invoice)
     db.commit()
+
+@router.post("/{invoice_id}/void", response_model=InvoiceResponse)
+def void_invoice(
+    invoice_id: int,
+    void_data: VoidRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice not found")
+    
+    if current_user.role != "admin" and invoice.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    
+    if invoice.status == InvoiceStatus.draft:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Draft invoices should be deleted, not voided."
+        )
+    
+    if invoice.status == InvoiceStatus.voided:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invoice is already voided."
+        )
+    
+    invoice.status = InvoiceStatus.voided
+    invoice.voided_at = datetime.utcnow()
+    invoice.voided_by = current_user.id
+    invoice.void_reason = void_data.reason
+    
+    db.commit()
+    db.refresh(invoice)
+    return invoice
 
 @router.post("/{invoice_id}/generate-pdf")
 def generate_pdf(
