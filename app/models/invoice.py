@@ -45,10 +45,15 @@ class Invoice(Base):
     
     customer_snapshot = Column(JSON, nullable=True)
     
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
+    milestone_id = Column(Integer, ForeignKey("milestones.id"), nullable=True)
+    
     user = relationship("User", back_populates="invoices", foreign_keys=[user_id])
     issuer = relationship("User", foreign_keys=[issued_by])
     canceller = relationship("User", foreign_keys=[cancelled_by])
     line_items = relationship("InvoiceLineItem", back_populates="invoice", cascade="all, delete-orphan")
+    project = relationship("Project", back_populates="invoices")
+    milestone = relationship("Milestone", back_populates="invoices")
 
 class InvoiceLineItem(Base):
     __tablename__ = "invoice_line_items"

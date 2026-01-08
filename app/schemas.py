@@ -4,6 +4,7 @@ from datetime import datetime
 from app.models.user import UserRole
 from app.models.invoice import InvoiceStatus
 from app.models.quote import QuoteStatus
+from app.models.project import ProjectStatus, MilestoneStatus
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -216,6 +217,82 @@ class EmailLogResponse(BaseModel):
     client_name: Optional[str] = None
     company_name: Optional[str] = None
     total_amount: Optional[float] = None
+    
+    class Config:
+        from_attributes = True
+
+class MilestoneBase(BaseModel):
+    milestone_no: int
+    label: str
+    expected_amount: Optional[float] = 0.0
+    due_date: Optional[datetime] = None
+    status: Optional[MilestoneStatus] = MilestoneStatus.planned
+
+class MilestoneCreate(MilestoneBase):
+    pass
+
+class MilestoneUpdate(BaseModel):
+    milestone_no: Optional[int] = None
+    label: Optional[str] = None
+    expected_amount: Optional[float] = None
+    due_date: Optional[datetime] = None
+    status: Optional[MilestoneStatus] = None
+
+class MilestoneResponse(MilestoneBase):
+    id: int
+    project_id: int
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class ProjectBase(BaseModel):
+    customer_id: int
+    title: str
+    description: Optional[str] = None
+    status: Optional[ProjectStatus] = ProjectStatus.active
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    total_budget: Optional[float] = 0.0
+    notes: Optional[str] = None
+
+class ProjectCreate(ProjectBase):
+    milestones: Optional[List[MilestoneCreate]] = None
+
+class ProjectUpdate(BaseModel):
+    customer_id: Optional[int] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[ProjectStatus] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    total_budget: Optional[float] = None
+    notes: Optional[str] = None
+
+class ProjectResponse(ProjectBase):
+    id: int
+    project_code: str
+    user_id: int
+    created_at: datetime
+    updated_at: datetime
+    milestones: List[MilestoneResponse] = []
+    
+    class Config:
+        from_attributes = True
+
+class ProjectListResponse(BaseModel):
+    id: int
+    project_code: str
+    customer_id: int
+    customer_name: Optional[str] = None
+    company_name: Optional[str] = None
+    title: str
+    status: ProjectStatus
+    total_budget: float
+    milestones_count: int = 0
+    invoiced_amount: float = 0.0
+    created_at: datetime
     
     class Config:
         from_attributes = True
