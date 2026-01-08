@@ -37,8 +37,8 @@ function renderQuotes(quotesToRender = quotes) {
         const pdfButtonIcon = quote.pdf_url ? 'bi-eye' : 'bi-file-pdf';
         const canEdit = quote.status === 'draft';
         const canConvert = quote.status === 'issued';
-        const isVoided = quote.status === 'voided';
-        const canVoid = quote.status === 'issued' || quote.status === 'invoiced';
+        const isCancelled = quote.status === 'cancelled';
+        const canCancel = quote.status === 'issued' || quote.status === 'invoiced';
         
         const convertBtn = canConvert 
             ? `<button class="btn btn-outline-warning btn-sm" onclick="convertToInvoice(${quote.id})" title="Convert to Invoice">
@@ -58,15 +58,15 @@ function renderQuotes(quotesToRender = quotes) {
                         <i class="bi bi-trash"></i>
                     </button>` : '';
         
-        const voidButton = canVoid ? `<button class="btn btn-outline-danger" onclick="openVoidModal(${quote.id})" title="Void Quote">
+        const cancelButton = canCancel ? `<button class="btn btn-outline-danger" onclick="openCancelModal(${quote.id})" title="Cancel Quote">
                         <i class="bi bi-x-circle"></i>
                     </button>` : '';
         
-        const voidedInfo = isVoided && quote.void_reason ? `<small class="text-muted d-block">Reason: ${quote.void_reason}</small>` : '';
+        const cancelledInfo = isCancelled && quote.cancel_reason ? `<small class="text-muted d-block">Reason: ${quote.cancel_reason}</small>` : '';
         
         return `
-        <tr class="${isVoided ? 'table-secondary' : ''}">
-            <td><strong>${quote.quote_number}</strong>${voidedInfo}</td>
+        <tr class="${isCancelled ? 'table-secondary' : ''}">
+            <td><strong>${quote.quote_number}</strong>${cancelledInfo}</td>
             <td>${quote.client_name || '-'}</td>
             <td>${quote.company_name || '-'}</td>
             <td>${quote.telephone1 || '-'}</td>
@@ -78,13 +78,13 @@ function renderQuotes(quotesToRender = quotes) {
                     ${editButton}
                     ${markIssuedBtn}
                     ${convertBtn}
-                    <button class="btn btn-outline-primary" onclick="generatePDF(${quote.id})" title="${pdfButtonText}" ${isVoided ? 'disabled' : ''}>
+                    <button class="btn btn-outline-primary" onclick="generatePDF(${quote.id})" title="${pdfButtonText}" ${isCancelled ? 'disabled' : ''}>
                         <i class="bi ${pdfButtonIcon}"></i>
                     </button>
-                    <button class="btn btn-outline-success" onclick="openEmailModal(${quote.id})" title="Send Email" ${isVoided ? 'disabled' : ''}>
+                    <button class="btn btn-outline-success" onclick="openEmailModal(${quote.id})" title="Send Email" ${isCancelled ? 'disabled' : ''}>
                         <i class="bi bi-envelope"></i>
                     </button>
-                    ${voidButton}
+                    ${cancelButton}
                     ${deleteButton}
                 </div>
             </td>
@@ -97,7 +97,7 @@ function getStatusBadge(status) {
         'draft': '<span class="badge bg-secondary">Draft</span>',
         'issued': '<span class="badge bg-success">Issued</span>',
         'invoiced': '<span class="badge bg-primary">Invoiced</span>',
-        'voided': '<span class="badge bg-danger">Voided</span>',
+        'cancelled': '<span class="badge bg-danger">Cancelled</span>',
         'sent': '<span class="badge bg-info">Sent</span>',
         'accepted': '<span class="badge bg-success">Accepted</span>',
         'rejected': '<span class="badge bg-danger">Rejected</span>',
@@ -499,40 +499,40 @@ async function deleteQuote(quoteId) {
     }
 }
 
-function openVoidModal(quoteId) {
+function openCancelModal(quoteId) {
     const quote = quotes.find(q => q.id === quoteId);
     if (!quote) {
         showError('Quote not found');
         return;
     }
     
-    document.getElementById('voidQuoteId').value = quoteId;
-    document.getElementById('voidQuoteNumber').textContent = quote.quote_number;
-    document.getElementById('voidReason').value = '';
+    document.getElementById('cancelQuoteId').value = quoteId;
+    document.getElementById('cancelQuoteNumber').textContent = quote.quote_number;
+    document.getElementById('cancelReason').value = '';
     
-    const modal = new bootstrap.Modal(document.getElementById('voidModal'));
+    const modal = new bootstrap.Modal(document.getElementById('cancelModal'));
     modal.show();
 }
 
-document.getElementById('confirmVoidBtn').addEventListener('click', async function() {
-    const quoteId = parseInt(document.getElementById('voidQuoteId').value);
-    const reason = document.getElementById('voidReason').value.trim();
+document.getElementById('confirmCancelBtn').addEventListener('click', async function() {
+    const quoteId = parseInt(document.getElementById('cancelQuoteId').value);
+    const reason = document.getElementById('cancelReason').value.trim();
     
     if (!reason) {
-        showError('Please enter a reason for voiding the quote');
+        showError('Please enter a reason for cancelling the quote');
         return;
     }
     
     try {
-        await api.voidQuote(quoteId, reason);
-        showSuccess('Quote voided successfully');
+        await api.cancelQuote(quoteId, reason);
+        showSuccess('Quote cancelled successfully');
         
-        const modal = bootstrap.Modal.getInstance(document.getElementById('voidModal'));
+        const modal = bootstrap.Modal.getInstance(document.getElementById('cancelModal'));
         modal.hide();
         
         loadQuotes();
     } catch (error) {
-        showError('Error voiding quote: ' + error.message);
+        showError('Error cancelling quote: ' + error.message);
     }
 });
 

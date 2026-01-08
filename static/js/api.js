@@ -116,8 +116,8 @@ const api = {
         return handleResponse(response);
     },
     
-    async voidInvoice(id, reason) {
-        const response = await fetch(`${API_BASE}/invoices/${id}/void`, {
+    async cancelInvoice(id, reason) {
+        const response = await fetch(`${API_BASE}/invoices/${id}/cancel`, {
             method: 'POST',
             headers: getHeaders(),
             body: JSON.stringify({ reason }),
@@ -185,8 +185,8 @@ const api = {
         return handleResponse(response);
     },
     
-    async voidQuote(id, reason) {
-        const response = await fetch(`${API_BASE}/quotes/${id}/void`, {
+    async cancelQuote(id, reason) {
+        const response = await fetch(`${API_BASE}/quotes/${id}/cancel`, {
             method: 'POST',
             headers: getHeaders(),
             body: JSON.stringify({ reason }),

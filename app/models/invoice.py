@@ -8,7 +8,7 @@ from app.database import Base
 class InvoiceStatus(str, enum.Enum):
     draft = "draft"
     issued = "issued"
-    voided = "voided"
+    cancelled = "cancelled"
 
 class Invoice(Base):
     __tablename__ = "invoices"
@@ -39,15 +39,15 @@ class Invoice(Base):
     issued_at = Column(DateTime, nullable=True)
     issued_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     
-    voided_at = Column(DateTime, nullable=True)
-    voided_by = Column(Integer, ForeignKey("users.id"), nullable=True)
-    void_reason = Column(Text, nullable=True)
+    cancelled_at = Column(DateTime, nullable=True)
+    cancelled_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    cancel_reason = Column(Text, nullable=True)
     
     customer_snapshot = Column(JSON, nullable=True)
     
     user = relationship("User", back_populates="invoices", foreign_keys=[user_id])
     issuer = relationship("User", foreign_keys=[issued_by])
-    voider = relationship("User", foreign_keys=[voided_by])
+    canceller = relationship("User", foreign_keys=[cancelled_by])
     line_items = relationship("InvoiceLineItem", back_populates="invoice", cascade="all, delete-orphan")
 
 class InvoiceLineItem(Base):

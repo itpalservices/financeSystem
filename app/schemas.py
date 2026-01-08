@@ -127,15 +127,15 @@ class InvoiceResponse(InvoiceBase):
     updated_at: datetime
     issued_at: Optional[datetime] = None
     issued_by: Optional[int] = None
-    voided_at: Optional[datetime] = None
-    voided_by: Optional[int] = None
-    void_reason: Optional[str] = None
+    cancelled_at: Optional[datetime] = None
+    cancelled_by: Optional[int] = None
+    cancel_reason: Optional[str] = None
     customer_snapshot: Optional[dict] = None
     
     class Config:
         from_attributes = True
 
-class VoidRequest(BaseModel):
+class CancelRequest(BaseModel):
     reason: str
 
 class QuoteBase(BaseModel):
@@ -187,9 +187,9 @@ class QuoteResponse(QuoteBase):
     updated_at: datetime
     issued_at: Optional[datetime] = None
     issued_by: Optional[int] = None
-    voided_at: Optional[datetime] = None
-    voided_by: Optional[int] = None
-    void_reason: Optional[str] = None
+    cancelled_at: Optional[datetime] = None
+    cancelled_by: Optional[int] = None
+    cancel_reason: Optional[str] = None
     customer_snapshot: Optional[dict] = None
     
     class Config:

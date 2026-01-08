@@ -19,5 +19,5 @@ class User(Base):
     role = Column(Enum(UserRole), default=UserRole.user, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     
-    invoices = relationship("Invoice", back_populates="user")
-    quotes = relationship("Quote", back_populates="user")
+    invoices = relationship("Invoice", back_populates="user", foreign_keys="[Invoice.user_id]")
+    quotes = relationship("Quote", back_populates="user", foreign_keys="[Quote.user_id]")

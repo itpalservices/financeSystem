@@ -8,7 +8,7 @@ from app.models.user import User
 from app.models.invoice import Invoice, InvoiceLineItem, InvoiceStatus
 from app.models.customer import Customer
 from app.models.email_log import EmailLog, EmailType
-from app.schemas import InvoiceCreate, InvoiceResponse, InvoiceUpdate, EmailRequest, VoidRequest
+from app.schemas import InvoiceCreate, InvoiceResponse, InvoiceUpdate, EmailRequest, CancelRequest
 from app.auth import get_current_user
 from app.utils.pdf_generator import generate_invoice_pdf
 from app.utils.email_sender import send_invoice_email
@@ -187,10 +187,10 @@ def update_invoice(
     if current_user.role != "admin" and invoice.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     
-    if invoice.status in [InvoiceStatus.issued, InvoiceStatus.voided]:
+    if invoice.status in [InvoiceStatus.issued, InvoiceStatus.cancelled]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, 
-            detail=f"Cannot edit {invoice.status.value} invoice. Void and re-issue if changes are needed."
+            detail=f"Cannot edit {invoice.status.value} invoice. Cancel and re-issue if changes are needed."
         )
     
     old_status = invoice.status
@@ -321,16 +321,16 @@ def delete_invoice(
     if invoice.status != InvoiceStatus.draft:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only draft invoices can be deleted. Use void to cancel issued invoices."
+            detail="Only draft invoices can be deleted. Use cancel to cancel issued invoices."
         )
     
     db.delete(invoice)
     db.commit()
 
-@router.post("/{invoice_id}/void", response_model=InvoiceResponse)
-def void_invoice(
+@router.post("/{invoice_id}/cancel", response_model=InvoiceResponse)
+def cancel_invoice(
     invoice_id: int,
-    void_data: VoidRequest,
+    cancel_data: CancelRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -344,19 +344,19 @@ def void_invoice(
     if invoice.status == InvoiceStatus.draft:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Draft invoices should be deleted, not voided."
+            detail="Draft invoices should be deleted, not cancelled."
         )
     
-    if invoice.status == InvoiceStatus.voided:
+    if invoice.status == InvoiceStatus.cancelled:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invoice is already voided."
+            detail="Invoice is already cancelled."
         )
     
-    invoice.status = InvoiceStatus.voided
-    invoice.voided_at = datetime.utcnow()
-    invoice.voided_by = current_user.id
-    invoice.void_reason = void_data.reason
+    invoice.status = InvoiceStatus.cancelled
+    invoice.cancelled_at = datetime.utcnow()
+    invoice.cancelled_by = current_user.id
+    invoice.cancel_reason = cancel_data.reason
     
     db.commit()
     db.refresh(invoice)

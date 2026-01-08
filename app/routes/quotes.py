@@ -9,7 +9,7 @@ from app.models.quote import Quote, QuoteLineItem, QuoteStatus
 from app.models.invoice import Invoice, InvoiceLineItem, InvoiceStatus
 from app.models.customer import Customer
 from app.models.email_log import EmailLog, EmailType
-from app.schemas import QuoteCreate, QuoteResponse, QuoteUpdate, EmailRequest, InvoiceResponse, VoidRequest
+from app.schemas import QuoteCreate, QuoteResponse, QuoteUpdate, EmailRequest, InvoiceResponse, CancelRequest
 from app.auth import get_current_user
 from app.utils.pdf_generator import generate_quote_pdf
 from app.utils.email_sender import send_quote_email
@@ -133,10 +133,10 @@ def update_quote(
     if current_user.role != "admin" and quote.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
     
-    if quote.status in [QuoteStatus.issued, QuoteStatus.invoiced, QuoteStatus.voided]:
+    if quote.status in [QuoteStatus.issued, QuoteStatus.invoiced, QuoteStatus.cancelled]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot edit {quote.status.value} quote. Void and re-create if changes are needed."
+            detail=f"Cannot edit {quote.status.value} quote. Cancel and re-create if changes are needed."
         )
     
     old_status = quote.status
@@ -237,16 +237,16 @@ def delete_quote(
     if quote.status != QuoteStatus.draft:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only draft quotes can be deleted. Use void to cancel issued quotes."
+            detail="Only draft quotes can be deleted. Use cancel to cancel issued quotes."
         )
     
     db.delete(quote)
     db.commit()
 
-@router.post("/{quote_id}/void", response_model=QuoteResponse)
-def void_quote(
+@router.post("/{quote_id}/cancel", response_model=QuoteResponse)
+def cancel_quote(
     quote_id: int,
-    void_data: VoidRequest,
+    cancel_data: CancelRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -260,19 +260,19 @@ def void_quote(
     if quote.status == QuoteStatus.draft:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Draft quotes should be deleted, not voided."
+            detail="Draft quotes should be deleted, not cancelled."
         )
     
-    if quote.status == QuoteStatus.voided:
+    if quote.status == QuoteStatus.cancelled:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Quote is already voided."
+            detail="Quote is already cancelled."
         )
     
-    quote.status = QuoteStatus.voided
-    quote.voided_at = datetime.utcnow()
-    quote.voided_by = current_user.id
-    quote.void_reason = void_data.reason
+    quote.status = QuoteStatus.cancelled
+    quote.cancelled_at = datetime.utcnow()
+    quote.cancelled_by = current_user.id
+    quote.cancel_reason = cancel_data.reason
     
     db.commit()
     db.refresh(quote)

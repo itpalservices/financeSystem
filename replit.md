@@ -53,12 +53,15 @@ The frontend utilizes Bootstrap 5.3.0 and Bootstrap Icons 1.10.0 for a modern, r
 - **Search**: Real-time, case-insensitive search functionality for invoices and quotes across multiple fields.
 - **Customer Management**: Comprehensive module for managing customers with CRUD operations, real-time search, and auto-sync with invoice/quote creation/editing based on telephone number.
 - **Analytics Dashboard**: Provides comprehensive financial visualizations using Chart.js, including total revenue, draft amounts, month-over-month, year-over-year comparisons, and various charts for historical data analysis.
-- **Quote Status**: Quotes can have 'Draft', 'Issued', or 'Invoiced' statuses. "Convert to Invoice" functionality transfers all quote fields and updates customer data, changing the quote status to "Invoiced".
+- **Quote Status**: Quotes can have 'Draft', 'Issued', 'Invoiced', or 'Cancelled' statuses. "Convert to Invoice" functionality transfers all quote fields and updates customer data, changing the quote status to "Invoiced".
+- **Document Integrity**: Issued documents cannot be edited or deleted - they must be cancelled instead with a mandatory reason. Cancelled documents are preserved for audit purposes with grey styling and disabled actions.
+- **Customer Snapshot**: When documents are issued, customer details are captured and frozen at that moment for historical accuracy.
+- **Audit Trail**: Documents track issued_at/issued_by and cancelled_at/cancelled_by/cancel_reason metadata.
 
 ### Feature Specifications
 - **Authentication & Authorization**: Admin-only user registration, JWT login, role-based access, protected routes, bcrypt hashing.
-- **Invoice Management**: CRUD operations, PDF generation, email sending, automatic numbering, status management (draft/issued), manual issuing process.
-- **Quote Management**: CRUD operations, PDF generation, email sending, automatic numbering, conversion to invoice, status management (draft/issued/invoiced).
+- **Invoice Management**: CRUD operations, PDF generation, email sending, automatic numbering, status management (draft/issued/cancelled), document locking for issued documents.
+- **Quote Management**: CRUD operations, PDF generation, email sending, automatic numbering, conversion to invoice, status management (draft/issued/invoiced/cancelled), document locking for issued documents.
 - **Customer Management**: Full CRUD, search, and active/inactive status toggle with auto-sync during invoice/quote creation/editing.
 - **Data Model**: Clearly defined models for Users, Invoices, Invoice Line Items, Quotes, Quote Line Items, and Customers with appropriate relationships.
 
