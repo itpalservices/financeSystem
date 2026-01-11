@@ -88,6 +88,47 @@ def get_customers(
     customers = query.order_by(Customer.created_at.desc()).all()
     return customers
 
+@router.post("/check-duplicates")
+def check_duplicates(
+    phone: Optional[str] = None,
+    vat_tic: Optional[str] = None,
+    exclude_id: Optional[int] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Check for duplicate phone or VAT/TIC - returns warnings (soft check)."""
+    warnings = []
+    
+    if phone:
+        query = db.query(Customer).filter(Customer.telephone1 == phone)
+        if exclude_id:
+            query = query.filter(Customer.id != exclude_id)
+        existing = query.first()
+        if existing:
+            warnings.append({
+                "field": "phone",
+                "message": f"Phone number matches existing customer: {existing.display_name}",
+                "customer_id": existing.id,
+                "customer_name": existing.display_name
+            })
+    
+    if vat_tic:
+        query = db.query(Customer).filter(
+            func.lower(Customer.client_tax_id) == func.lower(vat_tic)
+        )
+        if exclude_id:
+            query = query.filter(Customer.id != exclude_id)
+        existing = query.first()
+        if existing:
+            warnings.append({
+                "field": "vat_tic",
+                "message": f"VAT/TIC matches existing customer: {existing.display_name}",
+                "customer_id": existing.id,
+                "customer_name": existing.display_name
+            })
+    
+    return {"warnings": warnings}
+
 @router.get("/{customer_id}", response_model=CustomerResponse)
 def get_customer(
     customer_id: int,

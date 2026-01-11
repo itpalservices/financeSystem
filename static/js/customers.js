@@ -62,6 +62,49 @@ function clearAllEditFieldErrors() {
     ['editDisplayName', 'editEmail', 'editTelephone1', 'editTelephone2'].forEach(clearFieldError);
 }
 
+function setFieldWarning(fieldId, message) {
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+    field.classList.add('border-warning');
+    let feedback = field.parentElement.querySelector('.warning-feedback');
+    if (!feedback) {
+        feedback = document.createElement('div');
+        feedback.className = 'warning-feedback text-warning small mt-1';
+        field.parentElement.appendChild(feedback);
+    }
+    feedback.innerHTML = `<i class="bi bi-exclamation-triangle"></i> ${message}`;
+}
+
+function clearFieldWarning(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+    field.classList.remove('border-warning');
+    const feedback = field.parentElement.querySelector('.warning-feedback');
+    if (feedback) feedback.remove();
+}
+
+async function checkDuplicates(phone, vatTic, excludeId = null) {
+    const params = new URLSearchParams();
+    if (phone) params.append('phone', phone);
+    if (vatTic) params.append('vat_tic', vatTic);
+    if (excludeId) params.append('exclude_id', excludeId);
+    
+    try {
+        const response = await fetch(`/api/customers/check-duplicates?${params.toString()}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        if (response.ok) {
+            return await response.json();
+        }
+    } catch (error) {
+        console.error('Duplicate check failed:', error);
+    }
+    return { warnings: [] };
+}
+
 async function loadCustomers(searchQuery = '') {
     try {
         let url = '/api/customers';
@@ -173,6 +216,26 @@ async function createCustomer() {
         return null;
     }
     
+    clearFieldWarning('createTelephone1');
+    clearFieldWarning('createClientTaxId');
+    
+    const vatTic = customerType === 'company' ? document.getElementById('createClientTaxId').value.trim() : null;
+    const duplicateCheck = await checkDuplicates(telephone1, vatTic);
+    
+    if (duplicateCheck.warnings.length > 0) {
+        for (const warning of duplicateCheck.warnings) {
+            if (warning.field === 'phone') {
+                setFieldWarning('createTelephone1', warning.message);
+            } else if (warning.field === 'vat_tic') {
+                setFieldWarning('createClientTaxId', warning.message);
+            }
+        }
+        const warningMessages = duplicateCheck.warnings.map(w => w.message).join('\n');
+        if (!confirm(`Warning: Possible duplicate found.\n\n${warningMessages}\n\nDo you want to continue saving anyway?`)) {
+            return null;
+        }
+    }
+    
     const customerData = {
         customer_type: customerType.toLowerCase(),
         display_name: displayName,
@@ -184,7 +247,7 @@ async function createCustomer() {
         telephone2: telephone2 || null,
         address: document.getElementById('createAddress').value.trim() || null,
         client_reg_no: customerType === 'company' ? (document.getElementById('createClientRegNo').value.trim() || null) : null,
-        client_tax_id: customerType === 'company' ? (document.getElementById('createClientTaxId').value.trim() || null) : null,
+        client_tax_id: vatTic || null,
         internal_notes: document.getElementById('createInternalNotes').value.trim() || null
     };
     
@@ -291,6 +354,26 @@ async function updateCustomer() {
         return;
     }
     
+    clearFieldWarning('editTelephone1');
+    clearFieldWarning('editClientTaxId');
+    
+    const vatTic = customerType === 'company' ? document.getElementById('editClientTaxId').value.trim() : null;
+    const duplicateCheck = await checkDuplicates(telephone1, vatTic, parseInt(customerId));
+    
+    if (duplicateCheck.warnings.length > 0) {
+        for (const warning of duplicateCheck.warnings) {
+            if (warning.field === 'phone') {
+                setFieldWarning('editTelephone1', warning.message);
+            } else if (warning.field === 'vat_tic') {
+                setFieldWarning('editClientTaxId', warning.message);
+            }
+        }
+        const warningMessages = duplicateCheck.warnings.map(w => w.message).join('\n');
+        if (!confirm(`Warning: Possible duplicate found.\n\n${warningMessages}\n\nDo you want to continue saving anyway?`)) {
+            return;
+        }
+    }
+    
     const customerData = {
         customer_type: customerType.toLowerCase(),
         display_name: displayName,
@@ -302,7 +385,7 @@ async function updateCustomer() {
         telephone2: telephone2 || null,
         address: document.getElementById('editAddress').value.trim() || null,
         client_reg_no: customerType === 'company' ? (document.getElementById('editClientRegNo').value.trim() || null) : null,
-        client_tax_id: customerType === 'company' ? (document.getElementById('editClientTaxId').value.trim() || null) : null,
+        client_tax_id: vatTic || null,
         internal_notes: document.getElementById('editInternalNotes').value.trim() || null
     };
     
