@@ -26,7 +26,7 @@ async function loadQuotes() {
 
 async function loadCustomers() {
     try {
-        const response = await fetch('/api/customers/', {
+        const response = await fetch('/api/customers', {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         if (response.ok) {

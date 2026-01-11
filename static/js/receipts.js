@@ -29,7 +29,7 @@ async function loadReceipts() {
 
 async function loadCustomers() {
     try {
-        const response = await fetch('/api/customers/', {
+        const response = await fetch('/api/customers', {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         
@@ -72,7 +72,10 @@ async function loadProjects() {
 
 function populateCustomerDropdown() {
     const select = document.getElementById('createCustomerId');
-    select.innerHTML = '<option value="">Select Customer...</option>';
+    if (!select) return;
+    
+    const currentValue = select.value;
+    select.innerHTML = '<option value="">-- Select Customer --</option>';
     
     allCustomers.filter(c => c.status !== 'inactive').forEach(customer => {
         const option = document.createElement('option');
@@ -80,6 +83,10 @@ function populateCustomerDropdown() {
         option.textContent = customer.display_name || customer.name || customer.company_name || 'Unknown';
         select.appendChild(option);
     });
+    
+    if (currentValue) {
+        select.value = currentValue;
+    }
 }
 
 function selectCustomer() {
