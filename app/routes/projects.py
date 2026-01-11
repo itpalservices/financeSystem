@@ -7,7 +7,7 @@ from datetime import datetime
 from app.database import get_db
 from app.models.user import User
 from app.models.customer import Customer
-from app.models.project import Project, Milestone, ProjectStatus, MilestoneStatus
+from app.models.project import Project, Milestone, ProjectStatus, MilestoneStatus, MilestoneType
 from app.models.invoice import Invoice, InvoiceStatus
 from app.schemas import (
     ProjectCreate, ProjectResponse, ProjectUpdate, ProjectListResponse,
@@ -35,6 +35,56 @@ def generate_project_code(db: Session) -> str:
         new_number = 1
     
     return f"{year_prefix}{new_number:06d}"
+
+def create_milestone_with_validation(db: Session, project_id: int, milestone_data: MilestoneCreate) -> Milestone:
+    """Create a milestone with proper validation and auto-numbering."""
+    milestone_type = milestone_data.milestone_type
+    
+    if milestone_type == MilestoneType.advance:
+        existing = db.query(Milestone).filter(
+            Milestone.project_id == project_id,
+            Milestone.milestone_type == MilestoneType.advance
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This project already has an Advance Payment milestone"
+            )
+        label = "Advance Payment"
+        milestone_no = None
+        
+    elif milestone_type == MilestoneType.final:
+        existing = db.query(Milestone).filter(
+            Milestone.project_id == project_id,
+            Milestone.milestone_type == MilestoneType.final
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This project already has a Final Payment milestone"
+            )
+        label = "Final Payment"
+        milestone_no = None
+        
+    else:
+        max_no = db.query(func.max(Milestone.milestone_no)).filter(
+            Milestone.project_id == project_id,
+            Milestone.milestone_type == MilestoneType.progress
+        ).scalar() or 0
+        milestone_no = max_no + 1
+        label = f"Progress Payment {milestone_no}"
+    
+    milestone = Milestone(
+        project_id=project_id,
+        milestone_type=milestone_type,
+        milestone_no=milestone_no,
+        label=label,
+        expected_amount=milestone_data.expected_amount or 0.0,
+        due_date=milestone_data.due_date,
+        status=MilestoneStatus.planned
+    )
+    db.add(milestone)
+    return milestone
 
 @router.post("", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
 def create_project(
@@ -65,15 +115,7 @@ def create_project(
     
     if project_data.milestones:
         for milestone_data in project_data.milestones:
-            milestone = Milestone(
-                project_id=new_project.id,
-                milestone_no=milestone_data.milestone_no,
-                label=milestone_data.label,
-                expected_amount=milestone_data.expected_amount or 0.0,
-                due_date=milestone_data.due_date,
-                status=milestone_data.status or MilestoneStatus.planned
-            )
-            db.add(milestone)
+            create_milestone_with_validation(db, new_project.id, milestone_data)
     
     db.commit()
     db.refresh(new_project)
@@ -198,15 +240,7 @@ def add_milestone(
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
     
-    milestone = Milestone(
-        project_id=project_id,
-        milestone_no=milestone_data.milestone_no,
-        label=milestone_data.label,
-        expected_amount=milestone_data.expected_amount or 0.0,
-        due_date=milestone_data.due_date,
-        status=milestone_data.status or MilestoneStatus.planned
-    )
-    db.add(milestone)
+    milestone = create_milestone_with_validation(db, project_id, milestone_data)
     db.commit()
     db.refresh(milestone)
     return milestone
