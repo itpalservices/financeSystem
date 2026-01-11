@@ -226,6 +226,11 @@ async function saveNewCustomer() {
         return;
     }
     
+    const duplicateResult = await CustomerUtils.validateAndCheckDuplicates('newTelephone1', customerType === 'company' ? 'newClientTaxId' : null);
+    if (!duplicateResult.proceed) {
+        return;
+    }
+    
     const customerData = {
         customer_type: customerType.toLowerCase(),
         display_name: displayName,
