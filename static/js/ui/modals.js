@@ -42,7 +42,7 @@ const ModalUtils = {
     `,
 
     confirmModalHtml: `
-        <div class="modal fade" id="globalConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal fade" id="globalConfirmModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -62,7 +62,7 @@ const ModalUtils = {
     `,
 
     warningModalHtml: `
-        <div class="modal fade" id="globalWarningModal" tabindex="-1" aria-hidden="true">
+        <div class="modal fade" id="globalWarningModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content border-warning">
                     <div class="modal-header bg-warning bg-opacity-25">
@@ -84,7 +84,7 @@ const ModalUtils = {
     `,
 
     deleteModalHtml: `
-        <div class="modal fade" id="globalDeleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal fade" id="globalDeleteModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content border-danger">
                     <div class="modal-header bg-danger bg-opacity-25">
@@ -187,7 +187,7 @@ const ModalUtils = {
         this.init();
         return new Promise((resolve) => {
             const modal = document.getElementById('globalConfirmModal');
-            const modalInstance = new bootstrap.Modal(modal);
+            const modalInstance = new bootstrap.Modal(modal, { backdrop: false });
             
             document.getElementById('confirmModalTitle').textContent = title;
             document.getElementById('confirmModalBody').innerHTML = message;
@@ -225,7 +225,7 @@ const ModalUtils = {
         this.init();
         return new Promise((resolve) => {
             const modal = document.getElementById('globalWarningModal');
-            const modalInstance = new bootstrap.Modal(modal);
+            const modalInstance = new bootstrap.Modal(modal, { backdrop: false });
             
             document.getElementById('warningModalTitle').innerHTML = `<i class="bi bi-exclamation-triangle me-2"></i>${title}`;
             document.getElementById('warningModalBody').innerHTML = message;
@@ -263,7 +263,7 @@ const ModalUtils = {
         this.init();
         return new Promise((resolve) => {
             const modal = document.getElementById('globalDeleteModal');
-            const modalInstance = new bootstrap.Modal(modal);
+            const modalInstance = new bootstrap.Modal(modal, { backdrop: false });
             
             document.getElementById('deleteModalTitle').innerHTML = `<i class="bi bi-trash me-2"></i>${title}`;
             document.getElementById('deleteModalBody').innerHTML = message;
