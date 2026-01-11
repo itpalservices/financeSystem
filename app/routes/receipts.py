@@ -246,12 +246,15 @@ async def issue_receipt(
     receipt.issued_at = datetime.utcnow()
     receipt.issued_by = current_user.id
     
-    if receipt.milestone_id:
-        payment_date = receipt.receipt_date or datetime.utcnow()
-        update_milestone_status(db, receipt.milestone_id, payment_date)
+    milestone_id = receipt.milestone_id
+    payment_date = receipt.receipt_date or datetime.utcnow()
     
     db.commit()
     db.refresh(receipt)
+    
+    if milestone_id:
+        update_milestone_status(db, milestone_id, payment_date)
+        db.commit()
     
     log_action(
         db,
@@ -293,11 +296,14 @@ async def cancel_receipt(
     receipt.cancelled_by = current_user.id
     receipt.cancel_reason = cancel_request.reason
     
-    if receipt.milestone_id:
-        update_milestone_status(db, receipt.milestone_id)
+    milestone_id = receipt.milestone_id
     
     db.commit()
     db.refresh(receipt)
+    
+    if milestone_id:
+        update_milestone_status(db, milestone_id)
+        db.commit()
     
     log_action(
         db,
