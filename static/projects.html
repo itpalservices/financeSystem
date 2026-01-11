@@ -305,12 +305,14 @@
                     <form id="milestoneForm">
                         <input type="hidden" id="milestoneProjectId">
                         <div class="mb-3">
-                            <label class="form-label">Milestone No. <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="milestoneNo" min="1" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Label <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="milestoneLabel" required placeholder="e.g. 1st Installment - Advance">
+                            <label class="form-label">Milestone Type <span class="text-danger">*</span></label>
+                            <select class="form-select" id="milestoneType" required>
+                                <option value="">Select Type...</option>
+                                <option value="advance">Advance Payment</option>
+                                <option value="progress">Progress Payment</option>
+                                <option value="final">Final Payment</option>
+                            </select>
+                            <small class="text-muted">Note: Only one Advance and one Final Payment allowed per project. Multiple Progress Payments are auto-numbered.</small>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Expected Amount</label>
@@ -355,6 +357,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/js/api.js"></script>
-    <script src="/static/js/projects.js?v=2"></script>
+    <script src="/static/js/projects.js?v=3"></script>
 </body>
 </html>

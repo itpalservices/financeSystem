@@ -139,19 +139,20 @@ function addCreateMilestone() {
     const milestoneHtml = `
         <div class="milestone-item" id="createMilestone${index}">
             <div class="row">
-                <div class="col-md-2">
-                    <label class="form-label">No.</label>
-                    <input type="number" class="form-control form-control-sm milestone-no" value="${index}" min="1">
-                </div>
                 <div class="col-md-4">
-                    <label class="form-label">Label</label>
-                    <input type="text" class="form-control form-control-sm milestone-label" placeholder="e.g. Advance Payment">
+                    <label class="form-label">Type</label>
+                    <select class="form-select form-select-sm milestone-type">
+                        <option value="">Select...</option>
+                        <option value="advance">Advance Payment</option>
+                        <option value="progress">Progress Payment</option>
+                        <option value="final">Final Payment</option>
+                    </select>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Amount</label>
                     <input type="number" class="form-control form-control-sm milestone-amount" step="0.01" value="0">
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-4">
                     <label class="form-label">Due Date</label>
                     <input type="date" class="form-control form-control-sm milestone-due-date">
                 </div>
@@ -183,15 +184,13 @@ async function createProject() {
     
     const milestones = [];
     document.querySelectorAll('#createMilestones .milestone-item').forEach(item => {
-        const no = item.querySelector('.milestone-no').value;
-        const label = item.querySelector('.milestone-label').value;
+        const type = item.querySelector('.milestone-type').value;
         const amount = item.querySelector('.milestone-amount').value;
         const dueDate = item.querySelector('.milestone-due-date').value;
         
-        if (label) {
+        if (type) {
             milestones.push({
-                milestone_no: parseInt(no) || 1,
-                label: label,
+                milestone_type: type,
                 expected_amount: parseFloat(amount) || 0,
                 due_date: dueDate ? new Date(dueDate).toISOString() : null
             });
@@ -411,11 +410,16 @@ function openMilestoneModal(projectId) {
 
 async function addMilestoneToProject() {
     const projectId = document.getElementById('milestoneProjectId').value;
+    const milestoneType = document.getElementById('milestoneType').value;
     const dueDate = document.getElementById('milestoneDueDate').value;
     
+    if (!milestoneType) {
+        showError('Please select a milestone type');
+        return;
+    }
+    
     const data = {
-        milestone_no: parseInt(document.getElementById('milestoneNo').value),
-        label: document.getElementById('milestoneLabel').value,
+        milestone_type: milestoneType,
         expected_amount: parseFloat(document.getElementById('milestoneAmount').value) || 0,
         due_date: dueDate ? new Date(dueDate).toISOString() : null
     };
