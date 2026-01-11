@@ -147,66 +147,39 @@
                     <div class="modal-body">
                         <div class="row mb-3">
                             <div class="col-12">
-                                <label for="customerSelect" class="form-label"><i class="bi bi-person-check"></i> Select Existing Customer</label>
+                                <label for="customerSelect" class="form-label"><i class="bi bi-person-check"></i> Customer <span class="text-danger">*</span></label>
                                 <div class="input-group">
-                                    <select class="form-select" id="customerSelect" onchange="populateFromCustomer()">
-                                        <option value="">-- New Customer / Enter Details Manually --</option>
+                                    <select class="form-select" id="customerSelect" onchange="selectCustomer()" required>
+                                        <option value="">-- Select Customer --</option>
                                     </select>
-                                    <button type="button" class="btn btn-outline-secondary" onclick="clearCustomerSelection()" title="Clear Selection">
+                                    <button type="button" class="btn btn-success" onclick="openAddCustomerModal()" title="Add New Customer">
+                                        <i class="bi bi-person-plus"></i> New
+                                    </button>
+                                </div>
+                                <small class="text-muted">Select an existing customer or create a new one</small>
+                            </div>
+                        </div>
+                        <div id="customerPreview" class="card bg-light mb-3" style="display: none;">
+                            <div class="card-body py-2">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1"><i class="bi bi-person-badge"></i> <span id="previewDisplayName"></span></h6>
+                                        <div class="small text-muted">
+                                            <div id="previewCompany" style="display: none;"><i class="bi bi-building"></i> <span></span></div>
+                                            <div id="previewEmail" style="display: none;"><i class="bi bi-envelope"></i> <span></span></div>
+                                            <div id="previewPhone" style="display: none;"><i class="bi bi-telephone"></i> <span></span></div>
+                                            <div id="previewAddress" style="display: none;"><i class="bi bi-geo-alt"></i> <span></span></div>
+                                            <div id="previewVat" style="display: none;"><i class="bi bi-card-text"></i> VAT: <span></span></div>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearCustomerSelection()" title="Clear Selection">
                                         <i class="bi bi-x-lg"></i>
                                     </button>
                                 </div>
-                                <small class="text-muted">Select an existing customer to auto-fill details, or enter new customer information below</small>
                             </div>
                         </div>
+                        <input type="hidden" id="selectedCustomerId" value="">
                         <hr>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="clientName" class="form-label">Client Name</label>
-                                <input type="text" class="form-control" id="clientName">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="companyName" class="form-label">Company Name</label>
-                                <input type="text" class="form-control" id="companyName">
-                                <small class="text-muted">At least one of Client Name or Company Name is required</small>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="clientEmail" class="form-label">Client Email</label>
-                                <input type="email" class="form-control" id="clientEmail">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="telephone1" class="form-label">Telephone 1 *</label>
-                                <input type="tel" class="form-control" id="telephone1" required 
-                                    pattern="^(25|22|24|23|99|95|94|96|97)\d{6}$"
-                                    maxlength="8"
-                                    title="Phone must be 8 digits starting with 25, 22, 24, 23, 99, 95, 94, 96, or 97">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="telephone2" class="form-label">Telephone 2</label>
-                                <input type="tel" class="form-control" id="telephone2"
-                                    pattern="^(25|22|24|23|99|95|94|96|97)\d{6}$"
-                                    maxlength="8"
-                                    title="Phone must be 8 digits starting with 25, 22, 24, 23, 99, 95, 94, 96, or 97">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="clientRegNo" class="form-label">Client Reg. No.</label>
-                                <input type="text" class="form-control" id="clientRegNo" placeholder="Optional">
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="clientTaxId" class="form-label">Client T.I.C.</label>
-                                <input type="text" class="form-control" id="clientTaxId" placeholder="Optional">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="clientAddress" class="form-label">Client Address</label>
-                                <textarea class="form-control" id="clientAddress" rows="2"></textarea>
-                            </div>
-                        </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="validUntil" class="form-label">Valid Until *</label>
@@ -428,6 +401,74 @@
                     <span id="errorToastMessage">Error!</span>
                 </div>
                 <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="addCustomerModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="bi bi-person-plus"></i> Add New Customer</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="inlineCustomerForm">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Customer Type <span class="text-danger">*</span></label>
+                                <select class="form-select" id="newCustomerType">
+                                    <option value="individual">Individual</option>
+                                    <option value="company">Company</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Display Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="newDisplayName" required placeholder="Primary name for display">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Contact Person Name</label>
+                                <input type="text" class="form-control" id="newContactName">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Company Name</label>
+                                <input type="text" class="form-control" id="newCompanyName">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" id="newEmail">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Telephone 1</label>
+                                <input type="tel" class="form-control" id="newTelephone1">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Telephone 2</label>
+                                <input type="tel" class="form-control" id="newTelephone2">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">VAT / T.I.C.</label>
+                                <input type="text" class="form-control" id="newClientTaxId">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Address</label>
+                            <textarea class="form-control" id="newAddress" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="saveNewCustomer()">
+                        <i class="bi bi-check-circle"></i> Save Customer
+                    </button>
+                </div>
             </div>
         </div>
     </div>

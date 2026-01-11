@@ -82,12 +82,10 @@ function populateCustomerDropdown() {
     const select = document.getElementById('createCustomerId');
     select.innerHTML = '<option value="">Select Customer...</option>';
     
-    allCustomers.filter(c => c.is_active).forEach(customer => {
+    allCustomers.filter(c => c.status !== 'inactive').forEach(customer => {
         const option = document.createElement('option');
         option.value = customer.id;
-        option.textContent = customer.company_name 
-            ? `${customer.name || ''} (${customer.company_name})`.trim()
-            : customer.name || customer.telephone1;
+        option.textContent = customer.display_name || customer.name || customer.company_name || 'Unknown';
         select.appendChild(option);
     });
 }

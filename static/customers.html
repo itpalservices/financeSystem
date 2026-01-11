@@ -78,9 +78,21 @@
 
         <div class="card shadow-sm mb-3">
             <div class="card-body">
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-search"></i></span>
-                    <input type="text" class="form-control" id="searchInput" placeholder="Search by name, company, email, or telephone...">
+                <div class="row g-2">
+                    <div class="col-md-8">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="searchInput" placeholder="Search by name, company, email, or telephone...">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-select" id="statusFilter" onchange="filterCustomers()">
+                            <option value="all">All Statuses</option>
+                            <option value="active" selected>Active</option>
+                            <option value="potential">Potential</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
@@ -121,37 +133,59 @@
                     <form id="createForm">
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label">Name <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="createName" required>
+                                <label class="form-label">Customer Type <span class="text-danger">*</span></label>
+                                <select class="form-select" id="createCustomerType" onchange="toggleCompanyFields('create')">
+                                    <option value="individual">Individual</option>
+                                    <option value="company">Company</option>
+                                </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Company Name</label>
-                                <input type="text" class="form-control" id="createCompanyName">
+                                <label class="form-label">Status</label>
+                                <select class="form-select" id="createStatus">
+                                    <option value="potential">Potential Customer</option>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
                             </div>
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label">Telephone 1 <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="createTelephone1" required>
+                                <label class="form-label">Display Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="createDisplayName" required placeholder="Primary name for display">
+                                <small class="text-muted">For companies: use company name. For individuals: use full name.</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" id="createEmail">
+                            </div>
+                        </div>
+                        <div class="row mb-3" id="createIndividualFields">
+                            <div class="col-md-6">
+                                <label class="form-label">Contact Person Name</label>
+                                <input type="text" class="form-control" id="createName" placeholder="Contact person name">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Company Name</label>
+                                <input type="text" class="form-control" id="createCompanyName" placeholder="Company name (if applicable)">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Telephone 1</label>
+                                <input type="text" class="form-control" id="createTelephone1">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Telephone 2</label>
                                 <input type="text" class="form-control" id="createTelephone2">
                             </div>
                         </div>
-                        <div class="row mb-3">
-                            <div class="col-md-12">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-control" id="createEmail">
-                            </div>
-                        </div>
-                        <div class="row mb-3">
+                        <div class="row mb-3" id="createCompanyFields">
                             <div class="col-md-6">
-                                <label class="form-label">Client Reg. No.</label>
+                                <label class="form-label">Registration No.</label>
                                 <input type="text" class="form-control" id="createClientRegNo">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Client T.I.C.</label>
+                                <label class="form-label">VAT / T.I.C.</label>
                                 <input type="text" class="form-control" id="createClientTaxId">
                             </div>
                         </div>
@@ -160,8 +194,8 @@
                             <textarea class="form-control" id="createAddress" rows="2"></textarea>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Notes</label>
-                            <textarea class="form-control" id="createNotes" rows="2"></textarea>
+                            <label class="form-label">Internal Notes</label>
+                            <textarea class="form-control" id="createInternalNotes" rows="2" placeholder="Internal notes (not printed on documents)"></textarea>
                         </div>
                     </form>
                 </div>
@@ -187,8 +221,35 @@
                         <input type="hidden" id="editCustomerId">
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label">Name <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="editName" required>
+                                <label class="form-label">Customer Type <span class="text-danger">*</span></label>
+                                <select class="form-select" id="editCustomerType" onchange="toggleCompanyFields('edit')">
+                                    <option value="individual">Individual</option>
+                                    <option value="company">Company</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Status</label>
+                                <select class="form-select" id="editStatus">
+                                    <option value="potential">Potential Customer</option>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Display Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="editDisplayName" required placeholder="Primary name for display">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" id="editEmail">
+                            </div>
+                        </div>
+                        <div class="row mb-3" id="editIndividualFields">
+                            <div class="col-md-6">
+                                <label class="form-label">Contact Person Name</label>
+                                <input type="text" class="form-control" id="editName">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Company Name</label>
@@ -197,27 +258,21 @@
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label">Telephone 1 <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="editTelephone1" required>
+                                <label class="form-label">Telephone 1</label>
+                                <input type="text" class="form-control" id="editTelephone1">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Telephone 2</label>
                                 <input type="text" class="form-control" id="editTelephone2">
                             </div>
                         </div>
-                        <div class="row mb-3">
-                            <div class="col-md-12">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-control" id="editEmail">
-                            </div>
-                        </div>
-                        <div class="row mb-3">
+                        <div class="row mb-3" id="editCompanyFields">
                             <div class="col-md-6">
-                                <label class="form-label">Client Reg. No.</label>
+                                <label class="form-label">Registration No.</label>
                                 <input type="text" class="form-control" id="editClientRegNo">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Client T.I.C.</label>
+                                <label class="form-label">VAT / T.I.C.</label>
                                 <input type="text" class="form-control" id="editClientTaxId">
                             </div>
                         </div>
@@ -226,8 +281,8 @@
                             <textarea class="form-control" id="editAddress" rows="2"></textarea>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Notes</label>
-                            <textarea class="form-control" id="editNotes" rows="2"></textarea>
+                            <label class="form-label">Internal Notes</label>
+                            <textarea class="form-control" id="editInternalNotes" rows="2" placeholder="Internal notes (not printed on documents)"></textarea>
                         </div>
                     </form>
                 </div>

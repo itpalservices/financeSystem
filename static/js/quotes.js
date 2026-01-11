@@ -42,55 +42,147 @@ function populateCustomerDropdown() {
     const select = document.getElementById('customerSelect');
     if (!select) return;
     
-    select.innerHTML = '<option value="">-- New Customer / Enter Details Manually --</option>';
+    const currentValue = select.value;
+    select.innerHTML = '<option value="">-- Select Customer --</option>';
     
-    customers.filter(c => c.is_active).forEach(customer => {
+    customers.filter(c => c.status !== 'inactive').forEach(customer => {
         const option = document.createElement('option');
         option.value = customer.id;
-        const displayName = customer.company_name 
-            ? `${customer.name || ''} (${customer.company_name})`.trim()
-            : customer.name || customer.telephone1;
-        option.textContent = displayName;
+        option.textContent = customer.display_name || customer.name || customer.company_name || 'Unknown';
         select.appendChild(option);
     });
+    
+    if (currentValue) {
+        select.value = currentValue;
+    }
 }
 
-function populateFromCustomer() {
+function selectCustomer() {
     const select = document.getElementById('customerSelect');
     const customerId = select.value;
     
     if (!customerId) {
-        clearCustomerFields();
+        clearCustomerSelection();
         return;
     }
     
     const customer = customers.find(c => c.id == customerId);
     if (!customer) return;
     
-    document.getElementById('clientName').value = customer.name || '';
-    document.getElementById('companyName').value = customer.company_name || '';
-    document.getElementById('clientEmail').value = customer.email || '';
-    document.getElementById('telephone1').value = customer.telephone1 || '';
-    document.getElementById('telephone2').value = customer.telephone2 || '';
-    document.getElementById('clientRegNo').value = customer.client_reg_no || '';
-    document.getElementById('clientTaxId').value = customer.client_tax_id || '';
-    document.getElementById('clientAddress').value = customer.address || '';
+    document.getElementById('selectedCustomerId').value = customer.id;
+    showCustomerPreview(customer, 'preview');
+}
+
+function showCustomerPreview(customer, prefix) {
+    const previewDiv = document.getElementById('customerPreview');
+    if (!previewDiv) return;
+    
+    previewDiv.style.display = 'block';
+    document.getElementById(`${prefix}DisplayName`).textContent = customer.display_name || customer.name || 'Unknown';
+    
+    const companyDiv = document.getElementById(`${prefix}Company`);
+    if (customer.company_name) {
+        companyDiv.style.display = 'block';
+        companyDiv.querySelector('span').textContent = customer.company_name;
+    } else {
+        companyDiv.style.display = 'none';
+    }
+    
+    const emailDiv = document.getElementById(`${prefix}Email`);
+    if (customer.email) {
+        emailDiv.style.display = 'block';
+        emailDiv.querySelector('span').textContent = customer.email;
+    } else {
+        emailDiv.style.display = 'none';
+    }
+    
+    const phoneDiv = document.getElementById(`${prefix}Phone`);
+    const phones = [customer.telephone1, customer.telephone2].filter(Boolean).join(' / ');
+    if (phones) {
+        phoneDiv.style.display = 'block';
+        phoneDiv.querySelector('span').textContent = phones;
+    } else {
+        phoneDiv.style.display = 'none';
+    }
+    
+    const addressDiv = document.getElementById(`${prefix}Address`);
+    if (customer.address) {
+        addressDiv.style.display = 'block';
+        addressDiv.querySelector('span').textContent = customer.address;
+    } else {
+        addressDiv.style.display = 'none';
+    }
+    
+    const vatDiv = document.getElementById(`${prefix}Vat`);
+    if (customer.client_tax_id) {
+        vatDiv.style.display = 'block';
+        vatDiv.querySelector('span').textContent = customer.client_tax_id;
+    } else {
+        vatDiv.style.display = 'none';
+    }
 }
 
 function clearCustomerSelection() {
     document.getElementById('customerSelect').value = '';
-    clearCustomerFields();
+    document.getElementById('selectedCustomerId').value = '';
+    const previewDiv = document.getElementById('customerPreview');
+    if (previewDiv) previewDiv.style.display = 'none';
 }
 
-function clearCustomerFields() {
-    document.getElementById('clientName').value = '';
-    document.getElementById('companyName').value = '';
-    document.getElementById('clientEmail').value = '';
-    document.getElementById('telephone1').value = '';
-    document.getElementById('telephone2').value = '';
-    document.getElementById('clientRegNo').value = '';
-    document.getElementById('clientTaxId').value = '';
-    document.getElementById('clientAddress').value = '';
+function openAddCustomerModal() {
+    document.getElementById('inlineCustomerForm').reset();
+    new bootstrap.Modal(document.getElementById('addCustomerModal')).show();
+}
+
+async function saveNewCustomer() {
+    const displayName = document.getElementById('newDisplayName').value.trim();
+    
+    if (!displayName) {
+        showError('Display Name is required');
+        return;
+    }
+    
+    const customerData = {
+        customer_type: document.getElementById('newCustomerType').value,
+        display_name: displayName,
+        status: 'potential',
+        name: document.getElementById('newContactName').value.trim() || null,
+        company_name: document.getElementById('newCompanyName').value.trim() || null,
+        email: document.getElementById('newEmail').value.trim() || null,
+        telephone1: document.getElementById('newTelephone1').value.trim() || null,
+        telephone2: document.getElementById('newTelephone2').value.trim() || null,
+        client_tax_id: document.getElementById('newClientTaxId').value.trim() || null,
+        address: document.getElementById('newAddress').value.trim() || null
+    };
+    
+    try {
+        const response = await fetch('/api/customers', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify(customerData)
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to create customer');
+        }
+        
+        const newCustomer = await response.json();
+        
+        customers.push(newCustomer);
+        populateCustomerDropdown();
+        
+        document.getElementById('customerSelect').value = newCustomer.id;
+        selectCustomer();
+        
+        bootstrap.Modal.getInstance(document.getElementById('addCustomerModal')).hide();
+        showSuccess('Customer created and selected!');
+    } catch (error) {
+        showError('Error creating customer: ' + error.message);
+    }
 }
 
 function renderQuotes(quotesToRender = quotes) {
@@ -240,6 +332,7 @@ function resetQuoteForm() {
     document.getElementById('submitBtnText').textContent = 'Create';
     document.getElementById('submitBtnIcon').className = 'bi bi-plus-circle';
     document.getElementById('createForm').reset();
+    clearCustomerSelection();
     const lineItemsContainer = document.getElementById('lineItems');
     lineItemsContainer.innerHTML = `
         <div class="line-item-row">
@@ -278,13 +371,14 @@ document.getElementById('createModal').addEventListener('hidden.bs.modal', funct
 document.getElementById('createForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    const clientName = document.getElementById('clientName').value.trim();
-    const companyName = document.getElementById('companyName').value.trim();
+    const customerId = document.getElementById('selectedCustomerId')?.value;
     
-    if (!clientName && !companyName) {
-        showModalError('Please provide at least Client Name or Company Name');
+    if (!customerId) {
+        showModalError('Please select a customer');
         return;
     }
+    
+    const customer = customers.find(c => c.id == customerId);
     
     const lineItemsElements = document.querySelectorAll('.line-item-row');
     const lineItems = Array.from(lineItemsElements).map(item => ({
@@ -300,14 +394,15 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
     }
     
     const data = {
-        client_name: clientName || null,
-        company_name: companyName || null,
-        client_email: document.getElementById('clientEmail').value || null,
-        telephone1: document.getElementById('telephone1').value,
-        telephone2: document.getElementById('telephone2').value || null,
-        client_reg_no: document.getElementById('clientRegNo').value || null,
-        client_tax_id: document.getElementById('clientTaxId').value || null,
-        client_address: document.getElementById('clientAddress').value,
+        customer_id: parseInt(customerId),
+        client_name: customer?.name || customer?.display_name || null,
+        company_name: customer?.company_name || null,
+        client_email: customer?.email || null,
+        telephone1: customer?.telephone1 || null,
+        telephone2: customer?.telephone2 || null,
+        client_reg_no: customer?.client_reg_no || null,
+        client_tax_id: customer?.client_tax_id || null,
+        client_address: customer?.address || null,
         valid_until: new Date(document.getElementById('validUntil').value).toISOString(),
         discount: parseFloat(document.getElementById('discount').value) || 0,
         tax: parseFloat(document.getElementById('tax').value) || 0,
@@ -494,14 +589,17 @@ async function editQuote(quoteId) {
     document.getElementById('submitBtnText').textContent = 'Save';
     document.getElementById('submitBtnIcon').className = 'bi bi-check-lg';
     
-    document.getElementById('clientName').value = quote.client_name || '';
-    document.getElementById('companyName').value = quote.company_name || '';
-    document.getElementById('clientEmail').value = quote.client_email || '';
-    document.getElementById('telephone1').value = quote.telephone1 || '';
-    document.getElementById('telephone2').value = quote.telephone2 || '';
-    document.getElementById('clientRegNo').value = quote.client_reg_no || '';
-    document.getElementById('clientTaxId').value = quote.client_tax_id || '';
-    document.getElementById('clientAddress').value = quote.client_address || '';
+    if (quote.customer_id) {
+        document.getElementById('customerSelect').value = quote.customer_id;
+        document.getElementById('selectedCustomerId').value = quote.customer_id;
+        const customer = customers.find(c => c.id == quote.customer_id);
+        if (customer) {
+            showCustomerPreview(customer, 'preview');
+        }
+    } else {
+        clearCustomerSelection();
+    }
+    
     document.getElementById('validUntil').value = quote.valid_until ? quote.valid_until.split('T')[0] : '';
     document.getElementById('discount').value = quote.discount || 0;
     document.getElementById('tax').value = quote.tax || 0;

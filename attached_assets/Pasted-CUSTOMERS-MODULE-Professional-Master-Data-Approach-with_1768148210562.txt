@@ -1,0 +1,82 @@
+CUSTOMERS MODULE – Professional “Master Data” Approach (with examples)
+
+Goal:
+Customers must be managed as master records (single source of truth). Quotes/Invoices/Receipts must NOT contain editable customer input fields. Instead, they must reference a customer via dropdown selection and store a snapshot of customer details at the moment a document is issued, so historical documents never change when the customer record is later updated.
+
+Core rules:
+1) Customers are created/edited ONLY in the Customers module (master record).
+2) Quote/Invoice/Receipt creation must start by selecting a Customer from a searchable dropdown.
+3) If a customer does not exist, the user can create one via “+ Add Customer” which opens the SAME Customer Create modal used in Customers → New. After saving, the new customer is auto-selected in the document form.
+4) Once a document is marked as Issued, it becomes immutable and must store a customer snapshot (name/company/address/email/phones/VAT etc). Editing the customer later must NOT change any issued documents or their PDFs.
+5) Draft documents may either (A) always show current customer data, or (B) keep draft snapshot and provide a “Refresh from Customer” button. Choose one approach and keep it consistent. Issued documents always use the issued snapshot.
+
+Customer fields (recommended):
+- customer_type: “Company” or “Individual” (required)
+- display_name: if Company -> company name, if Individual -> full name (required)
+- email (required, ideally unique)
+- phone_1 (recommended)
+- phone_2 (optional)
+- address (recommended)
+- company_reg_no (optional/conditional for Company)
+- vat_tic (optional/conditional for Company)
+- status: Potential Customer / Active / Inactive (required)
+- internal_notes (optional; internal use only, never printed on PDFs)
+- created_at, updated_at
+
+Customer status logic:
+- Default status when created from a Quote = Potential Customer
+- When the customer gets any Issued Invoice or Issued Receipt, automatically set status = Active
+- Inactive can be manually set later if needed (no auto-delete).
+
+UI behavior:
+A) Customers menu:
+- Customers List: searchable by display_name, email, phone, vat_tic; with filters (default show Active; toggle include Potential/Inactive).
+- Customer Create/Edit form: includes the fields above. Editing customer happens only here.
+
+B) Quote/Invoice/Receipt forms:
+- Step 1: Customer dropdown (required). Search by display_name/email/phone/vat_tic.
+- When a customer is selected, show customer details as read-only preview (no editable inputs).
+- Include a “+ Add Customer” button to open Customer Create modal (same as Customers → New).
+- OPTIONAL advanced feature: “Override customer details for this document only” toggle:
+  - If enabled, allow editing address/email/phone only for this document snapshot (does not update the customer master record).
+  - This override is saved only in the document snapshot when issued.
+
+Data integrity:
+- Enforce uniqueness rules (at least email unique if provided; optionally vat_tic unique for Company customers).
+- Prevent document creation without a customer_id.
+- Customer edits must not rewrite historical issued documents (because documents store snapshots).
+
+Document snapshot requirements (on Issue):
+When a Quote/Invoice/Receipt is marked as Issued, copy customer details into document fields such as:
+- snapshot_display_name
+- snapshot_company_name (if needed)
+- snapshot_email
+- snapshot_phone_1, snapshot_phone_2
+- snapshot_address
+- snapshot_company_reg_no
+- snapshot_vat_tic
+These snapshot fields are what PDFs and emails use for issued documents.
+
+Examples:
+Example 1 – Quote for a new prospect that never becomes a sale:
+- User creates Quote → clicks “+ Add Customer” → enters customer details → status defaults to Potential Customer.
+- Quote is issued and sent.
+- Customer remains in Customers list as Potential Customer (not deleted), so history remains and the customer can return later.
+
+Example 2 – Customer changes phone/address after an invoice was issued:
+- Invoice INV-2026-000010 is issued for ABC LTD, showing old phone/address.
+- Later ABC LTD updates phone/address.
+- User edits customer in Customers → Edit and updates the new values.
+- Result: The old issued invoice PDF remains unchanged (uses snapshot). Any new invoices/quotes/receipts will use the new customer details automatically.
+
+Example 3 – Avoiding wrong manual customer typing:
+- Previously user typed customer fields inside invoice forms (risk of inconsistent data and wrong allocations).
+- New approach: user selects the customer from dropdown; all fields auto-fill preview; no manual typing.
+- This prevents duplicates, overwrites, and incorrect customer data.
+
+Acceptance criteria (must pass):
+- No customer input fields exist in Quote/Invoice/Receipt forms (only dropdown selection + read-only preview).
+- “+ Add Customer” opens the same Customer modal as Customers → New and auto-selects after save.
+- Issued documents store snapshots and do not change when the customer is edited later.
+- Customer edit can only happen from Customers module.
+- Customers can be Potential/Active/Inactive; creating a quote can create a Potential Customer; issuing invoice/receipt makes customer Active.

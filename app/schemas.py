@@ -31,29 +31,37 @@ class Token(BaseModel):
     token_type: str
 
 class CustomerBase(BaseModel):
+    customer_type: str = "individual"
+    display_name: str
     name: Optional[str] = None
     company_name: Optional[str] = None
     email: Optional[str] = None
-    telephone1: str
+    telephone1: Optional[str] = None
     telephone2: Optional[str] = None
     address: Optional[str] = None
     client_reg_no: Optional[str] = None
     client_tax_id: Optional[str] = None
+    status: str = "potential"
+    internal_notes: Optional[str] = None
     notes: Optional[str] = None
 
 class CustomerCreate(CustomerBase):
     pass
 
 class CustomerUpdate(BaseModel):
+    customer_type: Optional[str] = None
+    display_name: Optional[str] = None
     name: Optional[str] = None
     company_name: Optional[str] = None
     email: Optional[str] = None
-    telephone1: str  # Required - unique identifier
+    telephone1: Optional[str] = None
     telephone2: Optional[str] = None
     address: Optional[str] = None
     client_reg_no: Optional[str] = None
     client_tax_id: Optional[str] = None
+    status: Optional[str] = None
     is_active: Optional[bool] = None
+    internal_notes: Optional[str] = None
     notes: Optional[str] = None
 
 class CustomerResponse(CustomerBase):

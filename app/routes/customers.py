@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
-from typing import List
+from typing import List, Optional
 
 from app.database import get_db
 from app.models.user import User
-from app.models.customer import Customer
+from app.models.customer import Customer, CustomerType, CustomerStatus
 from app.models.email_log import EmailLog
 from app.schemas import CustomerCreate, CustomerResponse, CustomerUpdate, EmailLogResponse
 from app.auth import get_current_user
@@ -18,18 +18,12 @@ def create_customer(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Check if customer with this telephone already exists
-    existing_customer = db.query(Customer).filter(
-        Customer.telephone1 == customer_data.telephone1
-    ).first()
-    
-    if existing_customer:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Customer with this telephone number already exists"
-        )
+    customer_type = CustomerType(customer_data.customer_type) if customer_data.customer_type else CustomerType.INDIVIDUAL
+    customer_status = CustomerStatus(customer_data.status) if customer_data.status else CustomerStatus.POTENTIAL
     
     new_customer = Customer(
+        customer_type=customer_type,
+        display_name=customer_data.display_name,
         name=customer_data.name,
         company_name=customer_data.company_name,
         email=customer_data.email,
@@ -38,6 +32,8 @@ def create_customer(
         address=customer_data.address,
         client_reg_no=customer_data.client_reg_no,
         client_tax_id=customer_data.client_tax_id,
+        status=customer_status,
+        internal_notes=customer_data.internal_notes,
         notes=customer_data.notes
     )
     db.add(new_customer)
@@ -49,20 +45,30 @@ def create_customer(
 @router.get("", response_model=List[CustomerResponse])
 def get_customers(
     search: str = "",
+    status_filter: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     query = db.query(Customer)
     
+    if status_filter:
+        try:
+            status_enum = CustomerStatus(status_filter)
+            query = query.filter(Customer.status == status_enum)
+        except ValueError:
+            pass
+    
     if search:
         search_pattern = f"%{search}%"
         query = query.filter(
             or_(
+                func.lower(Customer.display_name).like(func.lower(search_pattern)),
                 func.lower(Customer.name).like(func.lower(search_pattern)),
                 func.lower(Customer.company_name).like(func.lower(search_pattern)),
                 func.lower(Customer.email).like(func.lower(search_pattern)),
                 func.lower(Customer.telephone1).like(func.lower(search_pattern)),
-                func.lower(Customer.telephone2).like(func.lower(search_pattern))
+                func.lower(Customer.telephone2).like(func.lower(search_pattern)),
+                func.lower(Customer.client_tax_id).like(func.lower(search_pattern))
             )
         )
     
@@ -102,19 +108,14 @@ def update_customer(
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
     
-    # Check if telephone1 is being changed and if it conflicts with another customer
-    if customer_data.telephone1 and customer_data.telephone1 != customer.telephone1:
-        existing = db.query(Customer).filter(
-            Customer.telephone1 == customer_data.telephone1,
-            Customer.id != customer_id
-        ).first()
-        if existing:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Another customer with this telephone number already exists"
-            )
-    
     update_data = customer_data.dict(exclude_unset=True)
+    
+    if 'customer_type' in update_data and update_data['customer_type']:
+        update_data['customer_type'] = CustomerType(update_data['customer_type'])
+    
+    if 'status' in update_data and update_data['status']:
+        update_data['status'] = CustomerStatus(update_data['status'])
+    
     for field, value in update_data.items():
         setattr(customer, field, value)
     
