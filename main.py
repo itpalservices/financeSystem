@@ -11,7 +11,9 @@ from app.models.invoice import Invoice, InvoiceLineItem
 from app.models.quote import Quote, QuoteLineItem
 from app.models.email_log import EmailLog
 from app.models.project import Project, Milestone
-from app.routes import auth, invoices, quotes, users, customers, analytics, projects
+from app.models.receipt import PaymentReceipt
+from app.models.audit_log import AuditLog
+from app.routes import auth, invoices, quotes, users, customers, analytics, projects, receipts
 
 Base.metadata.create_all(bind=engine)
 
@@ -29,6 +31,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(invoices.router, prefix="/api/invoices", tags=["Invoices"])
 app.include_router(quotes.router, prefix="/api/quotes", tags=["Quotes"])
+app.include_router(receipts.router, prefix="/api/receipts", tags=["Payment Receipts"])
 app.include_router(customers.router, prefix="/api/customers", tags=["Customers"])
 app.include_router(projects.router, prefix="/api/projects", tags=["Projects"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
@@ -71,6 +74,10 @@ async def read_analytics():
 @app.get("/projects")
 async def read_projects():
     return FileResponse("static/projects.html")
+
+@app.get("/receipts")
+async def read_receipts():
+    return FileResponse("static/receipts.html")
 
 if __name__ == "__main__":
     import uvicorn

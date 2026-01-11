@@ -4,21 +4,25 @@ from datetime import datetime
 import enum
 
 from app.database import Base
+from app.models.invoice import ContextType
 
-class InvoiceStatus(str, enum.Enum):
+class ReceiptStatus(str, enum.Enum):
     draft = "draft"
     issued = "issued"
     cancelled = "cancelled"
 
-class ContextType(str, enum.Enum):
-    none = "none"
-    project = "project"
+class PaymentMethod(str, enum.Enum):
+    cash = "cash"
+    bank_transfer = "bank_transfer"
+    card = "card"
+    cheque = "cheque"
+    other = "other"
 
-class Invoice(Base):
-    __tablename__ = "invoices"
+class PaymentReceipt(Base):
+    __tablename__ = "payment_receipts"
     
     id = Column(Integer, primary_key=True, index=True)
-    invoice_number = Column(String, unique=True, nullable=False, index=True)
+    receipt_number = Column(String, unique=True, nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     
     customer_id = Column(Integer, ForeignKey("customers.id"), nullable=True, index=True)
@@ -33,17 +37,22 @@ class Invoice(Base):
     client_tax_id = Column(String, nullable=True)
     
     context_type = Column(Enum(ContextType), default=ContextType.none, nullable=False)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
+    milestone_id = Column(Integer, ForeignKey("milestones.id"), nullable=True)
     
-    status = Column(Enum(InvoiceStatus), default=InvoiceStatus.draft, nullable=False)
-    issue_date = Column(DateTime, default=datetime.utcnow)
-    due_date = Column(DateTime, nullable=True)
-    subtotal = Column(Float, default=0.0)
-    discount = Column(Float, default=0.0)
-    tax = Column(Float, default=0.0)
-    total = Column(Float, default=0.0)
+    invoice_id = Column(Integer, ForeignKey("invoices.id"), nullable=True)
+    
+    status = Column(Enum(ReceiptStatus), default=ReceiptStatus.draft, nullable=False)
+    receipt_date = Column(DateTime, default=datetime.utcnow)
+    
+    payment_method = Column(Enum(PaymentMethod), default=PaymentMethod.bank_transfer, nullable=False)
+    payment_reference = Column(String, nullable=True)
+    
+    amount = Column(Float, default=0.0)
     notes = Column(Text)
     pdf_url = Column(String)
     pdf_stored = Column(String, nullable=True)
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -56,26 +65,10 @@ class Invoice(Base):
     
     customer_snapshot = Column(JSON, nullable=True)
     
-    project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
-    milestone_id = Column(Integer, ForeignKey("milestones.id"), nullable=True)
-    
-    user = relationship("User", back_populates="invoices", foreign_keys=[user_id])
+    user = relationship("User", foreign_keys=[user_id])
     issuer = relationship("User", foreign_keys=[issued_by])
     canceller = relationship("User", foreign_keys=[cancelled_by])
-    customer = relationship("Customer", back_populates="invoices")
-    line_items = relationship("InvoiceLineItem", back_populates="invoice", cascade="all, delete-orphan")
-    project = relationship("Project", back_populates="invoices")
-    milestone = relationship("Milestone", back_populates="invoices")
-
-class InvoiceLineItem(Base):
-    __tablename__ = "invoice_line_items"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    invoice_id = Column(Integer, ForeignKey("invoices.id"), nullable=False)
-    description = Column(String, nullable=False)
-    quantity = Column(Float, nullable=False)
-    unit_price = Column(Float, nullable=False)
-    discount = Column(Float, default=0.0)
-    total = Column(Float, nullable=False)
-    
-    invoice = relationship("Invoice", back_populates="line_items")
+    customer = relationship("Customer", back_populates="receipts")
+    project = relationship("Project", back_populates="receipts")
+    milestone = relationship("Milestone", back_populates="receipts")
+    invoice = relationship("Invoice", backref="receipts")

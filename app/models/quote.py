@@ -4,6 +4,7 @@ from datetime import datetime
 import enum
 
 from app.database import Base
+from app.models.invoice import ContextType
 
 class QuoteStatus(str, enum.Enum):
     draft = "draft"
@@ -17,6 +18,9 @@ class Quote(Base):
     id = Column(Integer, primary_key=True, index=True)
     quote_number = Column(String, unique=True, nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=True, index=True)
+    
     client_name = Column(String, nullable=True)
     company_name = Column(String, nullable=True)
     client_email = Column(String, nullable=True)
@@ -25,6 +29,11 @@ class Quote(Base):
     client_reg_no = Column(String, nullable=True)
     client_tax_id = Column(String, nullable=True)
     client_address = Column(Text)
+    
+    context_type = Column(Enum(ContextType), default=ContextType.none, nullable=False)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
+    milestone_id = Column(Integer, ForeignKey("milestones.id"), nullable=True)
+    
     status = Column(Enum(QuoteStatus), default=QuoteStatus.draft, nullable=False)
     issue_date = Column(DateTime, default=datetime.utcnow)
     valid_until = Column(DateTime, nullable=False)
@@ -34,6 +43,7 @@ class Quote(Base):
     total = Column(Float, default=0.0)
     notes = Column(Text)
     pdf_url = Column(String)
+    pdf_stored = Column(String, nullable=True)
     converted_to_invoice_id = Column(Integer, ForeignKey("invoices.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -50,6 +60,9 @@ class Quote(Base):
     user = relationship("User", back_populates="quotes", foreign_keys=[user_id])
     issuer = relationship("User", foreign_keys=[issued_by])
     canceller = relationship("User", foreign_keys=[cancelled_by])
+    customer = relationship("Customer", back_populates="quotes")
+    project = relationship("Project", back_populates="quotes")
+    milestone = relationship("Milestone", back_populates="quotes")
     line_items = relationship("QuoteLineItem", back_populates="quote", cascade="all, delete-orphan")
 
 class QuoteLineItem(Base):

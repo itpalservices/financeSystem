@@ -11,7 +11,7 @@ class Customer(Base):
     name = Column(String, nullable=True)
     company_name = Column(String, nullable=True)
     email = Column(String, nullable=True)
-    telephone1 = Column(String, nullable=False, index=True)  # Primary identifier
+    telephone1 = Column(String, nullable=False, index=True)
     telephone2 = Column(String, nullable=True)
     address = Column(Text, nullable=True)
     client_reg_no = Column(String, nullable=True)
@@ -20,3 +20,7 @@ class Customer(Base):
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    invoices = relationship("Invoice", back_populates="customer")
+    quotes = relationship("Quote", back_populates="customer")
+    receipts = relationship("PaymentReceipt", back_populates="customer")

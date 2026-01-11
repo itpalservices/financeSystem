@@ -41,6 +41,8 @@ class Project(Base):
     user = relationship("User", backref="projects")
     milestones = relationship("Milestone", back_populates="project", cascade="all, delete-orphan", order_by="Milestone.milestone_no")
     invoices = relationship("Invoice", back_populates="project")
+    quotes = relationship("Quote", back_populates="project")
+    receipts = relationship("PaymentReceipt", back_populates="project")
 
 class Milestone(Base):
     __tablename__ = "milestones"
@@ -58,3 +60,5 @@ class Milestone(Base):
     
     project = relationship("Project", back_populates="milestones")
     invoices = relationship("Invoice", back_populates="milestone")
+    quotes = relationship("Quote", back_populates="milestone")
+    receipts = relationship("PaymentReceipt", back_populates="milestone")

@@ -2,9 +2,10 @@ from pydantic import BaseModel, EmailStr
 from typing import List, Optional
 from datetime import datetime
 from app.models.user import UserRole
-from app.models.invoice import InvoiceStatus
+from app.models.invoice import InvoiceStatus, ContextType
 from app.models.quote import QuoteStatus
 from app.models.project import ProjectStatus, MilestoneStatus, MilestoneType
+from app.models.receipt import ReceiptStatus, PaymentMethod
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -81,41 +82,45 @@ class LineItemResponse(LineItemBase):
         from_attributes = True
 
 class InvoiceBase(BaseModel):
+    customer_id: Optional[int] = None
     client_name: Optional[str] = None
     company_name: Optional[str] = None
     client_email: Optional[str] = None
-    telephone1: str  # Required for customer identification
+    telephone1: Optional[str] = None
     telephone2: Optional[str] = None
     client_address: Optional[str] = None
     client_reg_no: Optional[str] = None
     client_tax_id: Optional[str] = None
+    context_type: Optional[ContextType] = ContextType.none
+    project_id: Optional[int] = None
+    milestone_id: Optional[int] = None
     due_date: Optional[datetime] = None
     notes: Optional[str] = None
     discount: Optional[float] = 0.0
     tax: Optional[float] = 0.0
-    project_id: Optional[int] = None
-    milestone_id: Optional[int] = None
 
 class InvoiceCreate(InvoiceBase):
     line_items: List[LineItemCreate]
 
 class InvoiceUpdate(BaseModel):
+    customer_id: Optional[int] = None
     client_name: Optional[str] = None
     company_name: Optional[str] = None
     client_email: Optional[str] = None
-    telephone1: str  # Required for customer identification
+    telephone1: Optional[str] = None
     telephone2: Optional[str] = None
     client_address: Optional[str] = None
     client_reg_no: Optional[str] = None
     client_tax_id: Optional[str] = None
+    context_type: Optional[ContextType] = None
+    project_id: Optional[int] = None
+    milestone_id: Optional[int] = None
     due_date: Optional[datetime] = None
     status: Optional[InvoiceStatus] = None
     notes: Optional[str] = None
     discount: Optional[float] = None
     tax: Optional[float] = None
     line_items: Optional[List[LineItemCreate]] = None
-    project_id: Optional[int] = None
-    milestone_id: Optional[int] = None
 
 class InvoiceResponse(InvoiceBase):
     id: int
@@ -127,6 +132,7 @@ class InvoiceResponse(InvoiceBase):
     discount: float
     total: float
     pdf_url: Optional[str] = None
+    pdf_stored: Optional[str] = None
     line_items: List[LineItemResponse]
     created_at: datetime
     updated_at: datetime
@@ -136,8 +142,6 @@ class InvoiceResponse(InvoiceBase):
     cancelled_by: Optional[int] = None
     cancel_reason: Optional[str] = None
     customer_snapshot: Optional[dict] = None
-    project_id: Optional[int] = None
-    milestone_id: Optional[int] = None
     
     class Config:
         from_attributes = True
@@ -146,6 +150,7 @@ class CancelRequest(BaseModel):
     reason: str
 
 class QuoteBase(BaseModel):
+    customer_id: Optional[int] = None
     client_name: Optional[str] = None
     company_name: Optional[str] = None
     client_email: Optional[str] = None
@@ -154,6 +159,9 @@ class QuoteBase(BaseModel):
     client_reg_no: Optional[str] = None
     client_tax_id: Optional[str] = None
     client_address: Optional[str] = None
+    context_type: Optional[ContextType] = ContextType.none
+    project_id: Optional[int] = None
+    milestone_id: Optional[int] = None
     valid_until: datetime
     notes: Optional[str] = None
     discount: Optional[float] = 0.0
@@ -163,6 +171,7 @@ class QuoteCreate(QuoteBase):
     line_items: List[LineItemCreate]
 
 class QuoteUpdate(BaseModel):
+    customer_id: Optional[int] = None
     client_name: Optional[str] = None
     company_name: Optional[str] = None
     client_email: Optional[str] = None
@@ -171,6 +180,9 @@ class QuoteUpdate(BaseModel):
     client_reg_no: Optional[str] = None
     client_tax_id: Optional[str] = None
     client_address: Optional[str] = None
+    context_type: Optional[ContextType] = None
+    project_id: Optional[int] = None
+    milestone_id: Optional[int] = None
     valid_until: Optional[datetime] = None
     status: Optional[QuoteStatus] = None
     notes: Optional[str] = None
@@ -188,6 +200,7 @@ class QuoteResponse(QuoteBase):
     discount: float
     total: float
     pdf_url: Optional[str] = None
+    pdf_stored: Optional[str] = None
     line_items: List[LineItemResponse]
     converted_to_invoice_id: Optional[int] = None
     created_at: datetime
@@ -300,6 +313,87 @@ class ProjectListResponse(BaseModel):
     total_budget: float
     milestones_count: int = 0
     invoiced_amount: float = 0.0
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class ReceiptBase(BaseModel):
+    customer_id: Optional[int] = None
+    client_name: Optional[str] = None
+    company_name: Optional[str] = None
+    client_email: Optional[str] = None
+    telephone1: Optional[str] = None
+    telephone2: Optional[str] = None
+    client_address: Optional[str] = None
+    client_reg_no: Optional[str] = None
+    client_tax_id: Optional[str] = None
+    context_type: Optional[ContextType] = ContextType.none
+    project_id: Optional[int] = None
+    milestone_id: Optional[int] = None
+    invoice_id: Optional[int] = None
+    receipt_date: Optional[datetime] = None
+    payment_method: Optional[PaymentMethod] = PaymentMethod.bank_transfer
+    payment_reference: Optional[str] = None
+    amount: float = 0.0
+    notes: Optional[str] = None
+
+class ReceiptCreate(ReceiptBase):
+    pass
+
+class ReceiptUpdate(BaseModel):
+    customer_id: Optional[int] = None
+    client_name: Optional[str] = None
+    company_name: Optional[str] = None
+    client_email: Optional[str] = None
+    telephone1: Optional[str] = None
+    telephone2: Optional[str] = None
+    client_address: Optional[str] = None
+    client_reg_no: Optional[str] = None
+    client_tax_id: Optional[str] = None
+    context_type: Optional[ContextType] = None
+    project_id: Optional[int] = None
+    milestone_id: Optional[int] = None
+    invoice_id: Optional[int] = None
+    receipt_date: Optional[datetime] = None
+    payment_method: Optional[PaymentMethod] = None
+    payment_reference: Optional[str] = None
+    amount: Optional[float] = None
+    notes: Optional[str] = None
+    status: Optional[ReceiptStatus] = None
+
+class ReceiptResponse(ReceiptBase):
+    id: int
+    receipt_number: str
+    user_id: int
+    status: ReceiptStatus
+    pdf_url: Optional[str] = None
+    pdf_stored: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    issued_at: Optional[datetime] = None
+    issued_by: Optional[int] = None
+    cancelled_at: Optional[datetime] = None
+    cancelled_by: Optional[int] = None
+    cancel_reason: Optional[str] = None
+    customer_snapshot: Optional[dict] = None
+    
+    class Config:
+        from_attributes = True
+
+class AuditLogResponse(BaseModel):
+    id: int
+    user_id: Optional[int] = None
+    username: Optional[str] = None
+    action: str
+    entity_type: Optional[str] = None
+    entity_id: Optional[int] = None
+    entity_number: Optional[str] = None
+    description: Optional[str] = None
+    old_values: Optional[dict] = None
+    new_values: Optional[dict] = None
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
     created_at: datetime
     
     class Config:

@@ -67,7 +67,10 @@ The frontend utilizes Bootstrap 5.3.0 and Bootstrap Icons 1.10.0 for a modern, r
 - **Customer Management**: Full CRUD, search, and active/inactive status toggle with auto-sync during invoice/quote creation/editing.
 - **Project Management**: Full CRUD for projects with year-based numbering (PRJ-YYYY-NNNNNN), customer links, status management (active/closed/cancelled), budget tracking, and milestone/installment support. Invoices can be allocated to projects and milestones with customer validation (telephone matching), amount warnings, and immutable locking after issuance. Projects/milestones cannot be deleted if linked to invoices.
 - **Project Analytics**: Revenue per project, top projects by revenue, milestone progress tracking with expected vs. invoiced amounts, and budget utilization percentages.
-- **Data Model**: Clearly defined models for Users, Invoices, Invoice Line Items, Quotes, Quote Line Items, Customers, Projects, and Milestones with appropriate relationships.
+- **Data Model**: Clearly defined models for Users, Invoices, Invoice Line Items, Quotes, Quote Line Items, Customers, Projects, Milestones, Payment Receipts, and Audit Logs with appropriate relationships.
+- **Payment Receipts**: Complete module for recording payments with year-based numbering (REC-YYYY-NNNNNN), customer links, optional invoice links, payment method tracking (cash/bank_transfer/card/cheque/other), and immutable records after issuance.
+- **Audit Logging**: Comprehensive audit trail for critical actions (login, document creation, edits, issuance, cancellation) with timestamps, user tracking, and action metadata.
+- **Business Context**: Documents support context_type enum (none | project) with optional project/milestone allocation for business segmentation.
 
 ## External Dependencies
 - **Database**: PostgreSQL
