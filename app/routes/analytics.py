@@ -207,7 +207,7 @@ def get_project_analytics(
             project_id=project.id,
             project_code=project.project_code,
             title=project.title,
-            customer_name=project.customer.client_name if project.customer else None,
+            customer_name=project.customer.name if project.customer else None,
             company_name=project.customer.company_name if project.customer else None,
             status=project.status.value,
             budget=project.total_budget or 0,
