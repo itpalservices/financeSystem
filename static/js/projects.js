@@ -224,7 +224,15 @@ async function createProject() {
         
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.detail || 'Failed to create project');
+            let errorMsg = 'Failed to create project';
+            if (error.detail) {
+                if (Array.isArray(error.detail)) {
+                    errorMsg = error.detail.map(e => e.msg || e.message || JSON.stringify(e)).join(', ');
+                } else {
+                    errorMsg = error.detail;
+                }
+            }
+            throw new Error(errorMsg);
         }
         
         bootstrap.Modal.getInstance(document.getElementById('createModal')).hide();
@@ -424,7 +432,15 @@ async function addMilestoneToProject() {
         
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.detail || 'Failed to add milestone');
+            let errorMsg = 'Failed to add milestone';
+            if (error.detail) {
+                if (Array.isArray(error.detail)) {
+                    errorMsg = error.detail.map(e => e.msg || e.message || JSON.stringify(e)).join(', ');
+                } else {
+                    errorMsg = error.detail;
+                }
+            }
+            throw new Error(errorMsg);
         }
         
         bootstrap.Modal.getInstance(document.getElementById('milestoneModal')).hide();
@@ -491,7 +507,15 @@ async function updateProject() {
         
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.detail || 'Failed to update project');
+            let errorMsg = 'Failed to update project';
+            if (error.detail) {
+                if (Array.isArray(error.detail)) {
+                    errorMsg = error.detail.map(e => e.msg || e.message || JSON.stringify(e)).join(', ');
+                } else {
+                    errorMsg = error.detail;
+                }
+            }
+            throw new Error(errorMsg);
         }
         
         bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
@@ -518,7 +542,15 @@ async function confirmDelete() {
         
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.detail || 'Failed to delete project');
+            let errorMsg = 'Failed to delete project';
+            if (error.detail) {
+                if (Array.isArray(error.detail)) {
+                    errorMsg = error.detail.map(e => e.msg || e.message || JSON.stringify(e)).join(', ');
+                } else {
+                    errorMsg = error.detail;
+                }
+            }
+            throw new Error(errorMsg);
         }
         
         bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
