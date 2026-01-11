@@ -246,7 +246,11 @@ async function saveNewCustomer() {
         return;
     }
     
-    const duplicateResult = await CustomerUtils.validateAndCheckDuplicates('newTelephone1', customerType === 'company' ? 'newClientTaxId' : null);
+    const duplicateResult = await CustomerUtils.validateAndCheckDuplicates(
+        'newTelephone1', 
+        customerType === 'company' ? 'newClientTaxId' : null,
+        'newEmail'
+    );
     if (!duplicateResult.proceed) {
         return;
     }

@@ -1,4 +1,46 @@
 const ModalUtils = {
+    errorModalHtml: `
+        <div class="modal fade" id="globalErrorModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-danger">
+                    <div class="modal-header bg-danger bg-opacity-25">
+                        <h5 class="modal-title text-danger" id="errorModalTitle">
+                            <i class="bi bi-x-circle me-2"></i>Error
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body" id="errorModalBody">
+                        An error occurred.
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal" id="errorModalClose">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `,
+
+    successModalHtml: `
+        <div class="modal fade" id="globalSuccessModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-success">
+                    <div class="modal-header bg-success bg-opacity-25">
+                        <h5 class="modal-title text-success" id="successModalTitle">
+                            <i class="bi bi-check-circle me-2"></i>Success
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body" id="successModalBody">
+                        Operation completed successfully.
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-success" data-bs-dismiss="modal" id="successModalClose">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `,
+
     confirmModalHtml: `
         <div class="modal fade" id="globalConfirmModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
@@ -64,6 +106,12 @@ const ModalUtils = {
     `,
 
     init() {
+        if (!document.getElementById('globalErrorModal')) {
+            document.body.insertAdjacentHTML('beforeend', this.errorModalHtml);
+        }
+        if (!document.getElementById('globalSuccessModal')) {
+            document.body.insertAdjacentHTML('beforeend', this.successModalHtml);
+        }
         if (!document.getElementById('globalConfirmModal')) {
             document.body.insertAdjacentHTML('beforeend', this.confirmModalHtml);
         }
@@ -73,6 +121,66 @@ const ModalUtils = {
         if (!document.getElementById('globalDeleteModal')) {
             document.body.insertAdjacentHTML('beforeend', this.deleteModalHtml);
         }
+    },
+
+    showError(title, message) {
+        this.init();
+        return new Promise((resolve) => {
+            const modal = document.getElementById('globalErrorModal');
+            const modalInstance = new bootstrap.Modal(modal, { backdrop: 'static' });
+            
+            document.getElementById('errorModalTitle').innerHTML = `<i class="bi bi-x-circle me-2"></i>${title}`;
+            document.getElementById('errorModalBody').innerHTML = message;
+            
+            const closeBtn = document.getElementById('errorModalClose');
+            
+            const cleanup = () => {
+                closeBtn.replaceWith(closeBtn.cloneNode(true));
+                modal.removeEventListener('hidden.bs.modal', onHidden);
+            };
+            
+            const onHidden = () => {
+                cleanup();
+                resolve();
+            };
+            
+            modal.addEventListener('hidden.bs.modal', onHidden, { once: true });
+            
+            modalInstance.show();
+        });
+    },
+
+    showSuccess(title, message) {
+        this.init();
+        return new Promise((resolve) => {
+            const modal = document.getElementById('globalSuccessModal');
+            const modalInstance = new bootstrap.Modal(modal);
+            
+            document.getElementById('successModalTitle').innerHTML = `<i class="bi bi-check-circle me-2"></i>${title}`;
+            document.getElementById('successModalBody').innerHTML = message;
+            
+            const closeBtn = document.getElementById('successModalClose');
+            
+            const cleanup = () => {
+                closeBtn.replaceWith(closeBtn.cloneNode(true));
+                modal.removeEventListener('hidden.bs.modal', onHidden);
+            };
+            
+            const onHidden = () => {
+                cleanup();
+                resolve();
+            };
+            
+            modal.addEventListener('hidden.bs.modal', onHidden, { once: true });
+            
+            modalInstance.show();
+            
+            setTimeout(() => {
+                if (modal.classList.contains('show')) {
+                    modalInstance.hide();
+                }
+            }, 3000);
+        });
     },
 
     showConfirm(title, message, confirmText = 'Confirm', cancelText = 'Cancel') {

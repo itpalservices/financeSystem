@@ -92,12 +92,30 @@ def get_customers(
 def check_duplicates(
     phone: Optional[str] = None,
     vat_tic: Optional[str] = None,
+    email: Optional[str] = None,
     exclude_id: Optional[int] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Check for duplicate phone or VAT/TIC - returns warnings (soft check)."""
+    """Check for duplicate phone, VAT/TIC, or email. Returns warnings (soft) and errors (hard)."""
     warnings = []
+    errors = []
+    
+    if email:
+        query = db.query(Customer).filter(
+            func.lower(Customer.email) == func.lower(email)
+        )
+        if exclude_id:
+            query = query.filter(Customer.id != exclude_id)
+        existing = query.first()
+        if existing:
+            errors.append({
+                "field": "email",
+                "severity": "error",
+                "message": f"A customer with email '{email}' already exists: {existing.display_name}",
+                "customer_id": existing.id,
+                "customer_name": existing.display_name
+            })
     
     if phone:
         query = db.query(Customer).filter(Customer.telephone1 == phone)
@@ -107,6 +125,7 @@ def check_duplicates(
         if existing:
             warnings.append({
                 "field": "phone",
+                "severity": "warning",
                 "message": f"Phone number matches existing customer: {existing.display_name}",
                 "customer_id": existing.id,
                 "customer_name": existing.display_name
@@ -122,12 +141,13 @@ def check_duplicates(
         if existing:
             warnings.append({
                 "field": "vat_tic",
+                "severity": "warning",
                 "message": f"VAT/TIC matches existing customer: {existing.display_name}",
                 "customer_id": existing.id,
                 "customer_name": existing.display_name
             })
     
-    return {"warnings": warnings}
+    return {"warnings": warnings, "errors": errors}
 
 @router.get("/{customer_id}", response_model=CustomerResponse)
 def get_customer(

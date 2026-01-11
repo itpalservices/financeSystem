@@ -11,10 +11,11 @@ const CustomerUtils = {
         return pattern.test(email);
     },
 
-    async checkDuplicates(phone, vatTic, excludeId = null) {
+    async checkDuplicates(phone, vatTic, email, excludeId = null) {
         const params = new URLSearchParams();
         if (phone) params.append('phone', phone);
         if (vatTic) params.append('vat_tic', vatTic);
+        if (email) params.append('email', email);
         if (excludeId) params.append('exclude_id', excludeId);
         
         try {
@@ -29,7 +30,7 @@ const CustomerUtils = {
         } catch (error) {
             console.error('Duplicate check failed:', error);
         }
-        return { warnings: [] };
+        return { warnings: [], errors: [] };
     },
 
     setFieldWarning(fieldId, message) {
@@ -74,21 +75,42 @@ const CustomerUtils = {
         if (feedback) feedback.textContent = '';
     },
 
-    async validateAndCheckDuplicates(phoneFieldId, vatFieldId, excludeId = null) {
+    async validateAndCheckDuplicates(phoneFieldId, vatFieldId, emailFieldId = null, excludeId = null) {
         this.clearFieldWarning(phoneFieldId);
         if (vatFieldId) this.clearFieldWarning(vatFieldId);
+        if (emailFieldId) this.clearFieldError(emailFieldId);
         
         const phoneField = document.getElementById(phoneFieldId);
         const vatField = vatFieldId ? document.getElementById(vatFieldId) : null;
+        const emailField = emailFieldId ? document.getElementById(emailFieldId) : null;
         
         const phone = phoneField ? phoneField.value.trim() : null;
         const vatTic = vatField ? vatField.value.trim() : null;
+        const email = emailField ? emailField.value.trim() : null;
         
-        if (!phone && !vatTic) return { proceed: true, warnings: [] };
+        if (!phone && !vatTic && !email) return { proceed: true, warnings: [], errors: [] };
         
-        const duplicateCheck = await this.checkDuplicates(phone, vatTic, excludeId);
+        const duplicateCheck = await this.checkDuplicates(phone, vatTic, email, excludeId);
         
-        if (duplicateCheck.warnings.length > 0) {
+        if (duplicateCheck.errors && duplicateCheck.errors.length > 0) {
+            let errorHtml = '<ul class="mb-0">';
+            for (const error of duplicateCheck.errors) {
+                if (error.field === 'email' && emailFieldId) {
+                    this.setFieldError(emailFieldId, error.message);
+                }
+                errorHtml += `<li>${error.message}</li>`;
+            }
+            errorHtml += '</ul>';
+            
+            await ModalUtils.showError(
+                'Duplicate Found',
+                `<p>Cannot save due to duplicate data:</p>${errorHtml}`
+            );
+            
+            return { proceed: false, warnings: [], errors: duplicateCheck.errors };
+        }
+        
+        if (duplicateCheck.warnings && duplicateCheck.warnings.length > 0) {
             let warningHtml = '<ul class="mb-0">';
             for (const warning of duplicateCheck.warnings) {
                 if (warning.field === 'phone' && phoneFieldId) {
@@ -107,10 +129,10 @@ const CustomerUtils = {
                 'Cancel'
             );
             
-            return { proceed, warnings: duplicateCheck.warnings };
+            return { proceed, warnings: duplicateCheck.warnings, errors: [] };
         }
         
-        return { proceed: true, warnings: [] };
+        return { proceed: true, warnings: [], errors: [] };
     }
 };
 

@@ -218,8 +218,11 @@ async function createCustomer() {
     CustomerUtils.clearFieldWarning('createTelephone1');
     CustomerUtils.clearFieldWarning('createClientTaxId');
     
-    const vatTic = customerType === 'company' ? document.getElementById('createClientTaxId').value.trim() : null;
-    const duplicateResult = await CustomerUtils.validateAndCheckDuplicates('createTelephone1', customerType === 'company' ? 'createClientTaxId' : null);
+    const duplicateResult = await CustomerUtils.validateAndCheckDuplicates(
+        'createTelephone1', 
+        customerType === 'company' ? 'createClientTaxId' : null,
+        'createEmail'
+    );
     
     if (!duplicateResult.proceed) {
         return null;
@@ -346,8 +349,12 @@ async function updateCustomer() {
     CustomerUtils.clearFieldWarning('editTelephone1');
     CustomerUtils.clearFieldWarning('editClientTaxId');
     
-    const vatTic = customerType === 'company' ? document.getElementById('editClientTaxId').value.trim() : null;
-    const duplicateResult = await CustomerUtils.validateAndCheckDuplicates('editTelephone1', customerType === 'company' ? 'editClientTaxId' : null, parseInt(customerId));
+    const duplicateResult = await CustomerUtils.validateAndCheckDuplicates(
+        'editTelephone1', 
+        customerType === 'company' ? 'editClientTaxId' : null,
+        'editEmail',
+        parseInt(customerId)
+    );
     
     if (!duplicateResult.proceed) {
         return;
