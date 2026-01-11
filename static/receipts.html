@@ -129,12 +129,13 @@
                                 <label class="form-label">Customer <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <select class="form-select" id="createCustomerId" required onchange="selectCustomer()">
-                                        <option value="">Select Customer...</option>
+                                        <option value="">-- Select Customer --</option>
                                     </select>
-                                    <button type="button" class="btn btn-outline-success" onclick="openAddCustomerModal()" title="Add New Customer">
-                                        <i class="bi bi-plus-lg"></i>
+                                    <button type="button" class="btn btn-success" onclick="openAddCustomerModal()" title="Add New Customer">
+                                        <i class="bi bi-person-plus"></i> New
                                     </button>
                                 </div>
+                                <small class="text-muted">Select an existing customer or create a new one</small>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Receipt Date</label>

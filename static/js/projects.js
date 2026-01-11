@@ -66,12 +66,245 @@ function populateCustomerDropdowns() {
     const editSelect = document.getElementById('editCustomerId');
     
     const options = customers
-        .filter(c => c.is_active)
-        .map(c => `<option value="${c.id}">${c.name || ''} ${c.company_name ? '(' + c.company_name + ')' : ''} - ${c.telephone1}</option>`)
+        .filter(c => c.status !== 'inactive')
+        .map(c => `<option value="${c.id}">${c.display_name || c.name || c.company_name || 'Unknown'}</option>`)
         .join('');
     
-    createSelect.innerHTML = '<option value="">Select Customer...</option>' + options;
-    editSelect.innerHTML = '<option value="">Select Customer...</option>' + options;
+    if (createSelect) {
+        const currentCreate = createSelect.value;
+        createSelect.innerHTML = '<option value="">-- Select Customer --</option>' + options;
+        if (currentCreate) createSelect.value = currentCreate;
+    }
+    if (editSelect) {
+        const currentEdit = editSelect.value;
+        editSelect.innerHTML = '<option value="">-- Select Customer --</option>' + options;
+        if (currentEdit) editSelect.value = currentEdit;
+    }
+}
+
+function selectCustomer() {
+    const select = document.getElementById('createCustomerId');
+    const customerId = select.value;
+    
+    if (!customerId) {
+        clearCustomerSelection();
+        return;
+    }
+    
+    const customer = customers.find(c => c.id == customerId);
+    if (!customer) return;
+    
+    showCustomerPreview(customer);
+}
+
+function showCustomerPreview(customer) {
+    const previewDiv = document.getElementById('customerPreview');
+    if (!previewDiv) return;
+    
+    previewDiv.style.display = 'block';
+    document.getElementById('previewDisplayName').textContent = customer.display_name || customer.name || 'Unknown';
+    
+    const companyDiv = document.getElementById('previewCompany');
+    if (companyDiv) {
+        if (customer.company_name) {
+            companyDiv.style.display = 'block';
+            companyDiv.querySelector('span').textContent = customer.company_name;
+        } else {
+            companyDiv.style.display = 'none';
+        }
+    }
+    
+    const emailDiv = document.getElementById('previewEmail');
+    if (emailDiv) {
+        if (customer.email) {
+            emailDiv.style.display = 'block';
+            emailDiv.querySelector('span').textContent = customer.email;
+        } else {
+            emailDiv.style.display = 'none';
+        }
+    }
+    
+    const phoneDiv = document.getElementById('previewPhone');
+    if (phoneDiv) {
+        const phones = [customer.telephone1, customer.telephone2].filter(Boolean).join(' / ');
+        if (phones) {
+            phoneDiv.style.display = 'block';
+            phoneDiv.querySelector('span').textContent = phones;
+        } else {
+            phoneDiv.style.display = 'none';
+        }
+    }
+}
+
+function clearCustomerSelection() {
+    document.getElementById('createCustomerId').value = '';
+    const previewDiv = document.getElementById('customerPreview');
+    if (previewDiv) previewDiv.style.display = 'none';
+}
+
+function openAddCustomerModal() {
+    document.getElementById('inlineCustomerForm').reset();
+    toggleNewCustomerCompanyFields();
+    hideCustomerModalError();
+    new bootstrap.Modal(document.getElementById('addCustomerModal')).show();
+}
+
+function toggleNewCustomerCompanyFields() {
+    const customerType = document.getElementById('newCustomerType').value;
+    const companyFields = document.getElementById('newCompanyFields');
+    if (companyFields) {
+        companyFields.style.display = customerType === 'company' ? 'flex' : 'none';
+    }
+}
+
+function showCustomerModalError(message) {
+    let errorDiv = document.getElementById('customerModalError');
+    if (!errorDiv) {
+        errorDiv = document.createElement('div');
+        errorDiv.id = 'customerModalError';
+        errorDiv.className = 'alert alert-danger mb-3';
+        const modalBody = document.querySelector('#addCustomerModal .modal-body');
+        modalBody.insertBefore(errorDiv, modalBody.firstChild);
+    }
+    errorDiv.innerHTML = `<i class="bi bi-exclamation-triangle"></i> ${message}`;
+    errorDiv.style.display = 'block';
+}
+
+function hideCustomerModalError() {
+    const errorDiv = document.getElementById('customerModalError');
+    if (errorDiv) errorDiv.style.display = 'none';
+}
+
+function setFieldError(fieldId, message) {
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+    field.classList.add('is-invalid');
+    let feedback = field.parentElement.querySelector('.invalid-feedback');
+    if (!feedback) {
+        feedback = document.createElement('div');
+        feedback.className = 'invalid-feedback';
+        field.parentElement.appendChild(feedback);
+    }
+    feedback.textContent = message;
+}
+
+function clearFieldError(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+    field.classList.remove('is-invalid');
+    const feedback = field.parentElement.querySelector('.invalid-feedback');
+    if (feedback) feedback.textContent = '';
+}
+
+function clearAllFieldErrors() {
+    ['newDisplayName', 'newEmail', 'newTelephone1', 'newTelephone2'].forEach(clearFieldError);
+}
+
+function validateCyprusPhone(phone) {
+    if (!phone) return true;
+    const pattern = /^(25|22|24|23|99|95|94|96|97)\d{6}$/;
+    return pattern.test(phone);
+}
+
+function validateEmail(email) {
+    if (!email) return true;
+    const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return pattern.test(email);
+}
+
+async function saveNewCustomer() {
+    hideCustomerModalError();
+    clearAllFieldErrors();
+    
+    const displayName = document.getElementById('newDisplayName').value.trim();
+    const customerType = document.getElementById('newCustomerType').value;
+    const email = document.getElementById('newEmail').value.trim();
+    const telephone1 = document.getElementById('newTelephone1').value.trim();
+    const telephone2 = document.getElementById('newTelephone2').value.trim();
+    
+    let hasErrors = false;
+    
+    if (!displayName) {
+        setFieldError('newDisplayName', 'Display Name is required');
+        hasErrors = true;
+    }
+    
+    if (!email) {
+        setFieldError('newEmail', 'Email is required');
+        hasErrors = true;
+    } else if (!validateEmail(email)) {
+        setFieldError('newEmail', 'Invalid email format');
+        hasErrors = true;
+    }
+    
+    if (!telephone1) {
+        setFieldError('newTelephone1', 'Telephone 1 is required');
+        hasErrors = true;
+    } else if (!validateCyprusPhone(telephone1)) {
+        setFieldError('newTelephone1', 'Must be 8 digits starting with 25, 22, 24, 23, 99, 95, 94, 96, or 97');
+        hasErrors = true;
+    }
+    
+    if (telephone2 && !validateCyprusPhone(telephone2)) {
+        setFieldError('newTelephone2', 'Must be a valid Cyprus number');
+        hasErrors = true;
+    }
+    
+    if (hasErrors) {
+        return;
+    }
+    
+    const customerData = {
+        customer_type: customerType.toLowerCase(),
+        display_name: displayName,
+        status: 'potential',
+        name: document.getElementById('newContactName').value.trim() || null,
+        company_name: customerType === 'company' ? (document.getElementById('newCompanyName').value.trim() || null) : null,
+        email: email || null,
+        telephone1: telephone1 || null,
+        telephone2: telephone2 || null,
+        address: document.getElementById('newAddress').value.trim() || null,
+        client_tax_id: customerType === 'company' ? (document.getElementById('newClientTaxId').value.trim() || null) : null,
+        client_reg_no: customerType === 'company' ? (document.getElementById('newClientRegNo').value.trim() || null) : null
+    };
+    
+    try {
+        const response = await fetch('/api/customers', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify(customerData)
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            let errorMsg = 'Failed to create customer';
+            if (error.detail) {
+                if (typeof error.detail === 'string') {
+                    errorMsg = error.detail;
+                } else if (Array.isArray(error.detail)) {
+                    errorMsg = error.detail.map(e => e.msg || e.message || JSON.stringify(e)).join(', ');
+                }
+            }
+            showCustomerModalError(errorMsg);
+            return;
+        }
+        
+        const newCustomer = await response.json();
+        
+        bootstrap.Modal.getInstance(document.getElementById('addCustomerModal')).hide();
+        
+        await loadCustomers();
+        
+        document.getElementById('createCustomerId').value = newCustomer.id;
+        selectCustomer();
+        
+        showSuccess('Customer created and selected');
+    } catch (error) {
+        showCustomerModalError('Error creating customer: ' + error.message);
+    }
 }
 
 function renderProjects() {
