@@ -125,6 +125,41 @@
         </div>
 
         <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="card stat-card shadow-sm" style="border-left-color: #28a745;">
+                    <div class="card-body">
+                        <h3 id="receiptCount" style="color: #28a745;">0</h3>
+                        <p><i class="bi bi-receipt"></i> Issued Receipts</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card shadow-sm" style="border-left-color: #ffc107;">
+                    <div class="card-body">
+                        <h3 id="draftReceiptCount" style="color: #ffc107;">0</h3>
+                        <p><i class="bi bi-receipt-cutoff"></i> Draft Receipts</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card shadow-sm" style="border-left-color: #28a745;">
+                    <div class="card-body">
+                        <h3 id="receiptAmount" style="color: #28a745;">€0</h3>
+                        <p><i class="bi bi-cash-coin"></i> Total Received</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card shadow-sm" style="border-left-color: #17a2b8;">
+                    <div class="card-body">
+                        <h3 id="receiptThisMonth" style="color: #17a2b8;">€0</h3>
+                        <p><i class="bi bi-calendar-check"></i> This Month</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
             <div class="col-md-4">
                 <div class="card stat-card shadow-sm" style="border-left-color: #28a745;">
                     <div class="card-body">
@@ -161,6 +196,9 @@
                     <a href="/quotes" class="btn btn-primary">
                         <i class="bi bi-file-earmark-ruled"></i> View Quotes
                     </a>
+                    <a href="/receipts" class="btn btn-primary">
+                        <i class="bi bi-receipt"></i> View Receipts
+                    </a>
                     <a href="/projects" class="btn btn-primary">
                         <i class="bi bi-folder"></i> View Projects
                     </a>
@@ -185,22 +223,30 @@
                 document.getElementById('userEmail').textContent = user.username;
                 document.getElementById('userRole').textContent = user.role;
 
-                const [invoices, quotes, projectAnalytics] = await Promise.all([
+                const headers = { 'Authorization': `Bearer ${localStorage.getItem('token')}` };
+                const [invoices, quotes, projectAnalytics, receiptAnalytics] = await Promise.all([
                     api.getInvoices(),
                     api.getQuotes(),
-                    fetch('/api/analytics/projects', {
-                        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-                    }).then(r => r.json()).catch(() => ({ total_projects: 0, active_projects: 0, total_project_revenue: 0 }))
+                    fetch('/api/analytics/projects', { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
+                    fetch('/api/analytics/receipts', { headers }).then(r => r.ok ? r.json() : null).catch(() => null)
                 ]);
+                
+                const projectData = projectAnalytics || { total_projects: 0, active_projects: 0, total_project_revenue: 0 };
+                const receiptData = receiptAnalytics || { total_issued_receipts: 0, total_draft_receipts: 0, total_issued_amount: 0, current_month_total: 0 };
 
                 document.getElementById('invoiceCount').textContent = invoices.length;
                 document.getElementById('draftInvoiceCount').textContent = invoices.filter(inv => inv.status === 'draft').length;
                 document.getElementById('quoteCount').textContent = quotes.length;
                 document.getElementById('draftQuoteCount').textContent = quotes.filter(q => q.status === 'draft').length;
                 
-                document.getElementById('activeProjectCount').textContent = projectAnalytics.active_projects || 0;
-                document.getElementById('totalProjectCount').textContent = projectAnalytics.total_projects || 0;
-                document.getElementById('projectRevenue').textContent = '€' + (projectAnalytics.total_project_revenue || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+                document.getElementById('receiptCount').textContent = receiptData.total_issued_receipts || 0;
+                document.getElementById('draftReceiptCount').textContent = receiptData.total_draft_receipts || 0;
+                document.getElementById('receiptAmount').textContent = '€' + (receiptData.total_issued_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+                document.getElementById('receiptThisMonth').textContent = '€' + (receiptData.current_month_total || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+                
+                document.getElementById('activeProjectCount').textContent = projectData.active_projects || 0;
+                document.getElementById('totalProjectCount').textContent = projectData.total_projects || 0;
+                document.getElementById('projectRevenue').textContent = '€' + (projectData.total_project_revenue || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
             } catch (error) {
                 console.error('Error loading dashboard:', error);
             }

@@ -9,6 +9,7 @@ from app.database import get_db
 from app.models.user import User
 from app.models.invoice import Invoice, InvoiceStatus
 from app.models.project import Project, ProjectStatus, Milestone
+from app.models.receipt import PaymentReceipt, ReceiptStatus, PaymentMethod
 from app.auth import get_current_user
 
 router = APIRouter()
@@ -264,4 +265,115 @@ def get_project_analytics(
         total_project_revenue=round(total_project_revenue, 2),
         top_projects=top_projects,
         milestone_progress=milestone_progress
+    )
+
+
+class PaymentMethodStats(BaseModel):
+    method: str
+    count: int
+    total: float
+    percentage: float
+
+class MonthlyReceiptData(BaseModel):
+    month: int
+    month_name: str
+    total: float
+    count: int
+
+class ReceiptAnalyticsResponse(BaseModel):
+    total_issued_receipts: int
+    total_issued_amount: float
+    total_draft_receipts: int
+    total_draft_amount: float
+    current_month_total: float
+    previous_month_total: float
+    month_change_percent: Optional[float]
+    payment_methods_breakdown: List[PaymentMethodStats]
+    monthly_cashflow: List[MonthlyReceiptData]
+
+@router.get("/receipts", response_model=ReceiptAnalyticsResponse)
+def get_receipt_analytics(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get receipt analytics including total receipts, payment methods breakdown, and cashflow."""
+    
+    today = date.today()
+    current_year = today.year
+    current_month = today.month
+    
+    month_names = ['January', 'February', 'March', 'April', 'May', 'June',
+                   'July', 'August', 'September', 'October', 'November', 'December']
+    
+    if current_user.role == "admin":
+        base_query = db.query(PaymentReceipt)
+    else:
+        base_query = db.query(PaymentReceipt).filter(PaymentReceipt.user_id == current_user.id)
+    
+    issued_receipts = base_query.filter(PaymentReceipt.status == ReceiptStatus.issued).all()
+    draft_receipts = base_query.filter(PaymentReceipt.status == ReceiptStatus.draft).all()
+    
+    total_issued_receipts = len(issued_receipts)
+    total_issued_amount = sum(r.amount for r in issued_receipts)
+    total_draft_receipts = len(draft_receipts)
+    total_draft_amount = sum(r.amount for r in draft_receipts)
+    
+    current_month_receipts = [r for r in issued_receipts 
+                              if r.issued_at and r.issued_at.year == current_year and r.issued_at.month == current_month]
+    current_month_total = sum(r.amount for r in current_month_receipts)
+    
+    prev_month = current_month - 1 if current_month > 1 else 12
+    prev_month_year = current_year if current_month > 1 else current_year - 1
+    previous_month_receipts = [r for r in issued_receipts 
+                               if r.issued_at and r.issued_at.year == prev_month_year and r.issued_at.month == prev_month]
+    previous_month_total = sum(r.amount for r in previous_month_receipts)
+    
+    if previous_month_total > 0:
+        month_change_percent = ((current_month_total - previous_month_total) / previous_month_total) * 100
+    else:
+        month_change_percent = None
+    
+    payment_method_counts = {}
+    for receipt in issued_receipts:
+        method = receipt.payment_method.value if receipt.payment_method else "other"
+        if method not in payment_method_counts:
+            payment_method_counts[method] = {"count": 0, "total": 0}
+        payment_method_counts[method]["count"] += 1
+        payment_method_counts[method]["total"] += receipt.amount
+    
+    payment_methods_breakdown = []
+    for method, data in payment_method_counts.items():
+        percentage = (data["total"] / total_issued_amount * 100) if total_issued_amount > 0 else 0
+        payment_methods_breakdown.append(PaymentMethodStats(
+            method=method,
+            count=data["count"],
+            total=round(data["total"], 2),
+            percentage=round(percentage, 1)
+        ))
+    
+    payment_methods_breakdown.sort(key=lambda x: x.total, reverse=True)
+    
+    monthly_cashflow = []
+    for month in range(1, 13):
+        month_receipts = [r for r in issued_receipts 
+                         if r.issued_at and r.issued_at.year == current_year and r.issued_at.month == month]
+        month_total = sum(r.amount for r in month_receipts)
+        month_count = len(month_receipts)
+        monthly_cashflow.append(MonthlyReceiptData(
+            month=month,
+            month_name=month_names[month - 1],
+            total=round(month_total, 2),
+            count=month_count
+        ))
+    
+    return ReceiptAnalyticsResponse(
+        total_issued_receipts=total_issued_receipts,
+        total_issued_amount=round(total_issued_amount, 2),
+        total_draft_receipts=total_draft_receipts,
+        total_draft_amount=round(total_draft_amount, 2),
+        current_month_total=round(current_month_total, 2),
+        previous_month_total=round(previous_month_total, 2),
+        month_change_percent=round(month_change_percent, 1) if month_change_percent is not None else None,
+        payment_methods_breakdown=payment_methods_breakdown,
+        monthly_cashflow=monthly_cashflow
     )

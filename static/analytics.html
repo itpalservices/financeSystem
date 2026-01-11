@@ -313,6 +313,71 @@
                 </div>
             </div>
         </div>
+
+        <h3 class="mt-5 mb-4"><i class="bi bi-receipt"></i> Receipt Analytics</h3>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="card stat-card shadow-sm" style="border-left-color: #28a745;">
+                    <div class="card-body">
+                        <h3 id="receiptIssuedCount" style="color: #28a745;">0</h3>
+                        <p><i class="bi bi-receipt"></i> Issued Receipts</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card shadow-sm" style="border-left-color: #ffc107;">
+                    <div class="card-body">
+                        <h3 id="receiptDraftCount" style="color: #ffc107;">0</h3>
+                        <p><i class="bi bi-receipt-cutoff"></i> Draft Receipts</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card shadow-sm" style="border-left-color: #28a745;">
+                    <div class="card-body">
+                        <h3 id="receiptTotalAmount" style="color: #28a745;">€0</h3>
+                        <p><i class="bi bi-cash-coin"></i> Total Received</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card shadow-sm" style="border-left-color: #17a2b8;">
+                    <div class="card-body">
+                        <h3 id="receiptMonthTotal" style="color: #17a2b8;">€0</h3>
+                        <p><i class="bi bi-calendar-check"></i> This Month</p>
+                        <small id="receiptMonthChange"></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-graph-up-arrow"></i> Monthly Cashflow</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="cashflowChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Payment Methods Breakdown</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="paymentMethodsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -324,12 +389,15 @@
 
         let analyticsData = null;
         let projectAnalyticsData = null;
+        let receiptAnalyticsData = null;
         let monthlyChart = null;
         let statusChart = null;
         let yearComparisonChart = null;
         let trendChart = null;
         let topProjectsChart = null;
         let milestoneChart = null;
+        let cashflowChart = null;
+        let paymentMethodsChart = null;
 
         const chartColors = {
             primary: '#1b7ca8',
@@ -345,11 +413,14 @@
         async function loadAnalytics() {
             try {
                 const token = localStorage.getItem('token');
-                const [analyticsResponse, projectResponse] = await Promise.all([
+                const [analyticsResponse, projectResponse, receiptResponse] = await Promise.all([
                     fetch('/api/analytics', {
                         headers: { 'Authorization': `Bearer ${token}` }
                     }),
                     fetch('/api/analytics/projects', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }),
+                    fetch('/api/analytics/receipts', {
                         headers: { 'Authorization': `Bearer ${token}` }
                     })
                 ]);
@@ -360,12 +431,19 @@
                 if (projectResponse.ok) {
                     projectAnalyticsData = await projectResponse.json();
                 }
+                if (receiptResponse.ok) {
+                    receiptAnalyticsData = await receiptResponse.json();
+                }
                 
                 updateDisplay();
                 initializeCharts();
                 if (projectAnalyticsData) {
                     updateProjectDisplay();
                     initializeProjectCharts();
+                }
+                if (receiptAnalyticsData && receiptAnalyticsData.total_issued_receipts !== undefined) {
+                    updateReceiptDisplay();
+                    initializeReceiptCharts();
                 }
             } catch (error) {
                 console.error('Error loading analytics:', error);
@@ -493,6 +571,102 @@
                 `;
             });
             tbody.innerHTML = html;
+        }
+        
+        function updateReceiptDisplay() {
+            if (!receiptAnalyticsData) return;
+            
+            document.getElementById('receiptIssuedCount').textContent = receiptAnalyticsData.total_issued_receipts;
+            document.getElementById('receiptDraftCount').textContent = receiptAnalyticsData.total_draft_receipts;
+            document.getElementById('receiptTotalAmount').textContent = `€${receiptAnalyticsData.total_issued_amount.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            document.getElementById('receiptMonthTotal').textContent = `€${receiptAnalyticsData.current_month_total.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            
+            const monthChange = document.getElementById('receiptMonthChange');
+            if (receiptAnalyticsData.month_change_percent !== null) {
+                const isPositive = receiptAnalyticsData.month_change_percent >= 0;
+                monthChange.className = isPositive ? 'change-positive' : 'change-negative';
+                monthChange.innerHTML = `<i class="bi bi-arrow-${isPositive ? 'up' : 'down'}"></i> ${Math.abs(receiptAnalyticsData.month_change_percent)}% vs last month`;
+            } else {
+                monthChange.textContent = 'No previous month data';
+                monthChange.className = 'text-muted';
+            }
+        }
+        
+        function initializeReceiptCharts() {
+            if (!receiptAnalyticsData) return;
+            
+            if (cashflowChart) cashflowChart.destroy();
+            const cashflowCtx = document.getElementById('cashflowChart').getContext('2d');
+            cashflowChart = new Chart(cashflowCtx, {
+                type: 'line',
+                data: {
+                    labels: receiptAnalyticsData.monthly_cashflow.map(m => m.month_name.substring(0, 3)),
+                    datasets: [{
+                        label: 'Cashflow (€)',
+                        data: receiptAnalyticsData.monthly_cashflow.map(m => m.total),
+                        borderColor: chartColors.success,
+                        backgroundColor: chartColors.success + '33',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '€' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            const paymentMethods = receiptAnalyticsData.payment_methods_breakdown;
+            const methodLabels = {
+                'cash': 'Cash',
+                'bank_transfer': 'Bank Transfer',
+                'card': 'Card',
+                'cheque': 'Cheque',
+                'other': 'Other'
+            };
+            const methodColors = ['#28a745', '#1b7ca8', '#6f42c1', '#ffc107', '#6c757d'];
+            
+            if (paymentMethodsChart) paymentMethodsChart.destroy();
+            const paymentCtx = document.getElementById('paymentMethodsChart').getContext('2d');
+            paymentMethodsChart = new Chart(paymentCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: paymentMethods.map(pm => methodLabels[pm.method] || pm.method),
+                    datasets: [{
+                        data: paymentMethods.map(pm => pm.total),
+                        backgroundColor: methodColors.slice(0, paymentMethods.length),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const pm = paymentMethods[context.dataIndex];
+                                    return `${context.label}: €${pm.total.toLocaleString('en-US', {minimumFractionDigits: 2})} (${pm.percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         function updateDisplay() {
