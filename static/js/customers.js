@@ -215,24 +215,14 @@ async function createCustomer() {
         return null;
     }
     
-    clearFieldWarning('createTelephone1');
-    clearFieldWarning('createClientTaxId');
+    CustomerUtils.clearFieldWarning('createTelephone1');
+    CustomerUtils.clearFieldWarning('createClientTaxId');
     
     const vatTic = customerType === 'company' ? document.getElementById('createClientTaxId').value.trim() : null;
-    const duplicateCheck = await checkDuplicates(telephone1, vatTic);
+    const duplicateResult = await CustomerUtils.validateAndCheckDuplicates('createTelephone1', customerType === 'company' ? 'createClientTaxId' : null);
     
-    if (duplicateCheck.warnings.length > 0) {
-        for (const warning of duplicateCheck.warnings) {
-            if (warning.field === 'phone') {
-                setFieldWarning('createTelephone1', warning.message);
-            } else if (warning.field === 'vat_tic') {
-                setFieldWarning('createClientTaxId', warning.message);
-            }
-        }
-        const warningMessages = duplicateCheck.warnings.map(w => w.message).join('\n');
-        if (!confirm(`Warning: Possible duplicate found.\n\n${warningMessages}\n\nDo you want to continue saving anyway?`)) {
-            return null;
-        }
+    if (!duplicateResult.proceed) {
+        return null;
     }
     
     const customerData = {
@@ -353,24 +343,14 @@ async function updateCustomer() {
         return;
     }
     
-    clearFieldWarning('editTelephone1');
-    clearFieldWarning('editClientTaxId');
+    CustomerUtils.clearFieldWarning('editTelephone1');
+    CustomerUtils.clearFieldWarning('editClientTaxId');
     
     const vatTic = customerType === 'company' ? document.getElementById('editClientTaxId').value.trim() : null;
-    const duplicateCheck = await checkDuplicates(telephone1, vatTic, parseInt(customerId));
+    const duplicateResult = await CustomerUtils.validateAndCheckDuplicates('editTelephone1', customerType === 'company' ? 'editClientTaxId' : null, parseInt(customerId));
     
-    if (duplicateCheck.warnings.length > 0) {
-        for (const warning of duplicateCheck.warnings) {
-            if (warning.field === 'phone') {
-                setFieldWarning('editTelephone1', warning.message);
-            } else if (warning.field === 'vat_tic') {
-                setFieldWarning('editClientTaxId', warning.message);
-            }
-        }
-        const warningMessages = duplicateCheck.warnings.map(w => w.message).join('\n');
-        if (!confirm(`Warning: Possible duplicate found.\n\n${warningMessages}\n\nDo you want to continue saving anyway?`)) {
-            return;
-        }
+    if (!duplicateResult.proceed) {
+        return;
     }
     
     const customerData = {
