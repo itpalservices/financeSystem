@@ -6,6 +6,7 @@ from datetime import datetime
 
 from app.database import get_db
 from app.models import PaymentReceipt, ReceiptStatus, User, Customer, Invoice
+from app.models.customer import CustomerStatus
 from app.models.invoice import ContextType
 from app.schemas import ReceiptCreate, ReceiptUpdate, ReceiptResponse, CancelRequest
 from app.auth import get_current_user
@@ -210,6 +211,9 @@ async def issue_receipt(
     
     if receipt.customer_id:
         receipt.customer_snapshot = get_customer_snapshot(db, receipt.customer_id)
+        customer = db.query(Customer).filter(Customer.id == receipt.customer_id).first()
+        if customer and customer.status == CustomerStatus.potential:
+            customer.status = CustomerStatus.active
     
     receipt.status = ReceiptStatus.issued
     receipt.issued_at = datetime.utcnow()

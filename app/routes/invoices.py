@@ -6,7 +6,7 @@ from datetime import datetime
 from app.database import get_db
 from app.models.user import User
 from app.models.invoice import Invoice, InvoiceLineItem, InvoiceStatus
-from app.models.customer import Customer
+from app.models.customer import Customer, CustomerStatus
 from app.models.email_log import EmailLog, EmailType
 from app.models.project import Project, Milestone
 from app.schemas import InvoiceCreate, InvoiceResponse, InvoiceUpdate, EmailRequest, CancelRequest
@@ -452,6 +452,11 @@ def issue_invoice(
         client_reg_no=invoice.client_reg_no,
         client_tax_id=invoice.client_tax_id
     )
+    
+    if invoice.customer_id:
+        customer = db.query(Customer).filter(Customer.id == invoice.customer_id).first()
+        if customer and customer.status == CustomerStatus.potential:
+            customer.status = CustomerStatus.active
     
     invoice.status = InvoiceStatus.issued
     invoice.issued_at = datetime.utcnow()

@@ -21,6 +21,18 @@ function toggleCompanyFields(prefix) {
     }
 }
 
+function validateCyprusPhone(phone) {
+    if (!phone) return true;
+    const pattern = /^(25|22|24|23|99|95|94|96|97)\d{6}$/;
+    return pattern.test(phone);
+}
+
+function validateEmail(email) {
+    if (!email) return true;
+    const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return pattern.test(email);
+}
+
 async function loadCustomers(searchQuery = '') {
     try {
         let url = '/api/customers';
@@ -93,24 +105,46 @@ function renderCustomers() {
 
 async function createCustomer() {
     const displayName = document.getElementById('createDisplayName').value.trim();
+    const customerType = document.getElementById('createCustomerType').value;
+    const email = document.getElementById('createEmail').value.trim();
+    const telephone1 = document.getElementById('createTelephone1').value.trim();
+    const telephone2 = document.getElementById('createTelephone2').value.trim();
+    
+    const errors = [];
     
     if (!displayName) {
-        showError('Display Name is required');
-        return;
+        errors.push('Display Name is required');
+    }
+    
+    if (email && !validateEmail(email)) {
+        errors.push('Invalid email format');
+    }
+    
+    if (telephone1 && !validateCyprusPhone(telephone1)) {
+        errors.push('Telephone 1 must be a valid Cyprus number (8 digits starting with 25, 22, 24, 23, 99, 95, 94, 96, or 97)');
+    }
+    
+    if (telephone2 && !validateCyprusPhone(telephone2)) {
+        errors.push('Telephone 2 must be a valid Cyprus number');
+    }
+    
+    if (errors.length > 0) {
+        showError(errors.join('. '));
+        return null;
     }
     
     const customerData = {
-        customer_type: document.getElementById('createCustomerType').value,
+        customer_type: customerType,
         display_name: displayName,
         status: document.getElementById('createStatus').value,
         name: document.getElementById('createName').value.trim() || null,
-        company_name: document.getElementById('createCompanyName').value.trim() || null,
-        email: document.getElementById('createEmail').value.trim() || null,
-        telephone1: document.getElementById('createTelephone1').value.trim() || null,
-        telephone2: document.getElementById('createTelephone2').value.trim() || null,
+        company_name: customerType === 'company' ? (document.getElementById('createCompanyName').value.trim() || null) : null,
+        email: email || null,
+        telephone1: telephone1 || null,
+        telephone2: telephone2 || null,
         address: document.getElementById('createAddress').value.trim() || null,
-        client_reg_no: document.getElementById('createClientRegNo').value.trim() || null,
-        client_tax_id: document.getElementById('createClientTaxId').value.trim() || null,
+        client_reg_no: customerType === 'company' ? (document.getElementById('createClientRegNo').value.trim() || null) : null,
+        client_tax_id: customerType === 'company' ? (document.getElementById('createClientTaxId').value.trim() || null) : null,
         internal_notes: document.getElementById('createInternalNotes').value.trim() || null
     };
     
@@ -178,24 +212,46 @@ async function editCustomer(customerId) {
 async function updateCustomer() {
     const customerId = document.getElementById('editCustomerId').value;
     const displayName = document.getElementById('editDisplayName').value.trim();
+    const customerType = document.getElementById('editCustomerType').value;
+    const email = document.getElementById('editEmail').value.trim();
+    const telephone1 = document.getElementById('editTelephone1').value.trim();
+    const telephone2 = document.getElementById('editTelephone2').value.trim();
+    
+    const errors = [];
     
     if (!displayName) {
-        showError('Display Name is required');
+        errors.push('Display Name is required');
+    }
+    
+    if (email && !validateEmail(email)) {
+        errors.push('Invalid email format');
+    }
+    
+    if (telephone1 && !validateCyprusPhone(telephone1)) {
+        errors.push('Telephone 1 must be a valid Cyprus number (8 digits starting with 25, 22, 24, 23, 99, 95, 94, 96, or 97)');
+    }
+    
+    if (telephone2 && !validateCyprusPhone(telephone2)) {
+        errors.push('Telephone 2 must be a valid Cyprus number');
+    }
+    
+    if (errors.length > 0) {
+        showError(errors.join('. '));
         return;
     }
     
     const customerData = {
-        customer_type: document.getElementById('editCustomerType').value,
+        customer_type: customerType,
         display_name: displayName,
         status: document.getElementById('editStatus').value,
         name: document.getElementById('editName').value.trim() || null,
-        company_name: document.getElementById('editCompanyName').value.trim() || null,
-        email: document.getElementById('editEmail').value.trim() || null,
-        telephone1: document.getElementById('editTelephone1').value.trim() || null,
-        telephone2: document.getElementById('editTelephone2').value.trim() || null,
+        company_name: customerType === 'company' ? (document.getElementById('editCompanyName').value.trim() || null) : null,
+        email: email || null,
+        telephone1: telephone1 || null,
+        telephone2: telephone2 || null,
         address: document.getElementById('editAddress').value.trim() || null,
-        client_reg_no: document.getElementById('editClientRegNo').value.trim() || null,
-        client_tax_id: document.getElementById('editClientTaxId').value.trim() || null,
+        client_reg_no: customerType === 'company' ? (document.getElementById('editClientRegNo').value.trim() || null) : null,
+        client_tax_id: customerType === 'company' ? (document.getElementById('editClientTaxId').value.trim() || null) : null,
         internal_notes: document.getElementById('editInternalNotes').value.trim() || null
     };
     

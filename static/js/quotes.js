@@ -131,27 +131,92 @@ function clearCustomerSelection() {
 
 function openAddCustomerModal() {
     document.getElementById('inlineCustomerForm').reset();
+    toggleNewCustomerCompanyFields();
+    hideCustomerModalError();
     new bootstrap.Modal(document.getElementById('addCustomerModal')).show();
 }
 
+function toggleNewCustomerCompanyFields() {
+    const customerType = document.getElementById('newCustomerType').value;
+    const companyFields = document.getElementById('newCompanyFields');
+    if (companyFields) {
+        companyFields.style.display = customerType === 'company' ? 'flex' : 'none';
+    }
+}
+
+function showCustomerModalError(message) {
+    let errorDiv = document.getElementById('customerModalError');
+    if (!errorDiv) {
+        errorDiv = document.createElement('div');
+        errorDiv.id = 'customerModalError';
+        errorDiv.className = 'alert alert-danger mb-3';
+        const modalBody = document.querySelector('#addCustomerModal .modal-body');
+        modalBody.insertBefore(errorDiv, modalBody.firstChild);
+    }
+    errorDiv.innerHTML = `<i class="bi bi-exclamation-triangle"></i> ${message}`;
+    errorDiv.style.display = 'block';
+}
+
+function hideCustomerModalError() {
+    const errorDiv = document.getElementById('customerModalError');
+    if (errorDiv) errorDiv.style.display = 'none';
+}
+
+function validateCyprusPhone(phone) {
+    if (!phone) return true;
+    const pattern = /^(25|22|24|23|99|95|94|96|97)\d{6}$/;
+    return pattern.test(phone);
+}
+
+function validateEmail(email) {
+    if (!email) return true;
+    const pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return pattern.test(email);
+}
+
 async function saveNewCustomer() {
+    hideCustomerModalError();
+    
     const displayName = document.getElementById('newDisplayName').value.trim();
+    const customerType = document.getElementById('newCustomerType').value;
+    const email = document.getElementById('newEmail').value.trim();
+    const telephone1 = document.getElementById('newTelephone1').value.trim();
+    const telephone2 = document.getElementById('newTelephone2').value.trim();
+    
+    const errors = [];
     
     if (!displayName) {
-        showError('Display Name is required');
+        errors.push('Display Name is required');
+    }
+    
+    if (email && !validateEmail(email)) {
+        errors.push('Invalid email format');
+    }
+    
+    if (telephone1 && !validateCyprusPhone(telephone1)) {
+        errors.push('Telephone 1 must be a valid Cyprus number (8 digits starting with 25, 22, 24, 23, 99, 95, 94, 96, or 97)');
+    }
+    
+    if (telephone2 && !validateCyprusPhone(telephone2)) {
+        errors.push('Telephone 2 must be a valid Cyprus number');
+    }
+    
+    if (errors.length > 0) {
+        showCustomerModalError(errors.join('<br>'));
         return;
     }
     
     const customerData = {
-        customer_type: document.getElementById('newCustomerType').value,
+        customer_type: customerType,
         display_name: displayName,
         status: 'potential',
         name: document.getElementById('newContactName').value.trim() || null,
-        company_name: document.getElementById('newCompanyName').value.trim() || null,
-        email: document.getElementById('newEmail').value.trim() || null,
-        telephone1: document.getElementById('newTelephone1').value.trim() || null,
-        telephone2: document.getElementById('newTelephone2').value.trim() || null,
-        client_tax_id: document.getElementById('newClientTaxId').value.trim() || null,
+        company_name: customerType === 'company' ? (document.getElementById('newCompanyName').value.trim() || null) : null,
+        email: email || null,
+        telephone1: telephone1 || null,
+        telephone2: telephone2 || null,
+        client_tax_id: customerType === 'company' ? (document.getElementById('newClientTaxId').value.trim() || null) : null,
+        client_reg_no: customerType === 'company' ? (document.getElementById('newClientRegNo')?.value.trim() || null) : null,
         address: document.getElementById('newAddress').value.trim() || null
     };
     
@@ -181,7 +246,7 @@ async function saveNewCustomer() {
         bootstrap.Modal.getInstance(document.getElementById('addCustomerModal')).hide();
         showSuccess('Customer created and selected!');
     } catch (error) {
-        showError('Error creating customer: ' + error.message);
+        showCustomerModalError('Error creating customer: ' + error.message);
     }
 }
 

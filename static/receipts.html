@@ -127,13 +127,34 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">Customer <span class="text-danger">*</span></label>
-                                <select class="form-select" id="createCustomerId" required>
-                                    <option value="">Select Customer...</option>
-                                </select>
+                                <div class="input-group">
+                                    <select class="form-select" id="createCustomerId" required onchange="selectCustomer()">
+                                        <option value="">Select Customer...</option>
+                                    </select>
+                                    <button type="button" class="btn btn-outline-success" onclick="openAddCustomerModal()" title="Add New Customer">
+                                        <i class="bi bi-plus-lg"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Receipt Date</label>
                                 <input type="date" class="form-control" id="createReceiptDate">
+                            </div>
+                        </div>
+                        <div id="customerPreview" class="card bg-light mb-3" style="display: none;">
+                            <div class="card-body py-2">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <small class="text-muted">Customer:</small>
+                                        <div id="previewDisplayName" class="fw-bold"></div>
+                                        <div id="previewCompanyName" class="text-muted small"></div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small class="text-muted">Contact:</small>
+                                        <div id="previewEmail" class="small"></div>
+                                        <div id="previewPhone" class="small"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="row mb-3">
@@ -221,6 +242,79 @@
                     <input type="hidden" id="cancelReceiptId">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     <button type="button" class="btn btn-danger" onclick="confirmCancel()">Cancel Receipt</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="addCustomerModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="bi bi-person-plus"></i> Add New Customer</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="inlineCustomerForm">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Customer Type <span class="text-danger">*</span></label>
+                                <select class="form-select" id="newCustomerType" onchange="toggleNewCustomerCompanyFields()">
+                                    <option value="individual">Individual</option>
+                                    <option value="company">Company</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Display Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="newDisplayName" required placeholder="Primary name for display">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Contact Person Name</label>
+                                <input type="text" class="form-control" id="newContactName">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" id="newEmail" placeholder="example@email.com">
+                            </div>
+                        </div>
+                        <div class="row mb-3" id="newCompanyFields" style="display: none;">
+                            <div class="col-md-4">
+                                <label class="form-label">Company Name</label>
+                                <input type="text" class="form-control" id="newCompanyName">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">VAT / T.I.C.</label>
+                                <input type="text" class="form-control" id="newClientTaxId">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Reg. No.</label>
+                                <input type="text" class="form-control" id="newClientRegNo">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Telephone 1</label>
+                                <input type="tel" class="form-control" id="newTelephone1" placeholder="e.g. 99123456" maxlength="8">
+                                <small class="text-muted">8 digits starting with 25, 22, 24, 23, 99, 95, 94, 96, or 97</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Telephone 2</label>
+                                <input type="tel" class="form-control" id="newTelephone2" placeholder="e.g. 22123456" maxlength="8">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Address</label>
+                            <textarea class="form-control" id="newAddress" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="saveNewCustomer()">
+                        <i class="bi bi-check-circle"></i> Save & Select Customer
+                    </button>
                 </div>
             </div>
         </div>

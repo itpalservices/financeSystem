@@ -18,8 +18,10 @@ def create_customer(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    customer_type = CustomerType(customer_data.customer_type) if customer_data.customer_type else CustomerType.INDIVIDUAL
-    customer_status = CustomerStatus(customer_data.status) if customer_data.status else CustomerStatus.POTENTIAL
+    customer_type_str = customer_data.customer_type.lower() if customer_data.customer_type else 'individual'
+    customer_status_str = customer_data.status.lower() if customer_data.status else 'potential'
+    customer_type = CustomerType(customer_type_str)
+    customer_status = CustomerStatus(customer_status_str)
     
     new_customer = Customer(
         customer_type=customer_type,
@@ -53,7 +55,7 @@ def get_customers(
     
     if status_filter:
         try:
-            status_enum = CustomerStatus(status_filter)
+            status_enum = CustomerStatus(status_filter.lower())
             query = query.filter(Customer.status == status_enum)
         except ValueError:
             pass
@@ -111,10 +113,10 @@ def update_customer(
     update_data = customer_data.dict(exclude_unset=True)
     
     if 'customer_type' in update_data and update_data['customer_type']:
-        update_data['customer_type'] = CustomerType(update_data['customer_type'])
+        update_data['customer_type'] = CustomerType(update_data['customer_type'].lower())
     
     if 'status' in update_data and update_data['status']:
-        update_data['status'] = CustomerStatus(update_data['status'])
+        update_data['status'] = CustomerStatus(update_data['status'].lower())
     
     for field, value in update_data.items():
         setattr(customer, field, value)
