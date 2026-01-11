@@ -8,6 +8,7 @@ from app.database import get_db
 from app.models import PaymentReceipt, ReceiptStatus, User, Customer, Invoice
 from app.models.customer import CustomerStatus
 from app.models.invoice import ContextType
+from app.models.project import Milestone, MilestoneStatus
 from app.schemas import ReceiptCreate, ReceiptUpdate, ReceiptResponse, CancelRequest
 from app.auth import get_current_user
 from app.services.validation import (
@@ -19,6 +20,32 @@ from app.services.validation import (
 from app.services.audit import log_action
 
 router = APIRouter()
+
+
+def update_milestone_status(db: Session, milestone_id: int, payment_date: datetime = None):
+    """Update milestone status and paid_date based on total received payments."""
+    milestone = db.query(Milestone).filter(Milestone.id == milestone_id).first()
+    if not milestone:
+        return
+    
+    received_amount = db.query(func.coalesce(func.sum(PaymentReceipt.amount), 0)).filter(
+        PaymentReceipt.milestone_id == milestone_id,
+        PaymentReceipt.status == ReceiptStatus.issued
+    ).scalar() or 0.0
+    
+    expected = milestone.expected_amount or 0.0
+    
+    if received_amount <= 0:
+        milestone.status = MilestoneStatus.planned
+        milestone.paid_date = None
+    elif received_amount < expected:
+        milestone.status = MilestoneStatus.partially_paid
+        if not milestone.paid_date and payment_date:
+            milestone.paid_date = payment_date
+    else:
+        milestone.status = MilestoneStatus.paid
+        if not milestone.paid_date and payment_date:
+            milestone.paid_date = payment_date
 
 
 def generate_receipt_number(db: Session) -> str:
@@ -219,6 +246,10 @@ async def issue_receipt(
     receipt.issued_at = datetime.utcnow()
     receipt.issued_by = current_user.id
     
+    if receipt.milestone_id:
+        payment_date = receipt.receipt_date or datetime.utcnow()
+        update_milestone_status(db, receipt.milestone_id, payment_date)
+    
     db.commit()
     db.refresh(receipt)
     
@@ -261,6 +292,9 @@ async def cancel_receipt(
     receipt.cancelled_at = datetime.utcnow()
     receipt.cancelled_by = current_user.id
     receipt.cancel_reason = cancel_request.reason
+    
+    if receipt.milestone_id:
+        update_milestone_status(db, receipt.milestone_id)
     
     db.commit()
     db.refresh(receipt)
