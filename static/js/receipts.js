@@ -140,6 +140,31 @@ function hideCustomerModalError() {
     if (errorDiv) errorDiv.style.display = 'none';
 }
 
+function setFieldError(fieldId, message) {
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+    field.classList.add('is-invalid');
+    let feedback = field.parentElement.querySelector('.invalid-feedback');
+    if (!feedback) {
+        feedback = document.createElement('div');
+        feedback.className = 'invalid-feedback';
+        field.parentElement.appendChild(feedback);
+    }
+    feedback.textContent = message;
+}
+
+function clearFieldError(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+    field.classList.remove('is-invalid');
+    const feedback = field.parentElement.querySelector('.invalid-feedback');
+    if (feedback) feedback.textContent = '';
+}
+
+function clearAllFieldErrors() {
+    ['newDisplayName', 'newEmail', 'newTelephone1', 'newTelephone2'].forEach(clearFieldError);
+}
+
 function validateCyprusPhone(phone) {
     if (!phone) return true;
     const pattern = /^(25|22|24|23|99|95|94|96|97)\d{6}$/;
@@ -154,6 +179,7 @@ function validateEmail(email) {
 
 async function saveNewCustomer() {
     hideCustomerModalError();
+    clearAllFieldErrors();
     
     const displayName = document.getElementById('newDisplayName').value.trim();
     const customerType = document.getElementById('newCustomerType').value;
@@ -161,26 +187,29 @@ async function saveNewCustomer() {
     const telephone1 = document.getElementById('newTelephone1').value.trim();
     const telephone2 = document.getElementById('newTelephone2').value.trim();
     
-    const errors = [];
+    let hasErrors = false;
     
     if (!displayName) {
-        errors.push('Display Name is required');
+        setFieldError('newDisplayName', 'Display Name is required');
+        hasErrors = true;
     }
     
     if (email && !validateEmail(email)) {
-        errors.push('Invalid email format');
+        setFieldError('newEmail', 'Invalid email format');
+        hasErrors = true;
     }
     
     if (telephone1 && !validateCyprusPhone(telephone1)) {
-        errors.push('Telephone 1 must be a valid Cyprus number (8 digits starting with 25, 22, 24, 23, 99, 95, 94, 96, or 97)');
+        setFieldError('newTelephone1', 'Must be 8 digits starting with 25, 22, 24, 23, 99, 95, 94, 96, or 97');
+        hasErrors = true;
     }
     
     if (telephone2 && !validateCyprusPhone(telephone2)) {
-        errors.push('Telephone 2 must be a valid Cyprus number');
+        setFieldError('newTelephone2', 'Must be a valid Cyprus number');
+        hasErrors = true;
     }
     
-    if (errors.length > 0) {
-        showCustomerModalError(errors.join('<br>'));
+    if (hasErrors) {
         return;
     }
     
