@@ -4,7 +4,7 @@ from datetime import datetime
 from app.models.user import UserRole
 from app.models.invoice import InvoiceStatus
 from app.models.quote import QuoteStatus
-from app.models.project import ProjectStatus, MilestoneStatus
+from app.models.project import ProjectStatus, MilestoneStatus, MilestoneType
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -228,25 +228,27 @@ class EmailLogResponse(BaseModel):
         from_attributes = True
 
 class MilestoneBase(BaseModel):
-    milestone_no: int
-    label: str
+    milestone_type: MilestoneType
     expected_amount: Optional[float] = 0.0
     due_date: Optional[datetime] = None
-    status: Optional[MilestoneStatus] = MilestoneStatus.planned
 
 class MilestoneCreate(MilestoneBase):
     pass
 
 class MilestoneUpdate(BaseModel):
-    milestone_no: Optional[int] = None
-    label: Optional[str] = None
     expected_amount: Optional[float] = None
     due_date: Optional[datetime] = None
     status: Optional[MilestoneStatus] = None
 
-class MilestoneResponse(MilestoneBase):
+class MilestoneResponse(BaseModel):
     id: int
     project_id: int
+    milestone_type: MilestoneType
+    milestone_no: Optional[int] = None
+    label: str
+    expected_amount: float
+    due_date: Optional[datetime] = None
+    status: MilestoneStatus
     created_at: datetime
     updated_at: datetime
     

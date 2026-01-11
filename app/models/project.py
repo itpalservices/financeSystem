@@ -15,6 +15,11 @@ class MilestoneStatus(str, enum.Enum):
     invoiced = "invoiced"
     paid = "paid"
 
+class MilestoneType(str, enum.Enum):
+    advance = "advance"
+    progress = "progress"
+    final = "final"
+
 class Project(Base):
     __tablename__ = "projects"
     
@@ -42,7 +47,8 @@ class Milestone(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
-    milestone_no = Column(Integer, nullable=False)
+    milestone_type = Column(Enum(MilestoneType), nullable=False)
+    milestone_no = Column(Integer, nullable=True)
     label = Column(String, nullable=False)
     expected_amount = Column(Float, default=0.0)
     due_date = Column(DateTime, nullable=True)

@@ -1,0 +1,48 @@
+Implement Project Milestones (Installments) with fixed milestone types and automatic naming.
+
+Goal:
+Each Project can have milestones (installments). The milestone type dropdown must only have:
+1) Advance Payment
+2) Progress Payment
+3) Final Payment
+
+Rules:
+- A Project may have at most ONE Advance Payment milestone and at most ONE Final Payment milestone.
+- A Project may have multiple Progress Payment milestones.
+- Progress Payment milestones must be automatically labeled with an incrementing number per project:
+  - First one: "Progress Payment 1"
+  - Second one: "Progress Payment 2"
+  - Third one: "Progress Payment 3"
+  - etc.
+- The user should NOT manually type the number; the system assigns it automatically based on existing Progress milestones for that project.
+
+Data model:
+Create table `project_milestones` with fields:
+- id (PK)
+- project_id (FK -> projects.id)
+- milestone_type (ENUM: ADVANCE, PROGRESS, FINAL)
+- milestone_no (INT, nullable)  // used only for PROGRESS, stores 1..N
+- label (STRING)               // display label (Advance Payment / Progress Payment X / Final Payment)
+- expected_amount (DECIMAL)
+- due_date (DATE, nullable)
+- status (ENUM: PLANNED, INVOICED, PAID) default PLANNED
+- created_at, updated_at
+
+Logic for creation:
+When creating a milestone:
+- If milestone_type = ADVANCE:
+  - Validate no existing ADVANCE milestone for the same project. If exists, block with a clear error.
+  - Set label = "Advance Payment", milestone_no = null
+- If milestone_type = FINAL:
+  - Validate no existing FINAL milestone for the same project. If exists, block with a clear error.
+  - Set label = "Final Payment", milestone_no = null
+- If milestone_type = PROGRESS:
+  - Compute next number:
+      nextNo = (MAX(milestone_no) for PROGRESS milestones in same project) + 1, starting from 1.
+  - Set milestone_no = nextNo
+  - Set label = "Progress Payment " + nextNo
+
+Important (concurrency-safe):
+Ensure numbering is safe if two users add a Progress Payment at the same time:
+- Use a DB transaction and row-level locking OR
+- Enforce a unique co
