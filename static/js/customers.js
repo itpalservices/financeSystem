@@ -91,7 +91,6 @@ async function checkDuplicates(phone, vatTic, excludeId = null) {
     
     try {
         const response = await fetch(`/api/customers/check-duplicates?${params.toString()}`, {
-            method: 'POST',
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
             }

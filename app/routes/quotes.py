@@ -7,7 +7,7 @@ from app.database import get_db
 from app.models.user import User
 from app.models.quote import Quote, QuoteLineItem, QuoteStatus
 from app.models.invoice import Invoice, InvoiceLineItem, InvoiceStatus
-from app.models.customer import Customer
+from app.models.customer import Customer, CustomerStatus
 from app.models.email_log import EmailLog, EmailType
 from app.schemas import QuoteCreate, QuoteResponse, QuoteUpdate, EmailRequest, InvoiceResponse, CancelRequest
 from app.auth import get_current_user
@@ -289,6 +289,9 @@ def issue_quote(
     
     if quote.customer_id:
         quote.customer_snapshot = get_customer_snapshot(db, quote.customer_id)
+        customer = db.query(Customer).filter(Customer.id == quote.customer_id).first()
+        if customer and customer.status == CustomerStatus.potential:
+            customer.status = CustomerStatus.active
     else:
         quote.customer_snapshot = {
             "client_name": quote.client_name,

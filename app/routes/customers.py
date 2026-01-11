@@ -88,7 +88,7 @@ def get_customers(
     customers = query.order_by(Customer.created_at.desc()).all()
     return customers
 
-@router.post("/check-duplicates")
+@router.get("/check-duplicates")
 def check_duplicates(
     phone: Optional[str] = None,
     vat_tic: Optional[str] = None,
