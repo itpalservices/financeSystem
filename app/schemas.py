@@ -269,6 +269,7 @@ class MilestoneResponse(BaseModel):
     label: str
     expected_amount: float
     due_date: Optional[datetime] = None
+    paid_date: Optional[datetime] = None
     status: MilestoneStatus
     created_at: datetime
     updated_at: datetime

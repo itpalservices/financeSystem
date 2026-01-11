@@ -1,0 +1,150 @@
+PROJECTS + MILESTONES (Professional Implementation Spec + Examples)
+
+Goal:
+Implement a Projects module to support project-based work with installment payments (milestones) and enable correct allocation from Invoices and Payment Receipts. Projects must always belong to a Customer (mandatory). Milestones track planned vs actual payments using due_date (planned) and paid_date (actual). The system must prevent wrong allocations (e.g., allocating an invoice/receipt to a project of a different customer). Progress must be visible in Project view and Analytics.
+
+1) Projects Menu / Pages
+Add a Projects menu with:
+- Projects List (search + pagination)
+- Create Project
+- Project Details page (overview + milestones + linked documents + totals)
+
+2) Project Numbering (Auto)
+Each project must get an auto-generated unique sequential number:
+- Format: PRJ-YYYY-0001 (e.g., PRJ-2026-0001)
+- Reset sequence per year is allowed (PRJ-2027-0001)
+- Must be concurrency-safe (transaction/locking or unique constraint + retry)
+
+3) Project Data Model
+Create table `projects`:
+- id (PK)
+- project_number (string, required, unique) // PRJ-YYYY-0001
+- customer_id (FK -> customers.id, required)
+- title (required)
+- description (optional)
+- budget_total (decimal, required) // agreed amount, e.g., 8000
+- start_month (required) // store as YYYY-MM or date (month granularity)
+- end_month (required)   // store as YYYY-MM or date
+- status (ENUM: ACTIVE, CLOSED, CANCELED) default ACTIVE
+- internal_notes (optional)
+- created_at, updated_at
+
+Rules:
+- customer_id is mandatory (projects cannot exist without customer).
+- project is created for real work, so selecting/creating the customer is always part of project creation.
+
+4) Customer Selection in Project Create (Dropdown + Add Customer Modal)
+In Create Project form:
+- Customer selection must be a searchable dropdown (by name/email/phone/VAT).
+- No free-text customer fields are allowed.
+- Provide a “+ Add Customer” button that opens the SAME Customer Create modal used in Customers module.
+- After saving the new customer in the modal, it must auto-select in the Project form.
+
+Customer status logic:
+- If a customer is created from Project Create, default status should be ACTIVE (project implies a real engagement).
+- Customers are still edited ONLY in Customers module.
+
+5) Milestones / Installments
+Add a Milestones/Payments section inside Project Details and/or Project Create.
+Create table `project_milestones`:
+- id (PK)
+- project_id (FK -> projects.id, required)
+- milestone_type (ENUM: ADVANCE, PROGRESS, FINAL) required
+- milestone_no (INT, nullable) // only for PROGRESS, 1..N
+- label (string, required) // "Advance Payment", "Progress Payment 1", ..., "Final Payment"
+- expected_amount (decimal, required)
+- due_date (date, nullable)  // planned/expected date (optional)
+- paid_date (date, nullable) // actual paid date (auto filled from receipts)
+- status (ENUM: PLANNED, INVOICED, PARTIALLY_PAID, PAID) default PLANNED
+- created_at, updated_at
+
+Milestone Rules:
+- Only one ADVANCE milestone per project.
+- Only one FINAL milestone per project.
+- Multiple PROGRESS milestones allowed.
+- PROGRESS milestones must be auto-numbered per project:
+  - First PROGRESS: label "Progress Payment 1", milestone_no=1
+  - Second PROGRESS: label "Progress Payment 2", milestone_no=2
+  - etc.
+- User must not manually type the number.
+- Ensure concurrency safety using transaction/locking OR enforce unique constraint on (project_id, milestone_type, milestone_no) and retry on conflict.
+
+Dates:
+- due_date is optional and should not be auto-overwritten.
+- paid_date is the actual payment date and must be set automatically when a Payment Receipt is issued and allocated to that milestone (if paid_date is currently null).
+
+6) Allocation from Invoices and Payment Receipts
+Invoices and Payment Receipts must support optional allocation to a project and milestone.
+
+Documents must have fields:
+- customer_id (required)
+- project_id (nullable)
+- milestone_id (nullable)
+
+Validation rules (backend + DB constraints where possible):
+- If document.project_id is set, then projects.customer_id MUST equal document.customer_id.
+- If document.milestone_id is set, then milestone.project_id MUST equal document.project_id.
+- After a document is Issued, project_id and milestone_id must be immutable (locked).
+
+Allocation UI behavior (Invoice/Receipt forms):
+1) Select Customer first (dropdown).
+2) Optional “Allocate to Project” section:
+   - Project dropdown filtered ONLY to projects of the selected customer.
+3) After selecting a project:
+   - Milestone dropdown filtered ONLY to milestones of that project.
+4) Show milestone label and expected_amount as read-only preview.
+
+7) Project Progress Calculations (Project Details + Analytics)
+Compute milestone progress from issued documents:
+- received_amount = SUM(issued receipts totals linked to milestone_id)
+- remaining_amount = expected_amount - received_amount
+
+Milestone status rules:
+- PLANNED: no linked invoices/receipts
+- INVOICED: invoices linked but received_amount = 0 (optional if invoices are used)
+- PARTIALLY_PAID: 0 < received_amount < expected_amount
+- PAID: received_amount >= expected_amount
+
+When a receipt is issued and allocated to a milestone:
+- Update milestone.paid_date if null (use receipt.payment_date or receipt.issued_at)
+- Update milestone.status based on totals
+
+Project totals:
+- project_received_total = SUM(issued receipts totals linked to project_id (or its milestones))
+- project_remaining = budget_total - project_received_total
+- Optional warning (not blocking): if SUM(milestone.expected_amount) != budget_total, show a warning.
+
+8) Examples
+Example A (Project with 3 installments):
+- Create Project:
+  - project_number auto: PRJ-2026-0001
+  - customer: Client A
+  - title: "System Implementation"
+  - budget_total: 8000
+  - start_month: 2026-01
+  - end_month: 2026-03
+- Add Milestones:
+  - Advance Payment: 3000 (due_date empty)
+  - Progress Payment: 1000 -> system labels as "Progress Payment 1"
+  - Progress Payment: 1000 -> system labels as "Progress Payment 2"
+  - Final Payment: 3000
+- Issue Receipts:
+  - Receipt REC-2026-0001 for 3000 allocated to Advance Payment -> milestone becomes PAID, paid_date set
+  - Receipt REC-2026-0002 for 1000 allocated to Progress Payment 1
+  - Receipt REC-2026-0003 for 1000 allocated to Progress Payment 2
+  - Receipt REC-2026-0004 for 3000 allocated to Final Payment
+- Project Details must show each milestone expected vs received and overall received/remaining.
+
+Example B (Prevent wrong allocation):
+- Customer B has a different project.
+- When creating an invoice/receipt for Customer A, Project dropdown must show ONLY Customer A projects.
+- Backend must reject any attempt to allocate Customer A invoice/receipt to Customer B project.
+
+Acceptance criteria (must pass):
+- Cannot create a project without selecting a customer.
+- Project number auto-generated PRJ-YYYY-0001 and unique.
+- Milestone auto-numbering for Progress works and cannot duplicate.
+- Only one Advance and one Final allowed per project.
+- Receipt allocation updates milestone received totals and sets paid_date (when null).
+- Cannot allocate documents to projects/milestones that belong to another customer.
+- Allocation fields are locked after the document is issued.

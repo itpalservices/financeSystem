@@ -13,6 +13,7 @@ class ProjectStatus(str, enum.Enum):
 class MilestoneStatus(str, enum.Enum):
     planned = "planned"
     invoiced = "invoiced"
+    partially_paid = "partially_paid"
     paid = "paid"
 
 class MilestoneType(str, enum.Enum):
@@ -54,6 +55,7 @@ class Milestone(Base):
     label = Column(String, nullable=False)
     expected_amount = Column(Float, default=0.0)
     due_date = Column(DateTime, nullable=True)
+    paid_date = Column(DateTime, nullable=True)
     status = Column(Enum(MilestoneStatus), default=MilestoneStatus.planned, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
