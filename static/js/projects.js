@@ -193,7 +193,7 @@ async function createProject() {
                 milestone_no: parseInt(no) || 1,
                 label: label,
                 expected_amount: parseFloat(amount) || 0,
-                due_date: dueDate || null
+                due_date: dueDate ? new Date(dueDate).toISOString() : null
             });
         }
     });
