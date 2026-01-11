@@ -223,6 +223,7 @@ async function createCustomer() {
     const duplicateResult = await CustomerUtils.validateAndCheckDuplicates(
         'createTelephone1', 
         customerType === 'company' ? 'createClientTaxId' : null,
+        customerType === 'company' ? 'createClientRegNo' : null,
         'createEmail'
     );
     
@@ -356,6 +357,7 @@ async function updateCustomer() {
     const duplicateResult = await CustomerUtils.validateAndCheckDuplicates(
         'editTelephone1', 
         customerType === 'company' ? 'editClientTaxId' : null,
+        customerType === 'company' ? 'editClientRegNo' : null,
         'editEmail',
         parseInt(customerId)
     );

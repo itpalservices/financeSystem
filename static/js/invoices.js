@@ -249,6 +249,7 @@ async function saveNewCustomer() {
     const duplicateResult = await CustomerUtils.validateAndCheckDuplicates(
         'newTelephone1', 
         customerType === 'company' ? 'newClientTaxId' : null,
+        customerType === 'company' ? 'newClientRegNo' : null,
         'newEmail'
     );
     if (!duplicateResult.proceed) {

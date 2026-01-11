@@ -11,10 +11,11 @@ const CustomerUtils = {
         return pattern.test(email);
     },
 
-    async checkDuplicates(phone, vatTic, email, excludeId = null) {
+    async checkDuplicates(phone, vatTic, regNo, email, excludeId = null) {
         const params = new URLSearchParams();
         if (phone) params.append('phone', phone);
         if (vatTic) params.append('vat_tic', vatTic);
+        if (regNo) params.append('reg_no', regNo);
         if (email) params.append('email', email);
         if (excludeId) params.append('exclude_id', excludeId);
         
@@ -75,22 +76,25 @@ const CustomerUtils = {
         if (feedback) feedback.textContent = '';
     },
 
-    async validateAndCheckDuplicates(phoneFieldId, vatFieldId, emailFieldId = null, excludeId = null) {
+    async validateAndCheckDuplicates(phoneFieldId, vatFieldId, regNoFieldId, emailFieldId, excludeId = null) {
         this.clearFieldWarning(phoneFieldId);
         if (vatFieldId) this.clearFieldWarning(vatFieldId);
+        if (regNoFieldId) this.clearFieldWarning(regNoFieldId);
         if (emailFieldId) this.clearFieldError(emailFieldId);
         
         const phoneField = document.getElementById(phoneFieldId);
         const vatField = vatFieldId ? document.getElementById(vatFieldId) : null;
+        const regNoField = regNoFieldId ? document.getElementById(regNoFieldId) : null;
         const emailField = emailFieldId ? document.getElementById(emailFieldId) : null;
         
         const phone = phoneField ? phoneField.value.trim() : null;
         const vatTic = vatField ? vatField.value.trim() : null;
+        const regNo = regNoField ? regNoField.value.trim() : null;
         const email = emailField ? emailField.value.trim() : null;
         
-        if (!phone && !vatTic && !email) return { proceed: true, warnings: [], errors: [] };
+        if (!phone && !vatTic && !regNo && !email) return { proceed: true, warnings: [], errors: [] };
         
-        const duplicateCheck = await this.checkDuplicates(phone, vatTic, email, excludeId);
+        const duplicateCheck = await this.checkDuplicates(phone, vatTic, regNo, email, excludeId);
         
         if (duplicateCheck.errors && duplicateCheck.errors.length > 0) {
             let errorHtml = '<ul class="mb-0">';
@@ -117,6 +121,8 @@ const CustomerUtils = {
                     this.setFieldWarning(phoneFieldId, warning.message);
                 } else if (warning.field === 'vat_tic' && vatFieldId) {
                     this.setFieldWarning(vatFieldId, warning.message);
+                } else if (warning.field === 'reg_no' && regNoFieldId) {
+                    this.setFieldWarning(regNoFieldId, warning.message);
                 }
                 warningHtml += `<li>${warning.message}</li>`;
             }

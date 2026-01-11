@@ -92,12 +92,13 @@ def get_customers(
 def check_duplicates(
     phone: Optional[str] = None,
     vat_tic: Optional[str] = None,
+    reg_no: Optional[str] = None,
     email: Optional[str] = None,
     exclude_id: Optional[int] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Check for duplicate phone, VAT/TIC, or email. Returns warnings (soft) and errors (hard)."""
+    """Check for duplicate phone, VAT/TIC, Reg No, or email. Returns warnings (soft) and errors (hard)."""
     warnings = []
     errors = []
     
@@ -143,6 +144,22 @@ def check_duplicates(
                 "field": "vat_tic",
                 "severity": "warning",
                 "message": f"VAT/TIC matches existing customer: {existing.display_name}",
+                "customer_id": existing.id,
+                "customer_name": existing.display_name
+            })
+    
+    if reg_no:
+        query = db.query(Customer).filter(
+            func.lower(Customer.client_reg_no) == func.lower(reg_no)
+        )
+        if exclude_id:
+            query = query.filter(Customer.id != exclude_id)
+        existing = query.first()
+        if existing:
+            warnings.append({
+                "field": "reg_no",
+                "severity": "warning",
+                "message": f"Registration No matches existing customer: {existing.display_name}",
                 "customer_id": existing.id,
                 "customer_name": existing.display_name
             })
