@@ -1,0 +1,52 @@
+Build a professional business documents system for a small company (3 internal users) with modules: Dashboard, Customers, Projects (optional), Quotes, Invoices, Payment Receipts, Analytics, Settings.
+
+Core philosophy:
+- Separate document types:
+  - Quote = offer/proposal (not money received)
+  - Invoice = billing/request for payment (money owed)
+  - Payment Receipt = proof of payment received (money received)
+- Projects are OPTIONAL. Many documents are one-off (asset sales, consulting, maintenance). If a document relates to a project, link it.
+- Each document must always link to a Customer. Optional linking to a Business Context:
+  - context_type: NONE | PROJECT | CONTRACT (optional future)
+  - context_id: project_id/contract_id
+  - milestone_id only for PROJECT context
+- After a document is Issued, financial fields and allocations become immutable (no editing). Corrections are done via Void/Cancel (not delete).
+
+Database requirements:
+- Use strong relational constraints and indexes.
+- Enforce correctness with DB validations:
+  - document.customer_id must match project.customer_id when project_id is set
+  - milestone.project_id must match document.project_id when milestone_id is set
+- Keep audit logs for critical actions (login, create, edit, issue, send email, void).
+- Keep document snapshots for historical accuracy: store customer/company/address/VAT fields on the document at issue time.
+
+Numbering:
+- Use series-based, year-based sequential numbers with DB uniqueness:
+  - QUO-YYYY-000001
+  - INV-YYYY-000001
+  - REC-YYYY-000001
+- Ensure concurrency-safe generation using DB transaction/locking or unique constraints + retry.
+
+Must-have UI behavior:
+- In Create Quote/Invoice/Receipt, user selects Customer via searchable dropdown first.
+- Provide “+ New Customer” option that creates customer and then auto-selects it.
+- Project dropdown appears only if allocation type is PROJECT and must be filtered by selected customer.
+- Milestone dropdown appears only after project selection and is filtered by project.
+- Disable manual typing of customer fields when existing customer is selected; allow optional “Override for this document only” without updating the Customer master record.
+
+Issued vs Draft:
+- Draft: editable.
+- Issued: locked; cannot be deleted; can only be voided/canceled with reason, timestamp, and user.
+- PDF generation: generate and store on issue; do not regenerate each time unless draft changes.
+
+Analytics:
+- Show totals by period and grouping:
+  - revenue by customer
+  - revenue by project (when allocated)
+  - unallocated revenue bucket
+  - quote conversion (sent → accepted)
+  - invoices outstanding (if billing is used)
+  - receipts received (cashflow)
+
+Goal:
+Design the system so it can start simple but is structurally correct for long-term scaling and reporting.
