@@ -275,8 +275,19 @@
                                 <input type="text" class="form-control" id="newContactName">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-control" id="newEmail" placeholder="example@email.com">
+                                <label class="form-label">Email <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="newEmail" placeholder="example@email.com" required>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Telephone 1 <span class="text-danger">*</span></label>
+                                <input type="tel" class="form-control" id="newTelephone1" placeholder="e.g. 99123456" maxlength="8" required pattern="[0-9]*" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                <small class="text-muted">8 digits starting with 25, 22, 24, 23, 99, 95, 94, 96, or 97</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Telephone 2</label>
+                                <input type="tel" class="form-control" id="newTelephone2" placeholder="e.g. 22123456" maxlength="8" pattern="[0-9]*" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                             </div>
                         </div>
                         <div class="row mb-3" id="newCompanyFields" style="display: none;">
@@ -291,17 +302,6 @@
                             <div class="col-md-4">
                                 <label class="form-label">Reg. No.</label>
                                 <input type="text" class="form-control" id="newClientRegNo">
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Telephone 1</label>
-                                <input type="tel" class="form-control" id="newTelephone1" placeholder="e.g. 99123456" maxlength="8">
-                                <small class="text-muted">8 digits starting with 25, 22, 24, 23, 99, 95, 94, 96, or 97</small>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Telephone 2</label>
-                                <input type="tel" class="form-control" id="newTelephone2" placeholder="e.g. 22123456" maxlength="8">
                             </div>
                         </div>
                         <div class="mb-3">

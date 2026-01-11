@@ -155,38 +155,38 @@
                                 <small class="text-muted">For companies: use company name. For individuals: use full name.</small>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-control" id="createEmail">
-                            </div>
-                        </div>
-                        <div class="row mb-3" id="createIndividualFields">
-                            <div class="col-md-6">
-                                <label class="form-label">Contact Person Name</label>
-                                <input type="text" class="form-control" id="createName" placeholder="Contact person name">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Company Name</label>
-                                <input type="text" class="form-control" id="createCompanyName" placeholder="Company name (if applicable)">
+                                <label class="form-label">Email <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="createEmail" required>
                             </div>
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label">Telephone 1</label>
-                                <input type="text" class="form-control" id="createTelephone1">
+                                <label class="form-label">Telephone 1 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="createTelephone1" required pattern="[0-9]*" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Telephone 2</label>
-                                <input type="text" class="form-control" id="createTelephone2">
+                                <input type="text" class="form-control" id="createTelephone2" pattern="[0-9]*" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                             </div>
                         </div>
-                        <div class="row mb-3" id="createCompanyFields">
-                            <div class="col-md-6">
+                        <div class="row mb-3" id="createCompanyFields" style="display: none;">
+                            <div class="col-md-4">
+                                <label class="form-label">Company Name</label>
+                                <input type="text" class="form-control" id="createCompanyName" placeholder="Company name">
+                            </div>
+                            <div class="col-md-4">
                                 <label class="form-label">Registration No.</label>
                                 <input type="text" class="form-control" id="createClientRegNo">
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label">VAT / T.I.C.</label>
                                 <input type="text" class="form-control" id="createClientTaxId">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Contact Person Name</label>
+                                <input type="text" class="form-control" id="createName" placeholder="Contact person name">
                             </div>
                         </div>
                         <div class="mb-3">
@@ -242,38 +242,38 @@
                                 <input type="text" class="form-control" id="editDisplayName" required placeholder="Primary name for display">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-control" id="editEmail">
-                            </div>
-                        </div>
-                        <div class="row mb-3" id="editIndividualFields">
-                            <div class="col-md-6">
-                                <label class="form-label">Contact Person Name</label>
-                                <input type="text" class="form-control" id="editName">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Company Name</label>
-                                <input type="text" class="form-control" id="editCompanyName">
+                                <label class="form-label">Email <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="editEmail" required>
                             </div>
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label">Telephone 1</label>
-                                <input type="text" class="form-control" id="editTelephone1">
+                                <label class="form-label">Telephone 1 <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="editTelephone1" required pattern="[0-9]*" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Telephone 2</label>
-                                <input type="text" class="form-control" id="editTelephone2">
+                                <input type="text" class="form-control" id="editTelephone2" pattern="[0-9]*" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                             </div>
                         </div>
-                        <div class="row mb-3" id="editCompanyFields">
-                            <div class="col-md-6">
+                        <div class="row mb-3" id="editCompanyFields" style="display: none;">
+                            <div class="col-md-4">
+                                <label class="form-label">Company Name</label>
+                                <input type="text" class="form-control" id="editCompanyName" placeholder="Company name">
+                            </div>
+                            <div class="col-md-4">
                                 <label class="form-label">Registration No.</label>
                                 <input type="text" class="form-control" id="editClientRegNo">
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label">VAT / T.I.C.</label>
                                 <input type="text" class="form-control" id="editClientTaxId">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Contact Person Name</label>
+                                <input type="text" class="form-control" id="editName">
                             </div>
                         </div>
                         <div class="mb-3">

@@ -21,7 +21,7 @@ class Customer(Base):
     __tablename__ = "customers"
     
     id = Column(Integer, primary_key=True, index=True)
-    customer_type = Column(SQLEnum(CustomerType), default=CustomerType.INDIVIDUAL, nullable=False)
+    customer_type = Column(SQLEnum(CustomerType, values_callable=lambda x: [e.value for e in x]), default=CustomerType.INDIVIDUAL, nullable=False)
     display_name = Column(String, nullable=False, index=True)
     name = Column(String, nullable=True)
     company_name = Column(String, nullable=True)
@@ -31,7 +31,7 @@ class Customer(Base):
     address = Column(Text, nullable=True)
     client_reg_no = Column(String, nullable=True)
     client_tax_id = Column(String, nullable=True, index=True)
-    status = Column(SQLEnum(CustomerStatus), default=CustomerStatus.POTENTIAL, nullable=False)
+    status = Column(SQLEnum(CustomerStatus, values_callable=lambda x: [e.value for e in x]), default=CustomerStatus.POTENTIAL, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     internal_notes = Column(Text, nullable=True)
     notes = Column(Text, nullable=True)
