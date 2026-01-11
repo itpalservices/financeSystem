@@ -13,6 +13,8 @@ from app.schemas import InvoiceCreate, InvoiceResponse, InvoiceUpdate, EmailRequ
 from app.auth import get_current_user
 from app.utils.pdf_generator import generate_invoice_pdf
 from app.utils.email_sender import send_invoice_email
+from app.services.audit import log_action
+from app.services.validation import get_customer_snapshot
 
 router = APIRouter()
 
@@ -186,6 +188,18 @@ def create_invoice(
     
     db.commit()
     db.refresh(new_invoice)
+    
+    log_action(
+        db,
+        action="create",
+        user_id=current_user.id,
+        username=current_user.username,
+        entity_type="invoice",
+        entity_id=new_invoice.id,
+        entity_number=new_invoice.invoice_number,
+        description=f"Created invoice {new_invoice.invoice_number}"
+    )
+    
     return new_invoice
 
 @router.get("", response_model=List[InvoiceResponse])
@@ -378,6 +392,85 @@ def update_invoice(
     invoice.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(invoice)
+    
+    log_action(
+        db,
+        action="issue" if old_status == InvoiceStatus.draft and invoice.status == InvoiceStatus.issued else "update",
+        user_id=current_user.id,
+        username=current_user.username,
+        entity_type="invoice",
+        entity_id=invoice.id,
+        entity_number=invoice.invoice_number,
+        description=f"{'Issued' if old_status == InvoiceStatus.draft and invoice.status == InvoiceStatus.issued else 'Updated'} invoice {invoice.invoice_number}"
+    )
+    
+    return invoice
+
+@router.post("/{invoice_id}/issue", response_model=InvoiceResponse)
+def issue_invoice(
+    invoice_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Issue a draft invoice (makes it immutable)."""
+    invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invoice not found")
+    
+    if current_user.role != "admin" and invoice.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    
+    if invoice.status != InvoiceStatus.draft:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only draft invoices can be issued"
+        )
+    
+    if invoice.customer_id:
+        invoice.customer_snapshot = get_customer_snapshot(db, invoice.customer_id)
+    else:
+        invoice.customer_snapshot = {
+            "client_name": invoice.client_name,
+            "company_name": invoice.company_name,
+            "client_email": invoice.client_email,
+            "telephone1": invoice.telephone1,
+            "telephone2": invoice.telephone2,
+            "client_address": invoice.client_address,
+            "client_reg_no": invoice.client_reg_no,
+            "client_tax_id": invoice.client_tax_id,
+            "snapshot_at": datetime.utcnow().isoformat()
+        }
+    
+    sync_customer(
+        db,
+        client_name=invoice.client_name,
+        company_name=invoice.company_name,
+        client_email=invoice.client_email,
+        telephone1=invoice.telephone1,
+        telephone2=invoice.telephone2,
+        client_address=invoice.client_address,
+        client_reg_no=invoice.client_reg_no,
+        client_tax_id=invoice.client_tax_id
+    )
+    
+    invoice.status = InvoiceStatus.issued
+    invoice.issued_at = datetime.utcnow()
+    invoice.issued_by = current_user.id
+    
+    db.commit()
+    db.refresh(invoice)
+    
+    log_action(
+        db,
+        action="issue",
+        user_id=current_user.id,
+        username=current_user.username,
+        entity_type="invoice",
+        entity_id=invoice.id,
+        entity_number=invoice.invoice_number,
+        description=f"Issued invoice {invoice.invoice_number}"
+    )
+    
     return invoice
 
 @router.delete("/{invoice_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -399,8 +492,20 @@ def delete_invoice(
             detail="Only draft invoices can be deleted. Use cancel to cancel issued invoices."
         )
     
+    invoice_number = invoice.invoice_number
     db.delete(invoice)
     db.commit()
+    
+    log_action(
+        db,
+        action="delete",
+        user_id=current_user.id,
+        username=current_user.username,
+        entity_type="invoice",
+        entity_id=invoice_id,
+        entity_number=invoice_number,
+        description=f"Deleted draft invoice {invoice_number}"
+    )
 
 @router.post("/{invoice_id}/cancel", response_model=InvoiceResponse)
 def cancel_invoice(
@@ -439,6 +544,18 @@ def cancel_invoice(
     
     db.commit()
     db.refresh(invoice)
+    
+    log_action(
+        db,
+        action="cancel",
+        user_id=current_user.id,
+        username=current_user.username,
+        entity_type="invoice",
+        entity_id=invoice.id,
+        entity_number=invoice.invoice_number,
+        description=f"Cancelled invoice {invoice.invoice_number}: {cancel_data.reason}"
+    )
+    
     return invoice
 
 @router.post("/{invoice_id}/generate-pdf")
@@ -512,5 +629,16 @@ def send_email(
     )
     db.add(email_log)
     db.commit()
+    
+    log_action(
+        db,
+        action="send_email",
+        user_id=current_user.id,
+        username=current_user.username,
+        entity_type="invoice",
+        entity_id=invoice.id,
+        entity_number=invoice.invoice_number,
+        description=f"Sent invoice {invoice.invoice_number} to {email_data.recipient_email}"
+    )
     
     return {"message": "Email sent successfully"}

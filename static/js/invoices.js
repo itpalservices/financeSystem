@@ -7,6 +7,7 @@ let currentInvoice = null;
 let editingInvoiceId = null;
 let projects = [];
 let currentMilestones = [];
+let customers = [];
 
 function formatDate(dateString) {
     const date = new Date(dateString);
@@ -23,6 +24,95 @@ async function loadInvoices() {
     } catch (error) {
         showError('Error loading invoices: ' + error.message);
     }
+}
+
+async function loadCustomers() {
+    try {
+        const response = await fetch('/api/customers/', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (response.ok) {
+            customers = await response.json();
+            populateCustomerDropdown();
+        }
+    } catch (error) {
+        console.error('Error loading customers:', error);
+    }
+}
+
+function populateCustomerDropdown() {
+    const select = document.getElementById('customerSelect');
+    if (!select) return;
+    
+    select.innerHTML = '<option value="">-- New Customer / Enter Details Manually --</option>';
+    
+    customers.filter(c => c.is_active).forEach(customer => {
+        const option = document.createElement('option');
+        option.value = customer.id;
+        const displayName = customer.company_name 
+            ? `${customer.name || ''} (${customer.company_name})`.trim()
+            : customer.name || customer.telephone1;
+        option.textContent = displayName;
+        select.appendChild(option);
+    });
+}
+
+function populateFromCustomer() {
+    const select = document.getElementById('customerSelect');
+    const customerId = select.value;
+    
+    if (!customerId) {
+        clearCustomerFields();
+        return;
+    }
+    
+    const customer = customers.find(c => c.id == customerId);
+    if (!customer) return;
+    
+    document.getElementById('clientName').value = customer.name || '';
+    document.getElementById('companyName').value = customer.company_name || '';
+    document.getElementById('clientEmail').value = customer.email || '';
+    document.getElementById('telephone1').value = customer.telephone1 || '';
+    document.getElementById('telephone2').value = customer.telephone2 || '';
+    document.getElementById('clientRegNo').value = customer.client_reg_no || '';
+    document.getElementById('clientTaxId').value = customer.client_tax_id || '';
+    document.getElementById('clientAddress').value = customer.address || '';
+    
+    filterProjectsByCustomer(customer.telephone1);
+}
+
+function clearCustomerSelection() {
+    document.getElementById('customerSelect').value = '';
+    clearCustomerFields();
+}
+
+function clearCustomerFields() {
+    document.getElementById('clientName').value = '';
+    document.getElementById('companyName').value = '';
+    document.getElementById('clientEmail').value = '';
+    document.getElementById('telephone1').value = '';
+    document.getElementById('telephone2').value = '';
+    document.getElementById('clientRegNo').value = '';
+    document.getElementById('clientTaxId').value = '';
+    document.getElementById('clientAddress').value = '';
+}
+
+function filterProjectsByCustomer(telephone) {
+    const projectSelect = document.getElementById('projectId');
+    if (!projectSelect || !projects.length) return;
+    
+    projectSelect.innerHTML = '<option value="">No Project</option>';
+    
+    projects.filter(p => {
+        if (!telephone) return true;
+        const projectCustomer = customers.find(c => c.id === p.customer_id);
+        return !projectCustomer || projectCustomer.telephone1 === telephone;
+    }).forEach(project => {
+        const option = document.createElement('option');
+        option.value = project.id;
+        option.textContent = `${project.project_code} - ${project.title}`;
+        projectSelect.appendChild(option);
+    });
 }
 
 let allInvoices = [];
@@ -770,3 +860,4 @@ function checkMilestoneWarning() {
 
 loadInvoices();
 loadProjects();
+loadCustomers();

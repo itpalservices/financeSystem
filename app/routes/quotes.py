@@ -13,6 +13,8 @@ from app.schemas import QuoteCreate, QuoteResponse, QuoteUpdate, EmailRequest, I
 from app.auth import get_current_user
 from app.utils.pdf_generator import generate_quote_pdf
 from app.utils.email_sender import send_quote_email
+from app.services.audit import log_action
+from app.services.validation import get_customer_snapshot
 
 router = APIRouter()
 
@@ -111,6 +113,18 @@ def create_quote(
     
     db.commit()
     db.refresh(new_quote)
+    
+    log_action(
+        db,
+        action="create",
+        user_id=current_user.id,
+        username=current_user.username,
+        entity_type="quote",
+        entity_id=new_quote.id,
+        entity_number=new_quote.quote_number,
+        description=f"Created quote {new_quote.quote_number}"
+    )
+    
     return new_quote
 
 @router.get("", response_model=List[QuoteResponse])
@@ -239,6 +253,73 @@ def update_quote(
     quote.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(quote)
+    
+    log_action(
+        db,
+        action="issue" if old_status == QuoteStatus.draft and quote.status == QuoteStatus.issued else "update",
+        user_id=current_user.id,
+        username=current_user.username,
+        entity_type="quote",
+        entity_id=quote.id,
+        entity_number=quote.quote_number,
+        description=f"{'Issued' if old_status == QuoteStatus.draft and quote.status == QuoteStatus.issued else 'Updated'} quote {quote.quote_number}"
+    )
+    
+    return quote
+
+@router.post("/{quote_id}/issue", response_model=QuoteResponse)
+def issue_quote(
+    quote_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Issue a draft quote (makes it immutable)."""
+    quote = db.query(Quote).filter(Quote.id == quote_id).first()
+    if not quote:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quote not found")
+    
+    if current_user.role != "admin" and quote.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    
+    if quote.status != QuoteStatus.draft:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only draft quotes can be issued"
+        )
+    
+    if quote.customer_id:
+        quote.customer_snapshot = get_customer_snapshot(db, quote.customer_id)
+    else:
+        quote.customer_snapshot = {
+            "client_name": quote.client_name,
+            "company_name": quote.company_name,
+            "client_email": quote.client_email,
+            "telephone1": quote.telephone1,
+            "telephone2": quote.telephone2,
+            "client_address": quote.client_address,
+            "client_reg_no": quote.client_reg_no,
+            "client_tax_id": quote.client_tax_id,
+            "snapshot_at": datetime.utcnow().isoformat()
+        }
+    
+    quote.status = QuoteStatus.issued
+    quote.issued_at = datetime.utcnow()
+    quote.issued_by = current_user.id
+    
+    db.commit()
+    db.refresh(quote)
+    
+    log_action(
+        db,
+        action="issue",
+        user_id=current_user.id,
+        username=current_user.username,
+        entity_type="quote",
+        entity_id=quote.id,
+        entity_number=quote.quote_number,
+        description=f"Issued quote {quote.quote_number}"
+    )
+    
     return quote
 
 @router.delete("/{quote_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -260,8 +341,20 @@ def delete_quote(
             detail="Only draft quotes can be deleted. Use cancel to cancel issued quotes."
         )
     
+    quote_number = quote.quote_number
     db.delete(quote)
     db.commit()
+    
+    log_action(
+        db,
+        action="delete",
+        user_id=current_user.id,
+        username=current_user.username,
+        entity_type="quote",
+        entity_id=quote_id,
+        entity_number=quote_number,
+        description=f"Deleted draft quote {quote_number}"
+    )
 
 @router.post("/{quote_id}/cancel", response_model=QuoteResponse)
 def cancel_quote(
@@ -300,6 +393,18 @@ def cancel_quote(
     
     db.commit()
     db.refresh(quote)
+    
+    log_action(
+        db,
+        action="cancel",
+        user_id=current_user.id,
+        username=current_user.username,
+        entity_type="quote",
+        entity_id=quote.id,
+        entity_number=quote.quote_number,
+        description=f"Cancelled quote {quote.quote_number}: {cancel_data.reason}"
+    )
+    
     return quote
 
 @router.post("/{quote_id}/convert-to-invoice", response_model=InvoiceResponse)
@@ -322,9 +427,26 @@ def convert_to_invoice(
     
     invoice_number = generate_invoice_number(db)
     
+    customer_snapshot_data = None
+    if quote.customer_id:
+        customer_snapshot_data = get_customer_snapshot(db, quote.customer_id)
+    else:
+        customer_snapshot_data = {
+            "client_name": quote.client_name,
+            "company_name": quote.company_name,
+            "client_email": quote.client_email,
+            "telephone1": quote.telephone1,
+            "telephone2": quote.telephone2,
+            "client_address": quote.client_address,
+            "client_reg_no": quote.client_reg_no,
+            "client_tax_id": quote.client_tax_id,
+            "snapshot_at": datetime.utcnow().isoformat()
+        }
+    
     new_invoice = Invoice(
         invoice_number=invoice_number,
         user_id=quote.user_id,
+        customer_id=quote.customer_id,
         client_name=quote.client_name,
         company_name=quote.company_name,
         client_email=quote.client_email,
@@ -339,7 +461,8 @@ def convert_to_invoice(
         tax=quote.tax,
         total=quote.total,
         notes=quote.notes,
-        status=InvoiceStatus.draft
+        status=InvoiceStatus.draft,
+        customer_snapshot=customer_snapshot_data
     )
     db.add(new_invoice)
     db.flush()
@@ -360,6 +483,29 @@ def convert_to_invoice(
     
     db.commit()
     db.refresh(new_invoice)
+    
+    log_action(
+        db,
+        action="convert",
+        user_id=current_user.id,
+        username=current_user.username,
+        entity_type="quote",
+        entity_id=quote.id,
+        entity_number=quote.quote_number,
+        description=f"Converted quote {quote.quote_number} to invoice {new_invoice.invoice_number}"
+    )
+    
+    log_action(
+        db,
+        action="create",
+        user_id=current_user.id,
+        username=current_user.username,
+        entity_type="invoice",
+        entity_id=new_invoice.id,
+        entity_number=new_invoice.invoice_number,
+        description=f"Created invoice {new_invoice.invoice_number} from quote {quote.quote_number}"
+    )
+    
     return new_invoice
 
 @router.post("/{quote_id}/generate-pdf")
@@ -433,5 +579,16 @@ def send_email(
     )
     db.add(email_log)
     db.commit()
+    
+    log_action(
+        db,
+        action="send_email",
+        user_id=current_user.id,
+        username=current_user.username,
+        entity_type="quote",
+        entity_id=quote.id,
+        entity_number=quote.quote_number,
+        description=f"Sent quote {quote.quote_number} to {email_data.recipient_email}"
+    )
     
     return {"message": "Email sent successfully"}

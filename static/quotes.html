@@ -145,6 +145,21 @@
                 </div>
                 <form id="createForm">
                     <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label for="customerSelect" class="form-label"><i class="bi bi-person-check"></i> Select Existing Customer</label>
+                                <div class="input-group">
+                                    <select class="form-select" id="customerSelect" onchange="populateFromCustomer()">
+                                        <option value="">-- New Customer / Enter Details Manually --</option>
+                                    </select>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="clearCustomerSelection()" title="Clear Selection">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">Select an existing customer to auto-fill details, or enter new customer information below</small>
+                            </div>
+                        </div>
+                        <hr>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="clientName" class="form-label">Client Name</label>
