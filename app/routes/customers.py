@@ -18,6 +18,17 @@ def create_customer(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    # Check for duplicate email
+    if customer_data.email:
+        existing_customer = db.query(Customer).filter(
+            func.lower(Customer.email) == func.lower(customer_data.email)
+        ).first()
+        if existing_customer:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"A customer with email '{customer_data.email}' already exists"
+            )
+    
     customer_type_str = customer_data.customer_type.lower() if customer_data.customer_type else 'individual'
     customer_status_str = customer_data.status.lower() if customer_data.status else 'potential'
     customer_type = CustomerType(customer_type_str)
@@ -109,6 +120,18 @@ def update_customer(
     customer = db.query(Customer).filter(Customer.id == customer_id).first()
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
+    
+    # Check for duplicate email (excluding current customer)
+    if customer_data.email:
+        existing_customer = db.query(Customer).filter(
+            func.lower(Customer.email) == func.lower(customer_data.email),
+            Customer.id != customer_id
+        ).first()
+        if existing_customer:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"A customer with email '{customer_data.email}' already exists"
+            )
     
     update_data = customer_data.dict(exclude_unset=True)
     

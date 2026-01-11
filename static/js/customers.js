@@ -123,7 +123,7 @@ function renderCustomers() {
                     <button class="btn btn-outline-primary" onclick="editCustomer(${customer.id})" title="Edit Customer">
                         <i class="bi bi-pencil"></i>
                     </button>
-                    <button class="btn btn-outline-info" onclick="viewEmailHistory(${customer.id}, '${displayName.replace(/'/g, "\\'")}', '${(customer.company_name || '').replace(/'/g, "\\'")}')">
+                    <button class="btn btn-outline-info" onclick="viewEmailHistory(${customer.id}, '${(displayName || '').replace(/'/g, "\\'")}', '${(customer.company_name || '').replace(/'/g, "\\'")}')">
                         <i class="bi bi-envelope-open"></i>
                     </button>
                 </div>
