@@ -221,12 +221,18 @@ async function saveNewCustomer() {
         hasErrors = true;
     }
     
-    if (email && !validateEmail(email)) {
+    if (!email) {
+        setFieldError('newEmail', 'Email is required');
+        hasErrors = true;
+    } else if (!validateEmail(email)) {
         setFieldError('newEmail', 'Invalid email format');
         hasErrors = true;
     }
     
-    if (telephone1 && !validateCyprusPhone(telephone1)) {
+    if (!telephone1) {
+        setFieldError('newTelephone1', 'Telephone 1 is required');
+        hasErrors = true;
+    } else if (!validateCyprusPhone(telephone1)) {
         setFieldError('newTelephone1', 'Must be 8 digits starting with 25, 22, 24, 23, 99, 95, 94, 96, or 97');
         hasErrors = true;
     }
@@ -241,7 +247,7 @@ async function saveNewCustomer() {
     }
     
     const customerData = {
-        customer_type: customerType,
+        customer_type: customerType.toLowerCase(),
         display_name: displayName,
         status: 'potential',
         name: document.getElementById('newContactName').value.trim() || null,

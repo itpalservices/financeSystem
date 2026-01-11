@@ -7,7 +7,7 @@ let currentStatusFilter = 'active';
 
 function filterCustomers() {
     const statusFilter = document.getElementById('statusFilter');
-    currentStatusFilter = statusFilter ? statusFilter.value : 'active';
+    currentStatusFilter = statusFilter ? statusFilter.value.toLowerCase() : 'active';
     if (currentStatusFilter === 'all') currentStatusFilter = '';
     const searchQuery = document.getElementById('searchInput').value;
     loadCustomers(searchQuery);
@@ -148,12 +148,18 @@ async function createCustomer() {
         hasErrors = true;
     }
     
-    if (email && !validateEmail(email)) {
+    if (!email) {
+        setFieldError('createEmail', 'Email is required');
+        hasErrors = true;
+    } else if (!validateEmail(email)) {
         setFieldError('createEmail', 'Invalid email format');
         hasErrors = true;
     }
     
-    if (telephone1 && !validateCyprusPhone(telephone1)) {
+    if (!telephone1) {
+        setFieldError('createTelephone1', 'Telephone 1 is required');
+        hasErrors = true;
+    } else if (!validateCyprusPhone(telephone1)) {
         setFieldError('createTelephone1', 'Must be 8 digits starting with 25, 22, 24, 23, 99, 95, 94, 96, or 97');
         hasErrors = true;
     }
@@ -168,9 +174,9 @@ async function createCustomer() {
     }
     
     const customerData = {
-        customer_type: customerType,
+        customer_type: customerType.toLowerCase(),
         display_name: displayName,
-        status: document.getElementById('createStatus').value,
+        status: document.getElementById('createStatus').value.toLowerCase(),
         name: document.getElementById('createName').value.trim() || null,
         company_name: customerType === 'company' ? (document.getElementById('createCompanyName').value.trim() || null) : null,
         email: email || null,
@@ -260,12 +266,18 @@ async function updateCustomer() {
         hasErrors = true;
     }
     
-    if (email && !validateEmail(email)) {
+    if (!email) {
+        setFieldError('editEmail', 'Email is required');
+        hasErrors = true;
+    } else if (!validateEmail(email)) {
         setFieldError('editEmail', 'Invalid email format');
         hasErrors = true;
     }
     
-    if (telephone1 && !validateCyprusPhone(telephone1)) {
+    if (!telephone1) {
+        setFieldError('editTelephone1', 'Telephone 1 is required');
+        hasErrors = true;
+    } else if (!validateCyprusPhone(telephone1)) {
         setFieldError('editTelephone1', 'Must be 8 digits starting with 25, 22, 24, 23, 99, 95, 94, 96, or 97');
         hasErrors = true;
     }
@@ -280,9 +292,9 @@ async function updateCustomer() {
     }
     
     const customerData = {
-        customer_type: customerType,
+        customer_type: customerType.toLowerCase(),
         display_name: displayName,
-        status: document.getElementById('editStatus').value,
+        status: document.getElementById('editStatus').value.toLowerCase(),
         name: document.getElementById('editName').value.trim() || null,
         company_name: customerType === 'company' ? (document.getElementById('editCompanyName').value.trim() || null) : null,
         email: email || null,
