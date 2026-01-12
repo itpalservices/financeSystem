@@ -469,3 +469,164 @@ def generate_quote_pdf(quote, db: Session) -> str:
     pdf_url = upload_to_s3(filepath, filename)
     
     return pdf_url
+
+
+def generate_receipt_pdf(receipt, db: Session) -> str:
+    """Generate a PDF for a payment receipt."""
+    os.makedirs("pdfs", exist_ok=True)
+    filename = f"receipt_{receipt.receipt_number}.pdf"
+    filepath = os.path.join("pdfs", filename)
+    
+    doc = SimpleDocTemplate(filepath, pagesize=letter)
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    logo_path = "static/logo.png"
+    if os.path.exists(logo_path):
+        logo = Image(logo_path, width=2.5*inch, height=0.9*inch)
+        elements.append(logo)
+        elements.append(Spacer(1, 0.2*inch))
+    
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#1b7ca8'),
+        spaceAfter=30,
+        alignment=TA_CENTER
+    )
+    
+    if receipt.status.value == "draft":
+        title_text = "PAYMENT RECEIPT DRAFT"
+        elements.append(Paragraph(title_text, title_style))
+    elif receipt.status.value == "cancelled":
+        cancelled_title_style = ParagraphStyle(
+            'CancelledTitleStyle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            textColor=colors.red,
+            spaceAfter=30,
+            alignment=TA_CENTER
+        )
+        elements.append(Paragraph("CANCELLED RECEIPT", cancelled_title_style))
+    else:
+        title_text = "PAYMENT RECEIPT"
+        elements.append(Paragraph(title_text, title_style))
+    elements.append(Spacer(1, 0.2*inch))
+    
+    receipt_date = receipt.receipt_date.strftime("%d-%m-%Y") if receipt.receipt_date else "N/A"
+    info_data = [
+        ["Receipt Number:", receipt.receipt_number, "Date:", receipt_date]
+    ]
+    
+    payment_methods = {
+        'cash': 'Cash',
+        'bank_transfer': 'Bank Transfer',
+        'card': 'Card',
+        'cheque': 'Cheque',
+        'other': 'Other'
+    }
+    payment_method = payment_methods.get(receipt.payment_method, receipt.payment_method)
+    info_data.append(["Payment Method:", payment_method, "", ""])
+    
+    if receipt.payment_reference:
+        info_data.append(["Reference:", receipt.payment_reference, "", ""])
+    
+    info_table = Table(info_data, colWidths=[1.5*inch, 2*inch, 1.5*inch, 2*inch])
+    info_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (2, 0), (2, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+    ]))
+    
+    elements.append(info_table)
+    elements.append(Spacer(1, 0.3*inch))
+    
+    bill_to_fields = []
+    if receipt.client_name:
+        bill_to_fields.append(f"Client Name: {receipt.client_name}")
+    if receipt.company_name:
+        bill_to_fields.append(f"Company Name: {receipt.company_name}")
+    if receipt.telephone1:
+        bill_to_fields.append(f"Tel: {receipt.telephone1}")
+    
+    if bill_to_fields:
+        bill_to_header = ParagraphStyle(
+            'BillToHeader',
+            parent=styles['Heading2'],
+            fontSize=14,
+            textColor=colors.HexColor('#1b7ca8'),
+            spaceAfter=10
+        )
+        elements.append(Paragraph("Received From:", bill_to_header))
+        for field in bill_to_fields:
+            elements.append(Paragraph(field, styles['Normal']))
+        elements.append(Spacer(1, 0.3*inch))
+    
+    amount_style = ParagraphStyle(
+        'AmountStyle',
+        parent=styles['Heading1'],
+        fontSize=18,
+        textColor=colors.HexColor('#155a7a'),
+        spaceAfter=20,
+        alignment=TA_CENTER
+    )
+    elements.append(Paragraph(f"Amount Received: EUR {receipt.amount:.2f}", amount_style))
+    elements.append(Spacer(1, 0.3*inch))
+    
+    if receipt.invoice_id:
+        from app.models.invoice import Invoice
+        invoice = db.query(Invoice).filter(Invoice.id == receipt.invoice_id).first()
+        if invoice:
+            elements.append(Paragraph(f"<b>For Invoice:</b> {invoice.invoice_number}", styles['Normal']))
+            elements.append(Spacer(1, 0.1*inch))
+    
+    if receipt.notes:
+        elements.append(Paragraph(f"<b>Notes:</b> {html.escape(receipt.notes)}", styles['Normal']))
+    
+    elements.append(Spacer(1, 0.5*inch))
+    
+    footer_line_data = [["" for _ in range(1)]]
+    footer_line_table = Table(footer_line_data, colWidths=[7*inch])
+    footer_line_table.setStyle(TableStyle([
+        ('LINEABOVE', (0, 0), (-1, 0), 1, colors.HexColor('#1b7ca8')),
+        ('TOPPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+    ]))
+    elements.append(footer_line_table)
+    
+    footer_company_style = ParagraphStyle(
+        'FooterCompany',
+        parent=styles['Normal'],
+        fontSize=11,
+        textColor=colors.HexColor('#1b7ca8'),
+        alignment=TA_CENTER,
+        fontName='Helvetica-Bold'
+    )
+    
+    footer_info_style = ParagraphStyle(
+        'FooterInfo',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=colors.HexColor('#555555'),
+        alignment=TA_CENTER,
+        leading=12
+    )
+    
+    elements.append(Paragraph("IT PAL TECHNOLOGY SOLUTIONS LTD", footer_company_style))
+    elements.append(Spacer(1, 0.05*inch))
+    
+    rcpt_footer1 = "Reg. No.: HE482919 / T.I.C: 60254066D"
+    rcpt_footer2 = "IBAN: LT41 3250 0726 5105 4093 &nbsp;&nbsp;|&nbsp;&nbsp; BIC: REVOLT21 &nbsp;&nbsp;|&nbsp;&nbsp; BANK: Revolut Bank UAB"
+    rcpt_footer3 = "Tel: +357-97652017 &nbsp;&nbsp;|&nbsp;&nbsp; Email: finance@itpalsolutions.com &nbsp;&nbsp;|&nbsp;&nbsp; Website: www.itpalsolutions.com"
+    
+    elements.append(Paragraph(rcpt_footer1, footer_info_style))
+    elements.append(Paragraph(rcpt_footer2, footer_info_style))
+    elements.append(Paragraph(rcpt_footer3, footer_info_style))
+    
+    doc.build(elements)
+    
+    pdf_url = upload_to_s3(filepath, filename)
+    
+    return pdf_url

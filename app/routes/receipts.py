@@ -270,6 +270,24 @@ async def issue_receipt(
     return receipt
 
 
+@router.post("/{receipt_id}/generate-pdf")
+async def generate_receipt_pdf_endpoint(
+    receipt_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Generate a PDF for a payment receipt."""
+    from app.utils.pdf_generator import generate_receipt_pdf
+    
+    receipt = db.query(PaymentReceipt).filter(PaymentReceipt.id == receipt_id).first()
+    if not receipt:
+        raise HTTPException(status_code=404, detail="Receipt not found")
+    
+    pdf_url = generate_receipt_pdf(receipt, db)
+    
+    return {"pdf_url": pdf_url}
+
+
 @router.post("/{receipt_id}/cancel", response_model=ReceiptResponse)
 async def cancel_receipt(
     receipt_id: int,

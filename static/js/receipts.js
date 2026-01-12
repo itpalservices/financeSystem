@@ -10,6 +10,10 @@ document.addEventListener('DOMContentLoaded', function() {
     loadProjects();
     
     document.getElementById('searchInput').addEventListener('input', filterReceipts);
+    
+    document.getElementById('createModal').addEventListener('hidden.bs.modal', function() {
+        resetCreateForm();
+    });
 });
 
 async function loadReceipts() {
@@ -345,10 +349,13 @@ function displayReceipts(receipts) {
             <td>${getStatusBadge(receipt.status)}</td>
             <td>
                 <div class="btn-group btn-group-sm">
-                    <button class="btn btn-outline-primary" onclick="viewReceipt(${receipt.id})" title="View">
-                        <i class="bi bi-eye"></i>
+                    <button class="btn btn-outline-info" onclick="generateReceiptPDF(${receipt.id})" title="View PDF">
+                        <i class="bi bi-file-pdf"></i>
                     </button>
                     ${receipt.status === 'draft' ? `
+                        <button class="btn btn-outline-secondary" onclick="editReceipt(${receipt.id})" title="Edit">
+                            <i class="bi bi-pencil"></i>
+                        </button>
                         <button class="btn btn-outline-success" onclick="issueReceipt(${receipt.id})" title="Issue">
                             <i class="bi bi-check-circle"></i>
                         </button>
@@ -411,8 +418,12 @@ async function createReceipt() {
     };
     
     try {
-        const response = await fetch('/api/receipts/', {
-            method: 'POST',
+        const isEdit = editingReceiptId !== null;
+        const url = isEdit ? `/api/receipts/${editingReceiptId}` : '/api/receipts/';
+        const method = isEdit ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -422,16 +433,24 @@ async function createReceipt() {
         
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.detail || 'Failed to create receipt');
+            throw new Error(error.detail || `Failed to ${isEdit ? 'update' : 'create'} receipt`);
         }
         
         bootstrap.Modal.getInstance(document.getElementById('createModal')).hide();
-        document.getElementById('createForm').reset();
-        showSuccess('Receipt created successfully');
+        resetCreateForm();
+        showSuccess(`Receipt ${isEdit ? 'updated' : 'created'} successfully`);
         loadReceipts();
     } catch (error) {
         showError(error.message);
     }
+}
+
+function resetCreateForm() {
+    editingReceiptId = null;
+    document.getElementById('createForm').reset();
+    document.getElementById('customerPreview').style.display = 'none';
+    document.querySelector('#createModal .modal-title').innerHTML = '<i class="bi bi-plus-circle"></i> New Receipt';
+    document.getElementById('submitBtn').textContent = 'Create Receipt';
 }
 
 async function viewReceipt(receiptId) {
@@ -506,6 +525,76 @@ async function issueReceipt(receiptId) {
     } catch (error) {
         showError(error.message);
     }
+}
+
+async function generateReceiptPDF(receiptId) {
+    try {
+        const response = await fetch(`/api/receipts/${receiptId}/generate-pdf`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to generate PDF');
+        }
+        
+        const result = await response.json();
+        
+        document.getElementById('pdfFrame').src = result.pdf_url;
+        new bootstrap.Modal(document.getElementById('pdfModal')).show();
+    } catch (error) {
+        showError(error.message);
+    }
+}
+
+let editingReceiptId = null;
+
+async function editReceipt(receiptId) {
+    const receipt = allReceipts.find(r => r.id === receiptId);
+    if (!receipt) {
+        showError('Receipt not found');
+        return;
+    }
+    
+    if (receipt.status !== 'draft') {
+        showError('Only draft receipts can be edited');
+        return;
+    }
+    
+    editingReceiptId = receiptId;
+    
+    await loadCustomers();
+    await loadInvoices();
+    await loadProjects();
+    
+    document.querySelector('#createModal .modal-title').innerHTML = '<i class="bi bi-pencil"></i> Edit Receipt';
+    document.getElementById('submitBtn').textContent = 'Save Changes';
+    
+    if (receipt.customer_id) {
+        document.getElementById('createCustomerId').value = receipt.customer_id;
+        selectCustomer();
+    }
+    
+    document.getElementById('createAmount').value = receipt.amount;
+    document.getElementById('createPaymentMethod').value = receipt.payment_method || 'bank_transfer';
+    document.getElementById('createPaymentReference').value = receipt.payment_reference || '';
+    document.getElementById('createNotes').value = receipt.notes || '';
+    
+    if (receipt.receipt_date) {
+        const date = new Date(receipt.receipt_date);
+        document.getElementById('createReceiptDate').value = date.toISOString().split('T')[0];
+    }
+    
+    if (receipt.invoice_id) {
+        document.getElementById('createInvoiceId').value = receipt.invoice_id;
+    }
+    
+    if (receipt.project_id) {
+        document.getElementById('createProjectId').value = receipt.project_id;
+    }
+    
+    new bootstrap.Modal(document.getElementById('createModal')).show();
 }
 
 function openCancelModal(receiptId) {
