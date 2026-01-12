@@ -44,7 +44,7 @@ async function loadCustomers() {
 
 async function loadInvoices() {
     try {
-        const response = await fetch('/api/invoices/', {
+        const response = await fetch('/api/invoices', {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         
@@ -58,7 +58,7 @@ async function loadInvoices() {
 
 async function loadProjects() {
     try {
-        const response = await fetch('/api/projects/', {
+        const response = await fetch('/api/projects?search=', {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         

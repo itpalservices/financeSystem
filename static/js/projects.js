@@ -393,14 +393,14 @@ function addCreateMilestone() {
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Amount</label>
-                    <input type="number" class="form-control form-control-sm milestone-amount" step="0.01" value="0">
+                    <input type="number" class="form-control form-control-sm milestone-amount" step="0.01" value="0" oninput="updateMilestoneTotal()">
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Due Date</label>
                     <input type="date" class="form-control form-control-sm milestone-due-date">
                 </div>
                 <div class="col-md-1 d-flex align-items-end">
-                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeCreateMilestone(${index})">
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeCreateMilestone(${index}); updateMilestoneTotal();">
                         <i class="bi bi-x"></i>
                     </button>
                 </div>
@@ -409,6 +409,31 @@ function addCreateMilestone() {
     `;
     
     container.insertAdjacentHTML('beforeend', milestoneHtml);
+    updateMilestoneTotal();
+}
+
+function updateMilestoneTotal() {
+    let total = 0;
+    document.querySelectorAll('#createMilestones .milestone-amount').forEach(input => {
+        total += parseFloat(input.value) || 0;
+    });
+    
+    const totalDisplay = document.getElementById('milestoneTotalDisplay');
+    if (totalDisplay) {
+        totalDisplay.textContent = `Milestones Total: €${total.toFixed(2)}`;
+    }
+    
+    const budget = parseFloat(document.getElementById('createBudget').value) || 0;
+    const warningDiv = document.getElementById('milestoneMatchWarning');
+    
+    if (warningDiv) {
+        if (total > 0 && Math.abs(total - budget) > 0.01) {
+            warningDiv.textContent = `Warning: Milestones total (€${total.toFixed(2)}) does not match budget (€${budget.toFixed(2)})`;
+            warningDiv.style.display = 'block';
+        } else {
+            warningDiv.style.display = 'none';
+        }
+    }
 }
 
 function removeCreateMilestone(index) {
@@ -485,8 +510,9 @@ async function createProject() {
     
     if (milestones.length > 0) {
         const milestonesTotalAmount = milestones.reduce((sum, m) => sum + m.expected_amount, 0);
-        if (totalBudget > 0 && Math.abs(milestonesTotalAmount - totalBudget) > 0.01) {
-            showCreateModalWarning(`Milestone total (€${milestonesTotalAmount.toFixed(2)}) does not match project budget (€${totalBudget.toFixed(2)})`);
+        if (milestonesTotalAmount > 0 && Math.abs(milestonesTotalAmount - totalBudget) > 0.01) {
+            showCreateModalError(`Cannot save: Milestone total (€${milestonesTotalAmount.toFixed(2)}) must equal project budget (€${totalBudget.toFixed(2)})`);
+            return;
         }
     }
     
