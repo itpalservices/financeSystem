@@ -466,6 +466,7 @@ def issue_invoice(
     invoice.status = InvoiceStatus.issued
     invoice.issued_at = datetime.utcnow()
     invoice.issued_by = current_user.id
+    invoice.pdf_url = None  # Clear cached PDF so it regenerates with correct "INVOICE" title
     
     db.commit()
     db.refresh(invoice)

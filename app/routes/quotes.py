@@ -308,6 +308,7 @@ def issue_quote(
     quote.status = QuoteStatus.issued
     quote.issued_at = datetime.utcnow()
     quote.issued_by = current_user.id
+    quote.pdf_url = None  # Clear cached PDF so it regenerates with correct "QUOTATION" title
     
     db.commit()
     db.refresh(quote)
