@@ -416,12 +416,51 @@ function removeCreateMilestone(index) {
     if (element) element.remove();
 }
 
+function showCreateModalError(message) {
+    let errorDiv = document.getElementById('createModalError');
+    if (!errorDiv) {
+        const modalBody = document.querySelector('#createModal .modal-body');
+        errorDiv = document.createElement('div');
+        errorDiv.id = 'createModalError';
+        errorDiv.className = 'alert alert-danger';
+        modalBody.insertBefore(errorDiv, modalBody.firstChild);
+    }
+    errorDiv.innerHTML = `<i class="bi bi-exclamation-triangle"></i> ${message}`;
+    errorDiv.style.display = 'block';
+}
+
+function hideCreateModalError() {
+    const errorDiv = document.getElementById('createModalError');
+    if (errorDiv) errorDiv.style.display = 'none';
+}
+
+function showCreateModalWarning(message) {
+    let warnDiv = document.getElementById('createModalWarning');
+    if (!warnDiv) {
+        const modalBody = document.querySelector('#createModal .modal-body');
+        warnDiv = document.createElement('div');
+        warnDiv.id = 'createModalWarning';
+        warnDiv.className = 'alert alert-warning';
+        modalBody.insertBefore(warnDiv, modalBody.firstChild);
+    }
+    warnDiv.innerHTML = `<i class="bi bi-exclamation-triangle"></i> ${message}`;
+    warnDiv.style.display = 'block';
+}
+
+function hideCreateModalWarning() {
+    const warnDiv = document.getElementById('createModalWarning');
+    if (warnDiv) warnDiv.style.display = 'none';
+}
+
 async function createProject() {
+    hideCreateModalError();
+    hideCreateModalWarning();
+    
     const customerId = document.getElementById('createCustomerId').value;
     const title = document.getElementById('createTitle').value;
     
     if (!customerId || !title) {
-        showError('Customer and Title are required');
+        showCreateModalError('Customer and Title are required');
         return;
     }
     
@@ -442,12 +481,20 @@ async function createProject() {
     
     const startDate = document.getElementById('createStartDate').value;
     const endDate = document.getElementById('createEndDate').value;
+    const totalBudget = parseFloat(document.getElementById('createBudget').value) || 0;
+    
+    if (milestones.length > 0) {
+        const milestonesTotalAmount = milestones.reduce((sum, m) => sum + m.expected_amount, 0);
+        if (totalBudget > 0 && Math.abs(milestonesTotalAmount - totalBudget) > 0.01) {
+            showCreateModalWarning(`Milestone total (€${milestonesTotalAmount.toFixed(2)}) does not match project budget (€${totalBudget.toFixed(2)})`);
+        }
+    }
     
     const data = {
         customer_id: parseInt(customerId),
         title: title,
         description: document.getElementById('createDescription').value || null,
-        total_budget: parseFloat(document.getElementById('createBudget').value) || 0,
+        total_budget: totalBudget,
         start_date: startDate ? new Date(startDate).toISOString() : null,
         end_date: endDate ? new Date(endDate).toISOString() : null,
         notes: document.getElementById('createNotes').value || null,
@@ -474,16 +521,19 @@ async function createProject() {
                     errorMsg = error.detail;
                 }
             }
-            throw new Error(errorMsg);
+            showCreateModalError(errorMsg);
+            return;
         }
         
         bootstrap.Modal.getInstance(document.getElementById('createModal')).hide();
         document.getElementById('createForm').reset();
         document.getElementById('createMilestones').innerHTML = '';
+        hideCreateModalError();
+        hideCreateModalWarning();
         showSuccess('Project created successfully');
         loadProjects();
     } catch (error) {
-        showError(error.message);
+        showCreateModalError(error.message);
     }
 }
 

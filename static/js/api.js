@@ -125,6 +125,14 @@ const api = {
         return handleResponse(response);
     },
     
+    async issueInvoice(id) {
+        const response = await fetch(`${API_BASE}/invoices/${id}/issue`, {
+            method: 'POST',
+            headers: getHeaders(),
+        });
+        return handleResponse(response);
+    },
+    
     async generateInvoicePDF(id) {
         const response = await fetch(`${API_BASE}/invoices/${id}/generate-pdf`, {
             method: 'POST',

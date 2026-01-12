@@ -117,6 +117,7 @@ def create_project(
     if project_data.milestones:
         for milestone_data in project_data.milestones:
             create_milestone_with_validation(db, new_project.id, milestone_data)
+            db.flush()
     
     db.commit()
     db.refresh(new_project)
@@ -221,10 +222,17 @@ def delete_project(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
     
     linked_invoices = db.query(Invoice).filter(Invoice.project_id == project_id).count()
-    if linked_invoices > 0:
+    linked_receipts = db.query(PaymentReceipt).filter(PaymentReceipt.project_id == project_id).count()
+    
+    if linked_invoices > 0 or linked_receipts > 0:
+        docs = []
+        if linked_invoices > 0:
+            docs.append(f"{linked_invoices} invoice(s)")
+        if linked_receipts > 0:
+            docs.append(f"{linked_receipts} receipt(s)")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot delete project. {linked_invoices} invoice(s) are linked to it."
+            detail=f"Cannot delete project. {' and '.join(docs)} are linked. Set status to Cancelled instead."
         )
     
     db.delete(project)
