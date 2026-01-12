@@ -8,6 +8,8 @@ let editingInvoiceId = null;
 let projects = [];
 let currentMilestones = [];
 let customers = [];
+let customersLoaded = false;
+let customersLoadPromise = null;
 
 function formatDate(dateString) {
     const date = new Date(dateString);
@@ -27,17 +29,24 @@ async function loadInvoices() {
 }
 
 async function loadCustomers() {
-    try {
-        const response = await fetch('/api/customers', {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        if (response.ok) {
-            customers = await response.json();
-            populateCustomerDropdown();
+    if (customersLoadPromise) return customersLoadPromise;
+    
+    customersLoadPromise = (async () => {
+        try {
+            const response = await fetch('/api/customers', {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            });
+            if (response.ok) {
+                customers = await response.json();
+                populateCustomerDropdown();
+                customersLoaded = true;
+            }
+        } catch (error) {
+            console.error('Error loading customers:', error);
         }
-    } catch (error) {
-        console.error('Error loading customers:', error);
-    }
+    })();
+    
+    return customersLoadPromise;
 }
 
 function populateCustomerDropdown() {
@@ -720,6 +729,8 @@ async function editInvoice(invoiceId) {
         showError('Only draft invoices can be edited');
         return;
     }
+    
+    await loadCustomers();
     
     editingInvoiceId = invoiceId;
     

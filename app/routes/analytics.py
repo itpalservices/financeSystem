@@ -247,7 +247,7 @@ def get_project_analytics(
             milestone_id=milestone.id,
             project_code=milestone.project.project_code,
             project_title=milestone.project.title,
-            milestone_no=milestone.milestone_no,
+            milestone_no=milestone.milestone_no or 0,
             label=milestone.label,
             expected_amount=milestone.expected_amount,
             invoiced_amount=round(invoiced_amount, 2),
