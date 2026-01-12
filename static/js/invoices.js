@@ -561,34 +561,6 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
         const modal = bootstrap.Modal.getInstance(document.getElementById('createModal'));
         modal.hide();
         
-        hideModalError();
-        const projectWarning = document.getElementById('projectWarning');
-        const milestoneWarning = document.getElementById('milestoneWarning');
-        const summaryPanel = document.getElementById('milestoneSummaryPanel');
-        if (projectWarning) projectWarning.style.display = 'none';
-        if (milestoneWarning) milestoneWarning.style.display = 'none';
-        if (summaryPanel) summaryPanel.style.display = 'none';
-        
-        document.getElementById('createForm').reset();
-        clearCustomerSelection();
-        resetLineItems();
-        
-        const projectSelect = document.getElementById('projectId');
-        const milestoneSelect = document.getElementById('milestoneId');
-        if (projectSelect) projectSelect.value = '';
-        if (milestoneSelect) {
-            milestoneSelect.value = '';
-            milestoneSelect.disabled = true;
-            milestoneSelect.innerHTML = '<option value="">Select Project First</option>';
-        }
-        currentMilestones = [];
-        
-        document.querySelector('#createModal .modal-title').innerHTML = '<i class="bi bi-file-earmark-plus"></i> Create Invoice';
-        document.getElementById('markIssuedModalBtn').style.display = 'none';
-        document.getElementById('submitBtnText').textContent = 'Create';
-        document.getElementById('submitBtnIcon').className = 'bi bi-plus-circle';
-        editingInvoiceId = null;
-        
         loadInvoices();
         
         if (action === 'issued' && !isEditing) {
