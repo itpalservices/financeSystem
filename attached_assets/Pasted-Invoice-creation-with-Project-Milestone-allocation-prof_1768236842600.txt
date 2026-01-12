@@ -1,0 +1,52 @@
+Invoice creation with Project/Milestone allocation (professional UX + rules)
+
+Goal:
+When creating an Invoice, user can optionally allocate it to a Project and Milestone. If the selected Project has milestones, the Milestone dropdown must appear and be filtered by the selected Project only. Selecting a Milestone should show milestone financial summary (expected/received/remaining) and optionally allow auto-filling invoice line items based on the milestone amount. Partial invoicing (invoice < expected) must be supported.
+
+UI Flow:
+1) Select Customer (required).
+2) Optional: Enable “Allocate to Project”:
+   - Project dropdown filtered to projects of selected customer only.
+3) After Project selection:
+   - If project has milestones, show Milestone dropdown filtered to that project milestones only.
+4) When Milestone is selected:
+   - Show a read-only Milestone Summary panel:
+     - milestone label (e.g., "Advance Payment")
+     - expected_amount
+     - already_invoiced_amount (sum of issued invoices linked to this milestone) [optional but recommended]
+     - already_received_amount (sum of issued receipts linked to this milestone)
+     - remaining_amount = expected_amount - already_received_amount
+   - Provide a button: “Add milestone line item”
+     - On click, add a line item automatically:
+       - description = "{project_number} - {milestone.label}"
+       - qty = 1
+       - unit_price = remaining_amount OR expected_amount (choose expected if you want exact installment; choose remaining if you want smart)
+       - discount = 0
+   - Do NOT force auto-fill; user may keep manual line items if needed.
+
+Rules / Validations:
+- Customer must be selected first.
+- If invoice.project_id is set, project.customer_id must equal invoice.customer_id (block otherwise).
+- If invoice.milestone_id is set, milestone.project_id must equal invoice.project_id (block otherwise).
+- Allow partial invoicing: invoice total can be less than milestone expected_amount.
+- If invoice total exceeds milestone remaining_amount:
+  - show a warning (recommended) or block (optional policy).
+- After invoice is ISSUED, project_id and milestone_id are locked (immutable).
+
+Example:
+Project PRJ-2026-0001 with milestones:
+- Advance Payment expected 2000
+- Progress Payment 1 expected 2000
+- Final Payment expected 2000
+
+Invoice #1:
+- Allocate to PRJ-2026-0001 / Advance Payment
+- User clicks “Add milestone line item” -> adds line item 2000
+Invoice #2 (partial):
+- Allocate to PRJ-2026-0001 / Progress Payment 1
+- User manually invoices 1000 now and later another invoice 1000
+System must show remaining amounts in milestone summary and analytics.
+
+Outputs:
+- Project Details should show expected vs invoiced vs received per milestone.
+- Analytics should show totals by project and outstanding vs received.

@@ -9,6 +9,7 @@ from app.models.user import User
 from app.models.customer import Customer
 from app.models.project import Project, Milestone, ProjectStatus, MilestoneStatus, MilestoneType
 from app.models.invoice import Invoice, InvoiceStatus
+from app.models.receipt import PaymentReceipt, ReceiptStatus
 from app.schemas import (
     ProjectCreate, ProjectResponse, ProjectUpdate, ProjectListResponse,
     MilestoneCreate, MilestoneResponse, MilestoneUpdate
@@ -441,4 +442,100 @@ def get_project_summary(
             "progress_percent": (invoiced_total / project.total_budget * 100) if project.total_budget > 0 else 0
         },
         "milestones": milestones_summary
+    }
+
+@router.get("/{project_id}/milestones/{milestone_id}/financial")
+def get_milestone_financial_summary(
+    project_id: int,
+    milestone_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get detailed financial summary for a milestone including invoiced and received amounts."""
+    milestone = db.query(Milestone).filter(
+        Milestone.id == milestone_id,
+        Milestone.project_id == project_id
+    ).first()
+    if not milestone:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Milestone not found")
+    
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    
+    invoiced_amount = db.query(func.coalesce(func.sum(Invoice.total), 0)).filter(
+        Invoice.milestone_id == milestone_id,
+        Invoice.status == InvoiceStatus.issued
+    ).scalar() or 0.0
+    
+    received_amount = db.query(func.coalesce(func.sum(PaymentReceipt.amount), 0)).filter(
+        PaymentReceipt.milestone_id == milestone_id,
+        PaymentReceipt.status == ReceiptStatus.issued
+    ).scalar() or 0.0
+    
+    remaining_amount = max(0, milestone.expected_amount - received_amount)
+    outstanding_amount = max(0, invoiced_amount - received_amount)
+    
+    return {
+        "milestone_id": milestone.id,
+        "label": milestone.label,
+        "milestone_type": milestone.milestone_type.value,
+        "expected_amount": milestone.expected_amount,
+        "invoiced_amount": invoiced_amount,
+        "received_amount": received_amount,
+        "remaining_amount": remaining_amount,
+        "outstanding_amount": outstanding_amount,
+        "due_date": milestone.due_date.isoformat() if milestone.due_date else None,
+        "paid_date": milestone.paid_date.isoformat() if milestone.paid_date else None,
+        "status": milestone.status.value,
+        "project_code": project.project_code,
+        "project_title": project.title
+    }
+
+@router.get("/{project_id}/milestones-with-financials")
+def get_milestones_with_financials(
+    project_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all milestones for a project with their financial details."""
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    
+    milestones = db.query(Milestone).filter(Milestone.project_id == project_id).order_by(Milestone.id).all()
+    
+    result = []
+    for milestone in milestones:
+        invoiced_amount = db.query(func.coalesce(func.sum(Invoice.total), 0)).filter(
+            Invoice.milestone_id == milestone.id,
+            Invoice.status == InvoiceStatus.issued
+        ).scalar() or 0.0
+        
+        received_amount = db.query(func.coalesce(func.sum(PaymentReceipt.amount), 0)).filter(
+            PaymentReceipt.milestone_id == milestone.id,
+            PaymentReceipt.status == ReceiptStatus.issued
+        ).scalar() or 0.0
+        
+        remaining_amount = max(0, milestone.expected_amount - received_amount)
+        
+        result.append({
+            "id": milestone.id,
+            "milestone_type": milestone.milestone_type.value,
+            "milestone_no": milestone.milestone_no,
+            "label": milestone.label,
+            "expected_amount": milestone.expected_amount,
+            "invoiced_amount": invoiced_amount,
+            "received_amount": received_amount,
+            "remaining_amount": remaining_amount,
+            "due_date": milestone.due_date.isoformat() if milestone.due_date else None,
+            "paid_date": milestone.paid_date.isoformat() if milestone.paid_date else None,
+            "status": milestone.status.value
+        })
+    
+    return {
+        "project_id": project.id,
+        "project_code": project.project_code,
+        "project_title": project.title,
+        "milestones": result
     }

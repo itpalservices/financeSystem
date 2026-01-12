@@ -302,19 +302,42 @@ async function saveNewCustomer() {
 
 function filterProjectsByCustomer(customerId) {
     const projectSelect = document.getElementById('projectId');
-    if (!projectSelect || !projects.length) return;
+    const milestoneSelect = document.getElementById('milestoneId');
+    const summaryPanel = document.getElementById('milestoneSummaryPanel');
+    
+    if (!projectSelect) return;
     
     projectSelect.innerHTML = '<option value="">No Project</option>';
+    projectSelect.value = '';
     
-    projects.filter(p => {
-        if (!customerId) return true;
-        return !p.customer_id || p.customer_id == customerId;
-    }).forEach(project => {
+    if (milestoneSelect) {
+        milestoneSelect.innerHTML = '<option value="">Select Project First</option>';
+        milestoneSelect.disabled = true;
+    }
+    if (summaryPanel) {
+        summaryPanel.style.display = 'none';
+    }
+    currentMilestones = [];
+    
+    if (!projects.length || !customerId) return;
+    
+    const filteredProjects = projects.filter(p => p.customer_id == customerId);
+    
+    filteredProjects.forEach(project => {
         const option = document.createElement('option');
         option.value = project.id;
+        option.dataset.customerId = project.customer_id;
         option.textContent = `${project.project_code} - ${project.title}`;
         projectSelect.appendChild(option);
     });
+    
+    if (filteredProjects.length === 0) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.disabled = true;
+        option.textContent = '(No projects for this customer)';
+        projectSelect.appendChild(option);
+    }
 }
 
 let allInvoices = [];
@@ -1002,9 +1025,11 @@ async function loadProjectMilestones() {
     const milestoneSelect = document.getElementById('milestoneId');
     const projectWarning = document.getElementById('projectWarning');
     const milestoneWarning = document.getElementById('milestoneWarning');
+    const summaryPanel = document.getElementById('milestoneSummaryPanel');
     
     projectWarning.style.display = 'none';
     milestoneWarning.style.display = 'none';
+    if (summaryPanel) summaryPanel.style.display = 'none';
     
     if (!projectId) {
         milestoneSelect.innerHTML = '<option value="">Select Project First</option>';
@@ -1014,15 +1039,21 @@ async function loadProjectMilestones() {
     }
     
     try {
-        const response = await fetch(`/api/projects/${projectId}/milestones`, {
+        const response = await fetch(`/api/projects/${projectId}/milestones-with-financials`, {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         
         if (response.ok) {
-            currentMilestones = await response.json();
+            const data = await response.json();
+            currentMilestones = data.milestones || [];
+            window.currentProjectCode = data.project_code;
+            window.currentProjectTitle = data.project_title;
+            
             milestoneSelect.innerHTML = '<option value="">No Milestone</option>';
             currentMilestones.forEach(m => {
-                milestoneSelect.innerHTML += `<option value="${m.id}" data-expected="${m.expected_amount}">${m.milestone_no}. ${m.label} (€${m.expected_amount.toFixed(2)})</option>`;
+                const remaining = m.remaining_amount || (m.expected_amount - (m.received_amount || 0));
+                const label = m.milestone_no ? `${m.milestone_no}. ${m.label}` : m.label;
+                milestoneSelect.innerHTML += `<option value="${m.id}" data-expected="${m.expected_amount}" data-invoiced="${m.invoiced_amount || 0}" data-received="${m.received_amount || 0}" data-remaining="${remaining}" data-label="${m.label}">${label} (Expected: €${m.expected_amount.toFixed(2)}, Remaining: €${remaining.toFixed(2)})</option>`;
             });
             milestoneSelect.disabled = false;
         }
@@ -1030,6 +1061,64 @@ async function loadProjectMilestones() {
         console.error('Error loading milestones:', error);
         milestoneSelect.innerHTML = '<option value="">Error loading milestones</option>';
     }
+}
+
+async function showMilestoneSummary() {
+    const milestoneSelect = document.getElementById('milestoneId');
+    const summaryPanel = document.getElementById('milestoneSummaryPanel');
+    const milestoneWarning = document.getElementById('milestoneWarning');
+    
+    if (!milestoneSelect || !milestoneSelect.value) {
+        if (summaryPanel) summaryPanel.style.display = 'none';
+        if (milestoneWarning) milestoneWarning.style.display = 'none';
+        return;
+    }
+    
+    const selectedOption = milestoneSelect.options[milestoneSelect.selectedIndex];
+    const expected = parseFloat(selectedOption.dataset.expected) || 0;
+    const invoiced = parseFloat(selectedOption.dataset.invoiced) || 0;
+    const received = parseFloat(selectedOption.dataset.received) || 0;
+    const remaining = parseFloat(selectedOption.dataset.remaining) || 0;
+    const label = selectedOption.dataset.label || 'Milestone';
+    
+    document.getElementById('milestoneSummaryLabel').textContent = label;
+    document.getElementById('milestoneSummaryExpected').textContent = `€${expected.toFixed(2)}`;
+    document.getElementById('milestoneSummaryInvoiced').textContent = `€${invoiced.toFixed(2)}`;
+    document.getElementById('milestoneSummaryReceived').textContent = `€${received.toFixed(2)}`;
+    document.getElementById('milestoneSummaryRemaining').textContent = `€${remaining.toFixed(2)}`;
+    
+    if (summaryPanel) summaryPanel.style.display = 'block';
+    
+    checkMilestoneWarning();
+}
+
+function addMilestoneLineItem() {
+    const milestoneSelect = document.getElementById('milestoneId');
+    if (!milestoneSelect || !milestoneSelect.value) {
+        showErrorToast('Please select a milestone first');
+        return;
+    }
+    
+    const selectedOption = milestoneSelect.options[milestoneSelect.selectedIndex];
+    const remaining = parseFloat(selectedOption.dataset.remaining) || 0;
+    const label = selectedOption.dataset.label || 'Milestone Payment';
+    const projectCode = window.currentProjectCode || '';
+    
+    const description = projectCode ? `${projectCode} - ${label}` : label;
+    
+    addLineItem();
+    
+    const lineItems = document.querySelectorAll('.line-item-row');
+    const lastItem = lineItems[lineItems.length - 1];
+    
+    if (lastItem) {
+        lastItem.querySelector('.item-desc').value = description;
+        lastItem.querySelector('.item-qty').value = 1;
+        lastItem.querySelector('.item-price').value = remaining.toFixed(2);
+        lastItem.querySelector('.item-discount').value = 0;
+    }
+    
+    checkMilestoneWarning();
 }
 
 function checkMilestoneWarning() {
