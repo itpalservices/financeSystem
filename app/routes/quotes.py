@@ -465,7 +465,9 @@ def convert_to_invoice(
         total=quote.total,
         notes=quote.notes,
         status=InvoiceStatus.draft,
-        customer_snapshot=customer_snapshot_data
+        customer_snapshot=customer_snapshot_data,
+        source_quote_id=quote.id,
+        source_quote_number=quote.quote_number
     )
     db.add(new_invoice)
     db.flush()

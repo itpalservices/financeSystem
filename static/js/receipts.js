@@ -287,8 +287,16 @@ function filterInvoicesByCustomer(customerId) {
     const customer = allCustomers.find(c => c.id == customerId);
     if (!customer) return;
     
+    const invoiceIdsWithReceipts = new Set(
+        allReceipts
+            .filter(r => r.invoice_id && r.status === 'issued')
+            .map(r => r.invoice_id)
+    );
+    
     const customerInvoices = allInvoices.filter(inv => 
-        inv.telephone1 === customer.telephone1 || inv.customer_id == customerId
+        (inv.telephone1 === customer.telephone1 || inv.customer_id == customerId) &&
+        inv.status === 'issued' &&
+        !invoiceIdsWithReceipts.has(inv.id)
     );
     
     customerInvoices.forEach(invoice => {
@@ -303,7 +311,10 @@ function filterProjectsByCustomer(customerId) {
     const select = document.getElementById('createProjectId');
     select.innerHTML = '<option value="">No Project Link</option>';
     
-    const customerProjects = allProjects.filter(p => p.customer_id == customerId);
+    const customerProjects = allProjects.filter(p => 
+        p.customer_id == customerId && 
+        p.status === 'active'
+    );
     
     customerProjects.forEach(project => {
         const option = document.createElement('option');

@@ -59,6 +59,9 @@ class Invoice(Base):
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
     milestone_id = Column(Integer, ForeignKey("milestones.id"), nullable=True)
     
+    source_quote_id = Column(Integer, ForeignKey("quotes.id"), nullable=True)
+    source_quote_number = Column(String, nullable=True)
+    
     user = relationship("User", back_populates="invoices", foreign_keys=[user_id])
     issuer = relationship("User", foreign_keys=[issued_by])
     canceller = relationship("User", foreign_keys=[cancelled_by])

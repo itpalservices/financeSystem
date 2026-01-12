@@ -751,6 +751,8 @@ async function addMilestoneToProject() {
 
 async function editProject(projectId) {
     try {
+        await loadCustomers();
+        
         const response = await fetch(`/api/projects/${projectId}`, {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });

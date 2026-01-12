@@ -57,7 +57,12 @@ def sync_customer(db: Session, client_name: str, company_name: str, client_email
         if company_name is not None:
             existing_customer.company_name = company_name
         if client_email is not None:
-            existing_customer.email = client_email
+            email_conflict = db.query(Customer).filter(
+                Customer.email == client_email,
+                Customer.id != existing_customer.id
+            ).first()
+            if not email_conflict:
+                existing_customer.email = client_email
         if telephone2 is not None:
             existing_customer.telephone2 = telephone2
         if client_address is not None:

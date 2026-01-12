@@ -74,6 +74,10 @@ def generate_invoice_pdf(invoice, db: Session) -> str:
         ["Invoice Number:", invoice.invoice_number, "Issue Date:", invoice.issue_date.strftime("%d-%m-%Y")]
     ]
     
+    # Add quote reference if invoice was converted from a quote
+    if hasattr(invoice, 'source_quote_number') and invoice.source_quote_number:
+        info_data.append(["Quote Reference:", invoice.source_quote_number, "", ""])
+    
     info_table = Table(info_data, colWidths=[1.5*inch, 2*inch, 1.5*inch, 2*inch])
     info_table.setStyle(TableStyle([
         ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),

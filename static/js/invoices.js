@@ -515,6 +515,13 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
         return;
     }
     
+    const overallDiscount = parseFloat(document.getElementById('discount').value) || 0;
+    const hasLineItemDiscounts = lineItems.some(item => item.discount > 0);
+    
+    if (overallDiscount > 0 && hasLineItemDiscounts) {
+        showModalWarning('Warning: You have both an overall discount and line item discounts. Consider using only one method to avoid confusion.');
+    }
+    
     const customerId = document.getElementById('selectedCustomerId')?.value;
     
     if (!customerId) {

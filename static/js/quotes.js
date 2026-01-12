@@ -6,6 +6,8 @@ let quotes = [];
 let currentQuote = null;
 let editingQuoteId = null;
 let customers = [];
+let customersLoaded = false;
+let customersLoadPromise = null;
 
 function formatDate(dateString) {
     const date = new Date(dateString);
@@ -25,17 +27,24 @@ async function loadQuotes() {
 }
 
 async function loadCustomers() {
-    try {
-        const response = await fetch('/api/customers', {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        if (response.ok) {
-            customers = await response.json();
-            populateCustomerDropdown();
+    if (customersLoadPromise) return customersLoadPromise;
+    
+    customersLoadPromise = (async () => {
+        try {
+            const response = await fetch('/api/customers', {
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            });
+            if (response.ok) {
+                customers = await response.json();
+                populateCustomerDropdown();
+                customersLoaded = true;
+            }
+        } catch (error) {
+            console.error('Error loading customers:', error);
         }
-    } catch (error) {
-        console.error('Error loading customers:', error);
-    }
+    })();
+    
+    return customersLoadPromise;
 }
 
 function populateCustomerDropdown() {
@@ -503,6 +512,13 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
         return;
     }
     
+    const overallDiscount = parseFloat(document.getElementById('discount').value) || 0;
+    const hasLineItemDiscounts = lineItems.some(item => item.discount > 0);
+    
+    if (overallDiscount > 0 && hasLineItemDiscounts) {
+        showModalWarning('Warning: You have both an overall discount and line item discounts. Consider using only one method to avoid confusion.');
+    }
+    
     const data = {
         customer_id: parseInt(customerId),
         client_name: customer?.name || customer?.display_name || null,
@@ -693,6 +709,8 @@ async function editQuote(quoteId) {
         showError('Only draft quotes can be edited');
         return;
     }
+    
+    await loadCustomers();
     
     document.querySelector('#createModal .modal-title').innerHTML = '<i class="bi bi-pencil"></i> Edit Quote';
     document.getElementById('markIssuedModalBtn').style.display = 'inline-block';
