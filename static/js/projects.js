@@ -609,6 +609,21 @@ function renderProjectView(data) {
             // Only show number prefix for progress payments
             const labelPrefix = m.milestone_type === 'progress' && m.milestone_no ? `${m.milestone_no}. ` : '';
             
+            // Build clickable invoice links
+            let invoicesHtml = '';
+            if (m.invoices && m.invoices.length > 0) {
+                const invoiceLinks = m.invoices.map(inv => {
+                    if (inv.pdf_url) {
+                        return `<a href="${inv.pdf_url}" target="_blank" class="badge bg-primary text-decoration-none me-1" title="View PDF">${inv.invoice_number}</a>`;
+                    } else {
+                        return `<span class="badge bg-secondary me-1">${inv.invoice_number}</span>`;
+                    }
+                }).join('');
+                invoicesHtml = invoiceLinks;
+            } else {
+                invoicesHtml = '0';
+            }
+            
             return `
                 <div class="milestone-item">
                     <div class="d-flex justify-content-between align-items-center">
@@ -626,7 +641,7 @@ function renderProjectView(data) {
                             <small class="text-muted">Invoiced:</small> &euro;${m.invoiced_amount.toFixed(2)}
                         </div>
                         <div class="col-md-4">
-                            <small class="text-muted">Invoices:</small> ${m.invoices_count}
+                            <small class="text-muted">Invoices:</small> ${invoicesHtml}
                         </div>
                     </div>
                     <div class="progress mt-2" style="height: 8px;">

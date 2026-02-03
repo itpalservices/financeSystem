@@ -413,15 +413,26 @@ def get_project_summary(
         
         milestone_total = sum(inv.total for inv in milestone_invoices)
         
+        # Include invoice details for clickable links
+        invoices_list = [{
+            "id": inv.id,
+            "invoice_number": inv.invoice_number,
+            "total": inv.total,
+            "status": inv.status.value,
+            "pdf_url": inv.pdf_url
+        } for inv in milestone_invoices]
+        
         milestones_summary.append({
             "id": milestone.id,
             "milestone_no": milestone.milestone_no,
+            "milestone_type": milestone.milestone_type.value,
             "label": milestone.label,
             "expected_amount": milestone.expected_amount,
             "invoiced_amount": milestone_total,
             "due_date": milestone.due_date.isoformat() if milestone.due_date else None,
             "status": milestone.status.value,
-            "invoices_count": len(milestone_invoices)
+            "invoices_count": len(milestone_invoices),
+            "invoices": invoices_list
         })
     
     return {
