@@ -590,17 +590,30 @@ function renderProjectView(data) {
     
     let milestonesHtml = '';
     if (milestones.length > 0) {
-        milestonesHtml = milestones.map(m => {
+        // Sort milestones: Advance first, then Progress (by number), then Final
+        const sortedMilestones = [...milestones].sort((a, b) => {
+            const typeOrder = { 'advance': 1, 'progress': 2, 'final': 3 };
+            const aOrder = typeOrder[a.milestone_type] || 2;
+            const bOrder = typeOrder[b.milestone_type] || 2;
+            if (aOrder !== bOrder) return aOrder - bOrder;
+            // For progress milestones, sort by milestone_no
+            return (a.milestone_no || 0) - (b.milestone_no || 0);
+        });
+        
+        milestonesHtml = sortedMilestones.map(m => {
             const mStatus = getMilestoneStatusBadge(m.status);
             const mProgress = m.expected_amount > 0 
                 ? ((m.invoiced_amount / m.expected_amount) * 100).toFixed(0) 
                 : 0;
             
+            // Only show number prefix for progress payments
+            const labelPrefix = m.milestone_type === 'progress' && m.milestone_no ? `${m.milestone_no}. ` : '';
+            
             return `
                 <div class="milestone-item">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <strong>${m.milestone_no}. ${escapeHtml(m.label)}</strong>
+                            <strong>${labelPrefix}${escapeHtml(m.label)}</strong>
                             ${m.due_date ? `<small class="text-muted ms-2">Due: ${new Date(m.due_date).toLocaleDateString()}</small>` : ''}
                         </div>
                         <div>${mStatus}</div>
