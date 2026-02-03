@@ -144,16 +144,16 @@
             <div class="col-md-3">
                 <div class="card stat-card shadow-sm" style="border-left-color: #28a745;">
                     <div class="card-body">
-                        <h3 id="receiptAmount" style="color: #28a745;">€0</h3>
-                        <p><i class="bi bi-cash-coin"></i> Total Received</p>
+                        <h3 id="invoicedThisYear" style="color: #28a745;">€0</h3>
+                        <p><i class="bi bi-cash-coin"></i> Invoiced This Year</p>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="card stat-card shadow-sm" style="border-left-color: #17a2b8;">
                     <div class="card-body">
-                        <h3 id="receiptThisMonth" style="color: #17a2b8;">€0</h3>
-                        <p><i class="bi bi-calendar-check"></i> This Month</p>
+                        <h3 id="invoicedThisMonth" style="color: #17a2b8;">€0</h3>
+                        <p><i class="bi bi-calendar-check"></i> Invoiced This Month</p>
                     </div>
                 </div>
             </div>
@@ -224,15 +224,17 @@
                 document.getElementById('userRole').textContent = user.role;
 
                 const headers = { 'Authorization': `Bearer ${localStorage.getItem('token')}` };
-                const [invoices, quotes, projectAnalytics, receiptAnalytics] = await Promise.all([
+                const [invoices, quotes, projectAnalytics, receiptAnalytics, invoiceAnalytics] = await Promise.all([
                     api.getInvoices(),
                     api.getQuotes(),
                     fetch('/api/analytics/projects', { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
-                    fetch('/api/analytics/receipts', { headers }).then(r => r.ok ? r.json() : null).catch(() => null)
+                    fetch('/api/analytics/receipts', { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
+                    fetch('/api/analytics', { headers }).then(r => r.ok ? r.json() : null).catch(() => null)
                 ]);
                 
                 const projectData = projectAnalytics || { total_projects: 0, active_projects: 0, total_project_revenue: 0 };
                 const receiptData = receiptAnalytics || { total_issued_receipts: 0, total_draft_receipts: 0, total_issued_amount: 0, current_month_total: 0 };
+                const invoiceData = invoiceAnalytics || { current_year_total: 0, current_month_total: 0 };
 
                 document.getElementById('invoiceCount').textContent = invoices.length;
                 document.getElementById('draftInvoiceCount').textContent = invoices.filter(inv => inv.status === 'draft').length;
@@ -241,8 +243,8 @@
                 
                 document.getElementById('receiptCount').textContent = receiptData.total_issued_receipts || 0;
                 document.getElementById('draftReceiptCount').textContent = receiptData.total_draft_receipts || 0;
-                document.getElementById('receiptAmount').textContent = '€' + (receiptData.total_issued_amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
-                document.getElementById('receiptThisMonth').textContent = '€' + (receiptData.current_month_total || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+                document.getElementById('invoicedThisYear').textContent = '€' + (invoiceData.current_year_total || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
+                document.getElementById('invoicedThisMonth').textContent = '€' + (invoiceData.current_month_total || 0).toLocaleString('en-US', { minimumFractionDigits: 2 });
                 
                 document.getElementById('activeProjectCount').textContent = projectData.active_projects || 0;
                 document.getElementById('totalProjectCount').textContent = projectData.total_projects || 0;
